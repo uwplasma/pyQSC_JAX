@@ -318,13 +318,12 @@ class near_axis():
     def phi_of_theta_varphi(self, r, theta, varphi):
         residual = partial(self.residual_phi0_of_theta_varphi_func, theta=theta, r=r, varphi=varphi)
         
-        @partial(jit, static_argnums=(1,))
-        def internal_newton(x0, niter=5):
+        def internal_newton(f, x0):
             def body_fun(i, x):
-                res = residual(x)
-                jac = grad(residual)(x)
+                res = f(x)
+                jac = grad(f)(x)
                 return x - res / jac
-            return jax.lax.fori_loop(0, niter, body_fun, x0)
+            return jax.lax.fori_loop(0, 5, body_fun, x0)
             
         phi_on_axis = lax.custom_root(residual, varphi, internal_newton, lambda g, y: y / g(1.0))
         X_at_this_theta = r * (self.X1c_untwisted * jnp.cos(theta) + self.X1s_untwisted * jnp.sin(theta))
@@ -398,13 +397,12 @@ class near_axis():
 
             def compute_for_phi(phi_target):
                 
-                @partial(jit, static_argnums=(1,))
-                def internal_newton(x0, niter=5):
+                def internal_newton(f, x0):
                     def body_fun(i, x):
-                        res = residual(x)
-                        jac = grad(residual)(x)
+                        res = f(x)
+                        jac = grad(f)(x)
                         return x - res / jac
-                    return jax.lax.fori_loop(0, niter, body_fun, x0)
+                    return jax.lax.fori_loop(0, 5, body_fun, x0)
 
                 def residual(z):
                     return jax.lax.cond(
