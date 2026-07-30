@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.axis_optimization as axis_optimization
 from pyqsc_jax.axis_optimization import (
     _candidate_is_distinct,
     _copy_retained_axis_modes,
@@ -139,7 +140,7 @@ def test_search_certifies_only_the_verified_nonnegative_zero():
     )
 
 
-def test_search_failure_and_ill_conditioning_are_distinct_statuses():
+def test_search_failure_and_ill_conditioning_are_distinct_statuses(monkeypatch):
     coarse_failure = qsc.search_axis(
         circular_problem(etabar=0.0),
         options=small_options(
@@ -151,14 +152,26 @@ def test_search_failure_and_ill_conditioning_are_distinct_statuses():
     assert coarse_failure.best is None
     assert coarse_failure.local_starts_attempted == 0
 
-    local_failure = qsc.search_axis(
-        circular_problem(nphi=7),
-        options=small_options(
-            coarse_samples=1,
-            maximum_iterations=1,
-            verification_multipliers=(1,),
-        ),
-    )
+    original_local_solve = axis_optimization._levenberg_marquardt
+
+    def forced_nonfinite_local_solve(*args, **kwargs):
+        internal, report = original_local_solve(*args, **kwargs)
+        return internal, replace(report, finite=jnp.asarray(False))
+
+    with monkeypatch.context() as context:
+        context.setattr(
+            axis_optimization,
+            "_levenberg_marquardt",
+            forced_nonfinite_local_solve,
+        )
+        local_failure = qsc.search_axis(
+            circular_problem(),
+            options=small_options(
+                coarse_samples=1,
+                maximum_iterations=1,
+                verification_multipliers=(1,),
+            ),
+        )
     assert local_failure.status == "solver_failure"
     assert local_failure.best is None
     assert local_failure.local_starts_attempted == 1
