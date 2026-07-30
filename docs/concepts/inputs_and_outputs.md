@@ -29,11 +29,12 @@ Every `NearAxisSolution` contains `inputs`, `geometry`, `root_report`,
 `X1s`, `X1c`, `Y1s`, `Y1c` and untwisted forms, `elongation`,
 `mean_elongation`, `B_axis`, `grad_B_axis`, and `L_grad_B`.
 
-An r2 result adds the complete `SecondOrderData`: `V1`, `V2`, `V3`, `V1r`,
+An r2 result adds the complete `SecondOrderData`: `V1`, `V2`, `V3`,
 `X20`, `X2s`, `X2c`, `Y20`, `Y2s`, `Y2c`, `Z20`, `Z2s`, `Z2c`, their
 needed derivatives and untwisted forms, `beta_1s`, `G2`, `B20`,
-`B20_mean`, `B20_anomaly`, `B20_residual`, `B20_variation`, `B2cQI`,
-`r_singularity`, Mercier terms, and the total `FieldJet`.
+`B20_mean`, `B20_anomaly`, `B20_residual`, and `B20_variation`. The r2
+solution also attaches singular-radius diagnostics, Mercier terms, and the
+total `FieldJet`.
 
 `FieldJet` contains `field`, `gradient`, `hessian`, `hessian_frenet`,
 coordinate-map derivatives, reconstruction errors, Maxwell residuals, and

@@ -32,7 +32,7 @@ Issues = "https://github.com/uwplasma/pyQSC_JAX/issues"
 Source = "https://github.com/uwplasma/pyQSC_JAX"
 
 [project.optional-dependencies]
-plot = ["matplotlib", "pyevtk"]
+plot = ["matplotlib"]
 docs = [
   "furo",
   "myst-parser",

@@ -129,11 +129,39 @@ was made for that phase.
 
 ## Phase 10 — documentation and release hardening
 
-- Commit: in progress.
+- Commit: `69b05da`.
 - Files: complete docs hierarchy, tutorials via `literalinclude`, migration,
-  validation reports, release checklist, README and CI hardening.
-- Verification: warnings-as-errors HTML/doctest build, full coverage, clean
-  artifacts, and performance report are required before this phase closes.
-- Performance/API: no new physics API planned.
-- Risk/next: final audit must distinguish downstream inherited failures from
-  pyQSC_JAX correctness and leave no hidden release blocker.
+  validation reports, release checklist, README, and compact reproducible
+  figures.
+- Verification: warnings-as-errors HTML and doctest builds; 23 focused
+  configuration/plot/example tests; figure visual inspection.
+- Performance/API: named configurations and lazy plotting helpers added; no
+  new physics formula.
+- Risk/next: harden coverage, packaging, publishing, compatibility, and
+  benchmark workflows before final review.
+
+## Phase 11 — release hardening
+
+- Commit: in progress.
+- Files: synchronized benchmark and raw report, CI coverage/Codecov, docs
+  example smoke, ESSOS compatibility job, TestPyPI/production OIDC workflow,
+  clean wheel/sdist verification.
+- Verification: 226 tests pass with 98.64% combined line/branch coverage;
+  HTML/doctest warning-free; wheel and sdist install independently; `pip
+  check` and dependency audit clean; 12 ESSOS field-jet tests pass in a fresh
+  environment.
+- Numerical checks: direct `nphi=121` QA/finite/QH comparison with audited
+  pyQSC has maximum r2 array difference \(1.11\times10^{-11}\).
+- Performance: 61-point first-order solve 0.198 s cold and 144 µs warm on the
+  documented Apple M4 run; raw samples and caveats are committed.
+- API: removed unused `pyevtk`; core dependencies remain only `jax` and
+  `solvax`.
+- Risk/next: remote CI, TestPyPI OIDC, PR approval, and Zenodo are external
+  release gates; perform hostile final review before requesting merge.
+
+## Phase 12 — final review
+
+- Commit: in progress.
+- Required evidence: convention/API/dependency/link audits, mutation spot
+  checks, exact limitations, clean repository state, remote CI results, and
+  final PR summary.

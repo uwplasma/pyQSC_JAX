@@ -19,5 +19,12 @@ jobs:
           cache: pip
       - run: python -m pip install -e '.[dev]'
       - run: pytest -m numerics
+      - run: python benchmarks/benchmark_core.py
+        env:
+          PYQSC_BENCHMARK_OUTPUT: benchmarks/results/ci.json
       - name: Record environment
         run: python -m pip freeze
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmarks/results/ci.json
