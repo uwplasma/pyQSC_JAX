@@ -16,10 +16,12 @@ theory/first-order
 theory/second-order
 theory/third-order
 theory/inverse-solves
+theory/b20-optimization
 theory/field-jet
 api/axis
 api/first-order
 api/continuation
+api/optimization
 api/second-order
 api/third-order
 api/field-jet

@@ -211,7 +211,11 @@ def _assemble_periodic_system(
     )
 
 
-def solve_second_order(first_order: NearAxisSolution) -> NearAxisSolution:
+def solve_second_order(
+    first_order: NearAxisSolution,
+    *,
+    attach_diagnostics: bool = True,
+) -> NearAxisSolution:
     """Add the complete finite-pressure/current second-order solution."""
 
     inputs = first_order.inputs
@@ -363,6 +367,8 @@ def solve_second_order(first_order: NearAxisSolution) -> NearAxisSolution:
         Z2c_untwisted=Z2c_untwisted,
     )
     solution = replace(first_order, second_order=second_order)
+    if not attach_diagnostics:
+        return solution
     from pyqsc_jax.diagnostics import mercier_diagnostics
     from pyqsc_jax.field import total_field_jet
     from pyqsc_jax.singularity import singularity_diagnostics

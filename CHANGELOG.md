@@ -52,6 +52,9 @@ first stable release.
 - Full-state fixed-sign pseudo-arclength continuation for `etabar`, including
   fold-crossing detection, corrected solution records, and explicit partial
   completion statuses.
+- Dense nonconstant-`B20` diagnostics, exact affine elimination of `B2c`,
+  degenerate-response handling, and independent doubled/quadrupled-grid
+  verification.
 
 ### Fixed
 

@@ -98,6 +98,30 @@ print(branch.fold_detected)
 Each corrected point has its own `root_report`. `branch.complete` is true only
 when every requested point converged.
 
+## Analytic \(B_{2c}\) elimination
+
+For any r2 or r3 solution:
+
+```python
+optimal = qsc.optimize_B2c(solution)
+
+print(optimal.B2c_optimal)
+print(optimal.diagnostics.weighted_l2)
+print(optimal.diagnostics.grid_maximum)
+print(optimal.affine_reconstruction_error)
+
+verification = qsc.verify_B20_resolution(
+    optimal.solution,
+    multipliers=(1, 2, 4),
+)
+print(verification.relative_weighted_l2_change)
+print(verification.relative_grid_maximum_change)
+```
+
+The scalar optimum is exact for the weighted-\(L^2\) affine subproblem.
+Fine-grid maximum and spectral-tail checks remain independent acceptance
+criteria.
+
 ESSOS code can continue to use:
 
 ```python

@@ -99,6 +99,11 @@ Prescribe transform with
 response derivative and fold flag. `qsc.continue_etabar_branch(...)` traces
 the full sigma collocation state across such a fold.
 
+`qsc.optimize_B2c(solution)` eliminates the affine \(B_{2c}\) subproblem
+exactly and returns dense weighted, smooth-maximum, grid-maximum, Fourier, and
+tail diagnostics. `qsc.verify_B20_resolution(...)` independently rebuilds the
+candidate on doubled and quadrupled grids.
+
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
 

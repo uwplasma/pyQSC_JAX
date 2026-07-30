@@ -19,6 +19,15 @@ from pyqsc_jax.models import (
     ThirdOrderData,
 )
 from pyqsc_jax.near_axis import near_axis
+from pyqsc_jax.optimize import (
+    B2cOptimizationResult,
+    B20Diagnostics,
+    B20ResolutionVerification,
+    b20_diagnostics,
+    optimal_B2c_value,
+    optimize_B2c,
+    verify_B20_resolution,
+)
 from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
 from pyqsc_jax.shear import solve_magnetic_shear
 from pyqsc_jax.singularity import singularity_diagnostics
@@ -27,6 +36,9 @@ from pyqsc_jax.third_order import solve_third_order
 
 __all__ = [
     "Axis",
+    "B2cOptimizationResult",
+    "B20Diagnostics",
+    "B20ResolutionVerification",
     "ContinuationResult",
     "FieldJet",
     "InverseSolveDiagnostics",
@@ -43,6 +55,7 @@ __all__ = [
     "SingularityDiagnostics",
     "ThirdOrderData",
     "near_axis",
+    "b20_diagnostics",
     "continue_etabar_branch",
     "mercier_diagnostics",
     "second_order_residuals",
@@ -51,5 +64,8 @@ __all__ = [
     "singularity_diagnostics",
     "solve_third_order",
     "total_field_jet",
+    "optimal_B2c_value",
+    "optimize_B2c",
+    "verify_B20_resolution",
 ]
 __version__ = "0.2.0.dev0"

@@ -10,6 +10,8 @@ Known limitations under active refactor include:
 - no plasma/external field-jet separation;
 - pseudo-arclength continuation currently traces `etabar` branches only and
   uses a fixed arclength step.
+- no multistart axis optimization or basin enumeration yet; only the exact
+  affine `B2c` subproblem is eliminated.
 
 Target-transform solves are branch-local. The sign of the `etabar` seed is
 preserved and the seed magnitude selects a Newton basin. Multiple local
