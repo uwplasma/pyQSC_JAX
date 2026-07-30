@@ -12,6 +12,13 @@ from pyqsc_jax.axis_optimization import (
     search_axis,
     stellarator_symmetric_variable_indices,
 )
+from pyqsc_jax.configurations import (
+    REFERENCE_CONFIGURATIONS,
+    ReferenceConfiguration,
+    available_configurations,
+    get_configuration,
+    solve_configuration,
+)
 from pyqsc_jax.continuation import ContinuationResult, continue_etabar_branch
 from pyqsc_jax.criteria import Criteria, CriteriaReport, CriterionEvaluation
 from pyqsc_jax.diagnostics import mercier_diagnostics
@@ -94,6 +101,8 @@ __all__ = [
     "PlasmaGradientData",
     "PlasmaHessianData",
     "Qsc",
+    "REFERENCE_CONFIGURATIONS",
+    "ReferenceConfiguration",
     "RootSolveOptions",
     "RootSolveReport",
     "SecondOrderData",
@@ -103,12 +112,14 @@ __all__ = [
     "ThirdOrderData",
     "near_axis",
     "b20_diagnostics",
+    "available_configurations",
     "continue_etabar_branch",
     "continue_axis_search",
     "covariant_current_from_enclosed",
     "enclosed_current_from_covariant",
     "elliptical_channel_gradient",
     "evaluate_weighted_current",
+    "get_configuration",
     "matched_plasma_field_kernel",
     "pack_symmetric_trace_free_rank2",
     "pack_symmetric_trace_free_rank3",
@@ -116,6 +127,7 @@ __all__ = [
     "second_order_residuals",
     "search_axis",
     "solve",
+    "solve_configuration",
     "solve_magnetic_shear",
     "singularity_diagnostics",
     "stellarator_symmetric_variable_indices",
