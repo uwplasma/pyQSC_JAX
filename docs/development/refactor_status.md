@@ -209,13 +209,16 @@ was made for that phase.
 
 ## Phase 15 — screened database showcase and constrained \(B_{20}\)
 
-- Files: traceable configurations from Wisconsin database IDs 3, 57409, and
-  107579; an eight-mode constrained refinement of ID 57409; direct-Frenet 3D
-  surface plotting; regenerated README figures and optimizer report.
-- Verification: every showcased design independently passes the Curvo profile
-  with \(\lvert\iota\rvert\ge0.4\); the database source ID and URL are frozen
-  in configuration and figure metadata; strong-axis surface smoothness is a
-  regression test.
+- Files: traceable configurations from Wisconsin database IDs 3, 57409,
+  107579, and the one-period QA ID 139524; an eight-mode constrained
+  refinement of ID 57409; direct-Frenet 3D surface plotting; topology,
+  convergence, measured-performance, and optimizer-comparison README figures.
+- Verification: every showcased design independently passes the Curvo profile.
+  The QA lead passes with helicity zero and
+  \(\lvert\iota\rvert\ge0.3\); the other displayed cases pass with
+  \(\lvert\iota\rvert\ge0.4\). Database source IDs and URLs are frozen in
+  configuration and figure metadata, and every displayed surface has a
+  smoothness regression.
 - Numerical checks: the derived ID-57409 case has
   \(\lvert\iota\rvert=2.964\), \(r_\mathrm{sing}=0.249\) m, and weighted
   \(B_{20}\) residual \(1.2743\times10^{-10}\) at `nphi=121`, stable through
@@ -223,6 +226,14 @@ was made for that phase.
   \(I_2=0\), finite \(p_2\), RMS axis torsion \(0.979\ \mathrm{m}^{-1}\),
   and 14.04% relative angular variation of the pressure-driven plasma-field
   norm while passing the same screen.
+- QA showcase checks: ID 139524 has helicity zero,
+  \(\lvert\iota\rvert=0.355\), RMS axis torsion
+  \(1.199\ \mathrm{m}^{-1}\), and \(r_\mathrm{sing}=0.097\) m. The complete
+  287-test run passes with 98.79% combined line/branch coverage; all 24 public
+  scripts and strict HTML/doctest documentation builds pass.
+- Performance evidence: synchronized Apple M4 measurements show 0.144 ms warm
+  first-order latency at `nphi=61`, a 1,373-fold cold-to-warm ratio, 0.191 ms
+  for a JVP, and 0.479 ms for an eight-case VMAP batch.
 - Limitation: at formal radius 0.15 m the pressure-only plasma contribution is
   approximately 0.19% of the total field. The former 30% showcase relied on
   finite \(I_2\) and was removed because its nearly planar geometry presented

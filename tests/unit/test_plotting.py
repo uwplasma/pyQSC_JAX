@@ -86,6 +86,7 @@ def test_surface_and_angle_dependent_field_split_plotters():
 @pytest.mark.parametrize(
     ("configuration", "radius"),
     (
+        ("database_qa_139524", 0.03),
         ("database_example_3", 0.075),
         ("b20_optimized_good", 0.075),
         ("database_large_singularity_107579", 0.15),

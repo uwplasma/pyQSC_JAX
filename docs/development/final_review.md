@@ -17,9 +17,9 @@ Zenodo archive/DOI.
 | Gate | Result |
 | --- | --- |
 | Ruff lint and format | clean over `src`, `tests`, `examples`, `benchmarks` |
-| Full test/coverage run | 226 passed; 98.64% combined line/branch coverage |
+| Full test/coverage run | 287 passed, 3 integration skips; 98.79% combined line/branch coverage |
 | Documentation | HTML and doctest builders pass with warnings as errors |
-| Examples | 12 tutorials + 5 publication scripts pass from clean cwd |
+| Examples | 14 tutorials + 10 publication scripts pass from clean cwd |
 | Package metadata | wheel and sdist pass `twine check` |
 | Clean artifacts | wheel and independently rebuilt sdist pass physics smokes |
 | Dependencies | both environments pass `pip check`; no known advisories |

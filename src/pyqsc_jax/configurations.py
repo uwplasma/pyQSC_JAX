@@ -132,6 +132,24 @@ REFERENCE_CONFIGURATIONS = (
         source_url="https://stellarator.physics.wisc.edu/app/plot/3",
     ),
     ReferenceConfiguration(
+        name="database_qa_139524",
+        description=(
+            "Curvo stellarator-database configuration 139524: a one-field-period "
+            "finite-pressure QA stellarator with |iota| above 0.3, zero current, "
+            "nonzero torsion, and positive margins for the named design screen."
+        ),
+        rc=(1.0, -0.06883207, 0.0017516185, 0.023231717),
+        zs=(0.0, -0.28447896, 0.074662544, 0.07483574),
+        nfp=1,
+        etabar=-0.7771866,
+        B2c=-1.8120022,
+        I2=0.0,
+        p2=-232743.75,
+        order="r3",
+        source_database_id=139524,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/139524",
+    ),
+    ReferenceConfiguration(
         name="database_low_b20_57409",
         description=(
             "Low-B20 Curvo stellarator-database configuration 57409, used as "

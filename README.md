@@ -14,21 +14,32 @@ plasma–coil field jets in JAX.
 > compatibility, and external 3+5+7 field-jet paths are validated; release
 > hardening is still in progress.
 
-![Four independently screened stellarators](docs/_static/stellarator_gallery.png)
+![A visually diverse gallery of screened QA, QH, optimized, and large-clearance stellarators](docs/_static/stellarator_gallery.png)
 
-Four runnable, independently re-evaluated designs: [database ID 3](https://stellarator.physics.wisc.edu/app/plot/3),
-an eight-mode refinement of [database ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409),
-the large-clearance [database ID 107579](https://stellarator.physics.wisc.edu/app/plot/107579),
-and the finite-pressure, zero-current [database ID 52521](https://stellarator.physics.wisc.edu/app/plot/52521).
-Every displayed design is a nonplanar stellarator and passes the configurable
-Curvo/Table-3 profile with the stricter
-\(\lvert\iota\rvert\geq0.4\); each panel reports transform, singular radius,
-and its defining diagnostic. Plotting radii and database provenance are in
-the adjacent JSON metadata.
+Four geometries with four distinct jobs: the one-period QA
+[database ID 139524](https://stellarator.physics.wisc.edu/app/plot/139524),
+the four-period QH [database ID 3](https://stellarator.physics.wisc.edu/app/plot/3),
+an eight-mode flat-\(B_{20}\) refinement of
+[database ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409), and
+the large-clearance [database ID 107579](https://stellarator.physics.wisc.edu/app/plot/107579).
+Every panel is independently re-solved and screened. The lead QA stellarator
+has helicity zero, \(\lvert\iota\rvert=0.355\), finite pressure, exactly
+\(I_2=0\), and nonzero torsion; it passes the Curvo/Table-3 profile with the
+requested \(\lvert\iota\rvert\geq0.3\) gate. The other three pass at
+\(\lvert\iota\rvert\geq0.4\). Plot radii and provenance are saved beside the
+runnable figure as JSON.
 
 | \(B_{20}\) optimization, geometry, and singular margin | Angle-dependent plasma/external field |
 | --- | --- |
 | ![B20 optimization](docs/_static/B20_optimization.png) | ![Plasma and external jet](docs/_static/plasma_external_jet.png) |
+
+| QA versus QH topology branches | Resolution audit catches under-resolved \(B_{20}\) |
+| --- | --- |
+| ![QA and QH topology branches](docs/_static/QA_QH_branches.png) | ![Spectral resolution convergence](docs/_static/convergence.png) |
+
+| Measured JIT, JVP, and VMAP speedups | Five optimizers plus staged refinement |
+| --- | --- |
+| ![Measured JAX core performance](docs/_static/core_performance.png) | ![B20 optimizer comparison](docs/_static/optimizer_comparison.png) |
 
 | Differentiable radial VMEX quantities | VMEC2000 export validation |
 | --- | --- |
@@ -54,13 +65,15 @@ python -m pip install 'pyqsc-jax[plot,vmex]'
 ```python
 import pyqsc_jax as qsc
 
-configuration = qsc.get_configuration("database_example_3")
+configuration = qsc.get_configuration("database_qa_139524")
 solution = configuration.solve(nphi=81)
-criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.3)
 
 assert solution.root_report.converged
 assert solution.linear_report.converged
 assert criteria.evaluate(solution).passed
+assert int(solution.helicity) == 0
+assert solution.inputs.I2 == 0
 print("source:", configuration.source_url)
 print("|iota|:", abs(solution.iota))
 print("B20 residual:", solution.B20_residual)
@@ -116,13 +129,15 @@ resolution, timing, and radius-convergence tables are in the
 | Improvement over ID-57409 exact-\(B_{2c}\) solve | \(2.4321\times10^8\)× | \(>2.0\times10^8\)× |
 | \(B_{20}\)-optimized singular radius | 0.249 m | displayed \(r=0.075\) m gives 3.3× clearance |
 | Largest showcased singular radius, database ID 107579 | 0.432 m | \(>0.4\) m |
-| Four-case showcase design screen | all pass | Curvo profile with \(\lvert\iota\rvert\ge0.4\) |
+| Showcase QA, database ID 139524 | helicity 0, \(\lvert\iota\rvert=0.355\), \(\tau_\mathrm{RMS}=1.199\ \mathrm{m}^{-1}\) | Curvo profile with \(\lvert\iota\rvert\ge0.3\) |
+| Four-case showcase design screen | all pass | QA gate 0.3; other cases \(\lvert\iota\rvert\ge0.4\) |
 | Pressure-only \(I_2=0\) plasma fraction, min/mean/max at \(a=0.15\) m | 0.1761% / 0.1890% / 0.2026% | nonzero and resolved |
 | Pressure-driven plasma-field norm peak-to-peak / mean | 14.04% | \(>10\%\) |
 | Finite-beta showcase axis torsion, RMS | \(0.979\ \mathrm{m}^{-1}\) | \(>0.5\ \mathrm{m}^{-1}\) |
 | VMEC/near-axis on-axis \(\iota\), \(r=0.0025\) | 0.418543 / 0.418307 | relative error \(<0.1\%\) |
 | VMEC force residuals | \(2.4\)–\(7.6\times10^{-11}\) | maximum \(<10^{-9}\) |
 | `to_vmec`, Apple M4 CPU, compile+execute / warm | 0.476 s / 5.20 ms | warm unit gate \(<0.5\) s |
+| First-order solve, `nphi=61`, Apple CPU, compile+execute / warm | 198.2 ms / 0.144 ms | synchronized median; 1,373× amortized speedup |
 
 ```python
 optimized = qsc.solve_configuration("b20_optimized_good", nphi=121)

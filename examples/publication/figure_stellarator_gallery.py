@@ -10,19 +10,41 @@ import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_surface_3d
 
 CASES = (
-    ("database_example_3", "database ID 3", 0.075, "viridis"),
-    ("b20_optimized_good", r"database-seeded flat $B_{20}$", 0.075, "cividis"),
     (
-        "database_large_singularity_107579",
-        r"database ID 107579: large $r_\mathrm{sing}$",
-        0.15,
-        "plasma",
+        "database_qa_139524",
+        r"QA • database ID 139524 • 1 field period",
+        0.03,
+        "viridis",
+        32,
+        55,
+        0.3,
     ),
     (
-        "plasma_stellarator",
-        r"database ID 52521: finite $p_2$, $I_2=0$",
-        0.12,
+        "database_example_3",
+        r"QH • database ID 3 • 4 field periods",
+        0.075,
         "magma",
+        23,
+        35,
+        0.4,
+    ),
+    (
+        "b20_optimized_good",
+        r"optimization • nearly constant $B_{20}$",
+        0.075,
+        "cividis",
+        28,
+        28,
+        0.4,
+    ),
+    (
+        "database_large_singularity_107579",
+        r"robust surface • large $r_\mathrm{sing}$",
+        0.15,
+        "plasma",
+        25,
+        40,
+        0.4,
     ),
 )
 NPHI = 121
@@ -36,9 +58,19 @@ figure = plt.figure(figsize=(12.0, 9.2))
 metadata = {"nphi": NPHI, "configurations": {}}
 
 print("Rendering the bundled stellarator gallery...")
-for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
+for panel, (
+    name,
+    title,
+    radius,
+    cmap,
+    elevation,
+    azimuth,
+    minimum_abs_iota,
+) in enumerate(CASES, start=1):
     solution = qsc.solve_configuration(name, nphi=NPHI)
-    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+    criteria = qsc.Criteria.from_curvo_2025(
+        minimum_abs_iota=minimum_abs_iota,
+    )
     assert criteria.evaluate(solution).passed
     axis = figure.add_subplot(2, 2, panel, projection="3d")
     plot_surface_3d(
@@ -48,19 +80,24 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
         ax=axis,
         cmap=cmap,
     )
-    axis.view_init(elev=24, azim=35)
+    axis.view_init(elev=elevation, azim=azimuth)
     if name == "b20_optimized_good":
         diagnostic = rf"$\|P B_{{20}}\|_2={float(solution.B20_residual):.2e}$"
-    elif name == "plasma_stellarator":
-        torsion_rms = float((solution.torsion**2).mean() ** 0.5)
-        diagnostic = rf"$\tau_\mathrm{{rms}}={torsion_rms:.3f}\ \mathrm{{m}}^{{-1}}$"
+    elif name == "database_large_singularity_107579":
+        diagnostic = rf"$r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+    elif name == "database_qa_139524":
+        diagnostic = rf"helicity $=0$, $|\iota|={abs(float(solution.iota)):.3f}$"
     else:
         diagnostic = rf"$|\iota|={abs(float(solution.iota)):.3f}$"
     axis.set_title(
         title
         + "\n"
         + diagnostic
-        + rf", $r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+        + (
+            ""
+            if name == "database_large_singularity_107579"
+            else rf", $r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+        )
         + "\nCurvo profile: pass"
     )
     metadata["configurations"][name] = {
@@ -69,7 +106,7 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
         "B20_residual": float(solution.B20_residual),
         "singular_radius": float(solution.r_singularity),
         "surface_to_singular_radius": radius / float(solution.r_singularity),
-        "curvo_profile_minimum_abs_iota": 0.4,
+        "curvo_profile_minimum_abs_iota": minimum_abs_iota,
         "curvo_profile_passed": True,
         "source_database_id": qsc.get_configuration(name).source_database_id,
         "source_url": qsc.get_configuration(name).source_url,

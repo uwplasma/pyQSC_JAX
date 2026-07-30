@@ -99,10 +99,10 @@ measurements and exclude the shared JAX compilation.
 | method | evaluations | time [s] | independently evaluated weighted \(L^2\) |
 | --- | ---: | ---: | ---: |
 | exact \(B_{2c}\) only | 1 | — | \(3.09928\times10^{-2}\) |
-| SciPy L-BFGS-B | 70 | 0.181 | \(2.01392\times10^{-4}\) |
-| SciPy `least_squares` | 28 | 1.309 | \(1.02501\times10^{-4}\) |
-| low-budget differential evolution | 120 | 0.113 | \(2.65766\times10^{-1}\) |
-| pyQSC_JAX multistart Levenberg--Marquardt | 130 | 21.914* | \(1.08279\times10^{-4}\) |
+| SciPy L-BFGS-B | 70 | 0.141 | \(2.01392\times10^{-4}\) |
+| SciPy `least_squares` | 28 | 1.349 | \(1.02501\times10^{-4}\) |
+| low-budget differential evolution | 120 | 0.104 | \(2.65766\times10^{-1}\) |
+| pyQSC_JAX multistart Levenberg--Marquardt | 130 | 21.772* | \(1.08279\times10^{-4}\) |
 
 The SciPy timings exclude the shared JAX residual/Jacobian compilation; the
 asterisked multistart timing includes compilation of its independent closure.
@@ -142,4 +142,5 @@ radial clearance relative to the truncated-map singularity diagnostic.
 The result is a verified numerical basin, not a proof that no other basin is
 better. The runnable comparison is
 `benchmarks/benchmark_b20_optimizers.py`; its frozen report records the full
-environment and raw values.
+environment and raw values in
+`benchmarks/reports/2026-07-30-b20-optimizers-apple-m4.json`.

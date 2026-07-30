@@ -9,7 +9,7 @@ import numpy as np
 
 import pyqsc_jax as qsc
 
-CONFIGURATION = "qa"
+CONFIGURATION = "database_qa_139524"
 RESOLUTIONS = (15, 31, 61, 121)
 OUTPUT_STEM = Path("examples/output/publication/convergence")
 README_PNG = Path("docs/_static/convergence.png")
@@ -17,7 +17,7 @@ SAVE_OUTPUT = True
 SHOW_FIGURE = False
 
 plt.style.use("seaborn-v0_8-whitegrid")
-print("Solving the QA reference on successively finer grids...")
+print("Solving database QA ID 139524 on successively finer grids...")
 solutions = [qsc.solve_configuration(CONFIGURATION, nphi=resolution) for resolution in RESOLUTIONS]
 reference = solutions[-1]
 iota_errors = np.asarray(
@@ -47,6 +47,7 @@ axes[1].loglog(
 )
 axes[1].set_xlabel("toroidal grid points")
 axes[1].set_ylabel(r"$|R_{B20,N}-R_{B20,121}|$")
+figure.suptitle(r"Resolution audit: $\iota$ converges early, $B_{20}$ needs a finer grid")
 figure.tight_layout()
 
 try:
