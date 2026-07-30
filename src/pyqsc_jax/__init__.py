@@ -42,10 +42,14 @@ from pyqsc_jax.optimize import (
 )
 from pyqsc_jax.plasma import (
     PlasmaCurrentSource,
+    PlasmaFieldData,
     covariant_current_from_enclosed,
     enclosed_current_from_covariant,
     evaluate_weighted_current,
+    matched_plasma_field_kernel,
     plasma_current_source,
+    plasma_field_on_axis,
+    regularized_axis_integral,
 )
 from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
 from pyqsc_jax.shear import solve_magnetic_shear
@@ -75,6 +79,7 @@ __all__ = [
     "NearAxisInputs",
     "NearAxisSolution",
     "PlasmaCurrentSource",
+    "PlasmaFieldData",
     "Qsc",
     "RootSolveOptions",
     "RootSolveReport",
@@ -90,6 +95,7 @@ __all__ = [
     "covariant_current_from_enclosed",
     "enclosed_current_from_covariant",
     "evaluate_weighted_current",
+    "matched_plasma_field_kernel",
     "mercier_diagnostics",
     "second_order_residuals",
     "search_axis",
@@ -102,6 +108,8 @@ __all__ = [
     "optimal_B2c_value",
     "optimize_B2c",
     "plasma_current_source",
+    "plasma_field_on_axis",
+    "regularized_axis_integral",
     "verify_B20_resolution",
 ]
 __version__ = "0.2.0.dev0"

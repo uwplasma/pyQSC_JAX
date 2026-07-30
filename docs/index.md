@@ -20,6 +20,7 @@ theory/b20-optimization
 theory/criteria
 theory/global-search
 theory/plasma-current
+theory/plasma-field
 theory/field-jet
 api/axis
 api/first-order

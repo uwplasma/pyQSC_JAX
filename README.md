@@ -123,6 +123,11 @@ positive-volume current measure used by the surface-free Biot–Savart
 calculation and reports both \(I_2\) and enclosed amperes. A positive formal
 radius is mandatory even though no finite-radius surface is created.
 
+`qsc.plasma_field_on_axis(solution, formal_radius=a)` adds the full-torus
+regularized axis integral, local elliptical core, and second-order shape
+correction. Its matching-scale cancellation and predicted
+\(a^4|\log a|\) remainder have independent numerical tests.
+
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
 

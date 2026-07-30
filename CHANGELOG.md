@@ -67,6 +67,10 @@ first stable release.
 - Exact positive-volume plasma-current source through quadratic radial order,
   including independent pressure/current pathways, regular evaluation through
   \(I_2=0\), and covariant-current/enclosed-ampere conversions.
+- Matched on-axis free-space plasma field with a full-torus periodic
+  finite-part integral, elliptical core constants, second-order local shape
+  correction, arbitrary matching-length cancellation, asymptotic error
+  metadata, and independent resolved-volume Biot–Savart validation.
 
 ### Fixed
 
