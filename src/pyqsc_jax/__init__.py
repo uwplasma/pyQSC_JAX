@@ -74,6 +74,14 @@ from pyqsc_jax.shear import solve_magnetic_shear
 from pyqsc_jax.singularity import singularity_diagnostics
 from pyqsc_jax.solvers import RootSolveOptions
 from pyqsc_jax.third_order import solve_third_order
+from pyqsc_jax.vmec import (
+    VmecBoundary,
+    VmecExport,
+    VmecInputParameters,
+    to_vmec,
+    uniform_cylindrical_surface,
+    vmec_boundary,
+)
 
 __all__ = [
     "Axis",
@@ -110,6 +118,9 @@ __all__ = [
     "ShearData",
     "SingularityDiagnostics",
     "ThirdOrderData",
+    "VmecBoundary",
+    "VmecExport",
+    "VmecInputParameters",
     "near_axis",
     "b20_diagnostics",
     "available_configurations",
@@ -133,6 +144,9 @@ __all__ = [
     "stellarator_symmetric_variable_indices",
     "solve_third_order",
     "total_field_jet",
+    "to_vmec",
+    "uniform_cylindrical_surface",
+    "vmec_boundary",
     "optimal_B2c_value",
     "optimize_B2c",
     "plasma_current_source",

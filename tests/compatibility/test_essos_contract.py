@@ -46,6 +46,7 @@ def test_legacy_import_and_essos_on_axis_contract():
         "get_boundary",
         "Frenet_to_cylindrical",
         "phi_of_theta_varphi",
+        "to_vmec",
     }
 
     assert all(hasattr(field, name) for name in attributes)

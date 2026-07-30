@@ -186,6 +186,29 @@ def test_regularized_integral_resolution_convergence_for_nonplanar_axis():
     assert np.all(np.isfinite(coarse_integral))
 
 
+@pytest.mark.physics
+def test_documented_plasma_dominant_case_exceeds_thirty_percent():
+    solution = qsc.solve_configuration("plasma_dominant_channel", nphi=61)
+    formal_radius = 0.2
+    plasma = qsc.plasma_field_on_axis(
+        solution,
+        formal_radius=formal_radius,
+        angular_resolution=64,
+    )
+    plasma_norm = np.linalg.norm(np.asarray(plasma.field), axis=-1)
+    total_norm = np.linalg.norm(np.asarray(solution.B_axis), axis=-1)
+    fraction = plasma_norm / total_norm
+
+    assert np.min(fraction) > 0.30
+    np.testing.assert_allclose(np.mean(fraction), 0.3325737905856357, rtol=2.0e-12)
+    assert formal_radius < float(solution.r_singularity)
+    np.testing.assert_allclose(
+        plasma.current_source.enclosed_toroidal_current,
+        840000.0,
+        rtol=2.0e-13,
+    )
+
+
 def test_plasma_field_guards():
     solution = circular_solution()
     with pytest.raises(ValueError, match="angular_resolution"):

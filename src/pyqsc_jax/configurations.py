@@ -19,6 +19,7 @@ class ReferenceConfiguration:
     zs: tuple[float, ...]
     nfp: int
     etabar: float
+    B0: float = 1.0
     B2c: float = 0.0
     I2: float = 0.0
     p2: float = 0.0
@@ -32,6 +33,7 @@ class ReferenceConfiguration:
             "zs": self.zs,
             "nfp": self.nfp,
             "etabar": self.etabar,
+            "B0": self.B0,
             "B2c": self.B2c,
             "I2": self.I2,
             "p2": self.p2,
@@ -75,6 +77,54 @@ REFERENCE_CONFIGURATIONS = (
         B2c=-0.7,
         I2=0.9,
         p2=-600000.0,
+    ),
+    ReferenceConfiguration(
+        name="b20_optimized_qa",
+        description=(
+            "High-order QA axis refined by exact B2c elimination and bounded "
+            "least-squares minimization of the dense B20 anomaly."
+        ),
+        rc=(
+            1.0038581971135636,
+            0.15364113635027635,
+            0.019066219667598507,
+            0.0029880230763716796,
+            0.00040790711310020265,
+            0.00004610617355685316,
+            4.102693907398271e-06,
+            5.154300428457222e-07,
+            4.8802742243232844e-08,
+            7.301132037525988e-09,
+        ),
+        zs=(
+            0.0,
+            -0.14606422619055753,
+            -0.020369711261517005,
+            -0.003031761163968464,
+            -0.00039984211636995954,
+            -0.00005034787759957322,
+            -4.174376962124085e-06,
+            -4.557462755956434e-07,
+            -8.173481495049928e-08,
+            -3.732477282851326e-09,
+        ),
+        nfp=2,
+        etabar=-0.6783912804454629,
+        B0=1.006541121335688,
+        B2c=0.9427285320639192,
+    ),
+    ReferenceConfiguration(
+        name="plasma_dominant_channel",
+        description=(
+            "Circular finite-pressure/current channel for which the matched plasma "
+            "field exceeds 30 percent of the total field at formal radius 0.2."
+        ),
+        rc=(1.0,),
+        zs=(0.0,),
+        nfp=1,
+        etabar=0.5,
+        I2=4.2,
+        p2=-100000.0,
     ),
 )
 

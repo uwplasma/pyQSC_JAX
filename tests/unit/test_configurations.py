@@ -11,6 +11,8 @@ def test_named_configurations_are_immutable_and_solve():
         "qa",
         "qh",
         "finite_pressure_current",
+        "b20_optimized_qa",
+        "plasma_dominant_channel",
     )
     qa = qsc.get_configuration("qa")
     first_parameters = qa.parameters(nphi=15)

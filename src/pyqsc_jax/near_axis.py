@@ -12,6 +12,8 @@ from pyqsc_jax.first_order import solve
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.shear import solve_magnetic_shear
 from pyqsc_jax.solvers import implicit_dense_root
+from pyqsc_jax.vmec import VmecExport
+from pyqsc_jax.vmec import to_vmec as export_to_vmec
 
 ArrayLike = Any
 
@@ -564,6 +566,35 @@ class near_axis:  # noqa: N801
         R = jnp.sum(RBC[:, :, None, None] * jnp.cos(angle), axis=(0, 1))
         Z = jnp.sum(ZBS[:, :, None, None] * jnp.sin(angle), axis=(0, 1))
         return R * jnp.cos(phi2d), R * jnp.sin(phi2d), Z, R
+
+    def to_vmec(
+        self,
+        filename,
+        r: float = 0.1,
+        params: dict[str, Any] | None = None,
+        ntheta: int = 40,
+        ntorMax: int = 14,  # noqa: N803
+    ) -> VmecExport:
+        """Write a fast, diagnosed VMEC input while preserving the pyQSC call form."""
+
+        parameters = dict(params or {})
+        mpol = int(parameters.pop("mpol", min(ntheta // 2 - 1, 12)))
+        ntor = int(parameters.pop("ntor", min((self.nphi - 1) // 2, ntorMax)))
+        result = export_to_vmec(
+            self.solution,
+            filename,
+            r=r,
+            parameters=parameters,
+            ntheta=ntheta,
+            mpol=mpol,
+            ntor=ntor,
+            ntor_max=ntorMax,
+        )
+        self.RBC = result.boundary.RBC.T
+        self.RBS = result.boundary.RBS.T
+        self.ZBC = result.boundary.ZBC.T
+        self.ZBS = result.boundary.ZBS.T
+        return result
 
     def B_mag(self, r: ArrayLike, theta: ArrayLike, phi: ArrayLike) -> jax.Array:
         """Available-order field strength using the legacy angle convention."""

@@ -133,6 +133,20 @@ def test_resolution_verification_recomputes_fixed_candidate():
     assert verification.relative_grid_maximum_change[1] < 0.03
 
 
+@pytest.mark.physics
+def test_documented_optimized_axis_has_nearly_constant_B20():
+    stock = qsc.optimize_B2c(qsc.solve_configuration("qa", nphi=121))
+    optimized = qsc.solve_configuration("b20_optimized_qa", nphi=121)
+    diagnostics = qsc.b20_diagnostics(optimized)
+    verification = qsc.verify_B20_resolution(optimized, multipliers=(1, 2))
+
+    assert float(diagnostics.weighted_l2) < 1.6e-6
+    assert float(diagnostics.grid_maximum) < 3.3e-6
+    assert float(diagnostics.peak_to_peak) < 6.4e-6
+    assert float(stock.diagnostics.weighted_l2 / diagnostics.weighted_l2) > 25000
+    assert float(verification.relative_weighted_l2_change[1]) < 2.0e-7
+
+
 def test_B20_optimization_input_guards():
     first_order = qa_solution(order="r1")
     with pytest.raises(ValueError, match="second-order"):
