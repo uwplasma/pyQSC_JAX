@@ -92,3 +92,28 @@ available as `solution.second_order`. Check both the nonlinear
 Hessian `solution.grad_grad_B_axis` has shape `(nphi, 3, 3, 3)` and
 field-component-first ordering. `solution.r_singularity` is the first
 quadratic-map coordinate singularity, not an equilibrium-existence bound.
+
+## Third-order flux constraint
+
+Set `order="r3"` to add the surface correction required by the
+order-\(r^2\) toroidal-flux constraint:
+
+```python
+solution = qsc.Qsc(
+    rc=[1.0, 0.155, 0.0102],
+    zs=[0.0, 0.154, 0.0111],
+    nfp=2,
+    etabar=0.64,
+    B2c=-0.00322,
+    nphi=61,
+    order="r3",
+)
+
+print(solution.flux_constraint_residual)
+print(solution.consistency_error)
+print(solution.B0_order_a_squared_to_cancel)
+```
+
+The r3 result supplies first- and third-poloidal-harmonic coefficient arrays
+and their untwisted forms to boundary conversion. Magnetic shear is a
+separate, later milestone.

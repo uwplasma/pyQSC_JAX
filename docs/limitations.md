@@ -2,12 +2,12 @@
 
 The current computational core includes first order and the complete
 finite-pressure/current r2 coefficient solve, including the total on-axis
-field Hessian, Mercier terms, and singular-radius diagnostics. Third-order
-coefficients are not yet exposed.
+field Hessian, Mercier terms, singular-radius diagnostics, and the r3
+flux-constraint surface correction.
 
 Known limitations under active refactor include:
 
-- no third-order solution;
+- no magnetic-shear or \(\iota_2\) calculation yet;
 - no plasma/external field-jet separation;
 - no branch-aware target-transform inverse solve.
 

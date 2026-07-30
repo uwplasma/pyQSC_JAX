@@ -42,6 +42,8 @@ class near_axis:  # noqa: N801
     ) -> None:
         if not isinstance(nphi, int) or isinstance(nphi, bool) or nphi < 3 or nphi % 2 == 0:
             raise ValueError("The compatibility API requires odd integer nphi >= 3.")
+        if isinstance(order, bool) or order not in (1, 2, 3, "r1", "r2", "r3"):
+            raise ValueError("order must be one of 1, 2, 3, 'r1', 'r2', or 'r3'.")
 
         self.rc = jnp.asarray(rc)
         self.zs = jnp.asarray(zs)
@@ -69,7 +71,9 @@ class near_axis:  # noqa: N801
         zs: ArrayLike,
         etabar: ArrayLike,
     ) -> NearAxisSolution:
-        canonical_order = "r1" if self.order in (1, "r1") else "r2"
+        canonical_order = (
+            "r1" if self.order in (1, "r1") else ("r2" if self.order in (2, "r2") else "r3")
+        )
         return solve(
             axis=Axis.stellarator_symmetric(rc=rc, zs=zs, nfp=self.nfp),
             etabar=etabar,
@@ -175,6 +179,9 @@ class near_axis:  # noqa: N801
             self.r_singularity_basic_vs_varphi = solution.r_singularity_basic_vs_varphi
             self.r_singularity_theta_vs_varphi = solution.r_singularity_theta_vs_varphi
             self.r_singularity_residual_sqnorm = solution.r_singularity_residual_sqnorm
+        if solution.third_order is not None:
+            for name in solution._THIRD_ORDER_NAMES:
+                setattr(self, name, getattr(solution, name))
 
     @property
     def dofs(self) -> jax.Array:
@@ -393,6 +400,27 @@ class near_axis:  # noqa: N801
             )
             Z = Z + r**2 * (
                 self.Z20_untwisted + self.Z2c_untwisted * cosine2 + self.Z2s_untwisted * sine2
+            )
+        if self.solution.third_order is not None:
+            cosine3 = jnp.cos(3 * theta)
+            sine3 = jnp.sin(3 * theta)
+            X = X + r**3 * (
+                self.X3c1_untwisted * cosine
+                + self.X3s1_untwisted * sine
+                + self.X3c3_untwisted * cosine3
+                + self.X3s3_untwisted * sine3
+            )
+            Y = Y + r**3 * (
+                self.Y3c1_untwisted * cosine
+                + self.Y3s1_untwisted * sine
+                + self.Y3c3_untwisted * cosine3
+                + self.Y3s3_untwisted * sine3
+            )
+            Z = Z + r**3 * (
+                self.Z3c1_untwisted * cosine
+                + self.Z3s1_untwisted * sine
+                + self.Z3c3_untwisted * cosine3
+                + self.Z3s3_untwisted * sine3
             )
         return X, Y, Z
 

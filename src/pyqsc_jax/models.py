@@ -208,6 +208,44 @@ class SecondOrderData:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class ThirdOrderData:
+    """Third-order flux-constraint surface corrections."""
+
+    flux_constraint_coefficient: jax.Array
+    B0_order_a_squared_to_cancel: jax.Array
+    flux_constraint_residual: jax.Array
+    consistency_error: jax.Array
+    X3s1: jax.Array
+    X3c1: jax.Array
+    Y3s1: jax.Array
+    Y3c1: jax.Array
+    Z3s1: jax.Array
+    Z3c1: jax.Array
+    X3s3: jax.Array
+    X3c3: jax.Array
+    Y3s3: jax.Array
+    Y3c3: jax.Array
+    Z3s3: jax.Array
+    Z3c3: jax.Array
+    d_X3c1_d_varphi: jax.Array
+    d_Y3s1_d_varphi: jax.Array
+    d_Y3c1_d_varphi: jax.Array
+    X3s1_untwisted: jax.Array
+    X3c1_untwisted: jax.Array
+    Y3s1_untwisted: jax.Array
+    Y3c1_untwisted: jax.Array
+    Z3s1_untwisted: jax.Array
+    Z3c1_untwisted: jax.Array
+    X3s3_untwisted: jax.Array
+    X3c3_untwisted: jax.Array
+    Y3s3_untwisted: jax.Array
+    Y3c3_untwisted: jax.Array
+    Z3s3_untwisted: jax.Array
+    Z3c3_untwisted: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisSolution:
     """Canonical immutable near-axis solution.
 
@@ -242,9 +280,13 @@ class NearAxisSolution:
     mercier: MercierDiagnostics | None = None
     field_jet: FieldJet | None = None
     singularity: SingularityDiagnostics | None = None
+    third_order: ThirdOrderData | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
+    )
+    _THIRD_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
+        field.name for field in ThirdOrderData.__dataclass_fields__.values()
     )
     _MERCIER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in MercierDiagnostics.__dataclass_fields__.values()
@@ -275,6 +317,11 @@ class NearAxisSolution:
             if second_order is None:
                 raise AttributeError(f"First-order solution has no {name!r} quantity.")
             return getattr(second_order, name)
+        if name in self._THIRD_ORDER_NAMES:
+            third_order = object.__getattribute__(self, "third_order")
+            if third_order is None:
+                raise AttributeError(f"Lower-order solution has no {name!r} quantity.")
+            return getattr(third_order, name)
         if name in self._MERCIER_NAMES:
             mercier = object.__getattribute__(self, "mercier")
             if mercier is None:

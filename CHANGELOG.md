@@ -40,6 +40,9 @@ first stable release.
 - Singular-radius diagnostics derived directly from the regular-coordinate
   Jacobian determinant, with vectorized global angular seeding, Newton
   refinement, residual reports, and pyQSC QA/QH/finite-current parity.
+- Differentiable r3 flux-constraint surface corrections, untwisted boundary
+  coefficients, and two independent consistency checks with upstream pyQSC
+  QA, finite-pressure/current, and QH parity.
 
 ### Fixed
 
