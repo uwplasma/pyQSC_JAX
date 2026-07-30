@@ -77,7 +77,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/pyqsc_jax"]
+source = ["pyqsc_jax"]
 
 [tool.coverage.report]
 fail_under = 95

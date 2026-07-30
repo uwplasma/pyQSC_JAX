@@ -31,9 +31,18 @@ first stable release.
   dense second-order solve.
 - Independent four-equation r2 residual checks and upstream regression cases
   spanning vacuum QA, finite pressure/current, and QH topology.
+- Regular-coordinate total-field value, gradient, and Hessian on the axis,
+  including coordinate-map conditioning and Maxwell-identity diagnostics.
+- Mercier magnetic-well and geodesic terms matching vacuum and finite-pressure
+  pyQSC references.
+- JIT/JVP, resolution, upstream Hessian, full vacuum-symmetry, divergence, and
+  derivative-of-divergence validation for the total field jet.
 
 ### Fixed
 
 - A no-op assignment to legacy `dofs` no longer exchanges normal and binormal
   cylindrical components.
 - The legacy sigma calculation no longer assumes exactly five Newton updates.
+- Canonical field gradients now use explicit
+  `(sample, field component, derivative direction)` ordering; the ESSOS
+  adapter retains its historical layout.

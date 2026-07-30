@@ -21,7 +21,7 @@ def test_standard_solution_matches_legacy_and_upstream_reference():
     np.testing.assert_allclose(solution.B_axis, legacy.B_axis.T, rtol=2e-13, atol=2e-13)
     np.testing.assert_allclose(
         solution.grad_B_axis,
-        legacy.grad_B_axis.T,
+        np.moveaxis(legacy.grad_B_axis, -1, 0),
         rtol=2e-12,
         atol=2e-12,
     )
@@ -45,6 +45,20 @@ def test_finite_current_and_sigma0_match_upstream_reference():
     np.testing.assert_allclose(solution.G0, 1.2108964178133113, rtol=2e-13)
     np.testing.assert_allclose(np.max(np.abs(solution.sigma)), 1.1527807285268685, rtol=2e-13)
     np.testing.assert_allclose(solution.mean_elongation, 2.300022135471462, rtol=2e-13)
+    indices = [0, 7, 15]
+    expected_gradient_components = {
+        (0, 1): [-1.4189028123671708, -0.024458076547534513, 0.31866877632846324],
+        (1, 0): [-1.4958375512360236, -0.03652380306707692, 0.40219561346636035],
+        (0, 2): [1.248855714330292, 0.24413995843927835, -0.7230617247040809],
+        (2, 0): [0.6533238467899136, -0.2490021462405346, -1.0300929188685888],
+    }
+    for component, expected in expected_gradient_components.items():
+        np.testing.assert_allclose(
+            np.asarray(solution.grad_B_axis)[indices, *component],
+            expected,
+            rtol=3e-12,
+            atol=3e-12,
+        )
 
 
 def test_qh_topology_matches_upstream_reference():

@@ -362,7 +362,15 @@ def solve_second_order(first_order: NearAxisSolution) -> NearAxisSolution:
         Z2s_untwisted=Z2s_untwisted,
         Z2c_untwisted=Z2c_untwisted,
     )
-    return replace(first_order, second_order=second_order)
+    solution = replace(first_order, second_order=second_order)
+    from pyqsc_jax.diagnostics import mercier_diagnostics
+    from pyqsc_jax.field import total_field_jet
+
+    return replace(
+        solution,
+        mercier=mercier_diagnostics(solution),
+        field_jet=total_field_jet(solution),
+    )
 
 
 def second_order_residuals(solution: NearAxisSolution) -> SecondOrderResiduals:

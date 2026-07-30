@@ -81,7 +81,7 @@ def _assemble_gradient(
     tt: jax.Array,
 ) -> jax.Array:
     outer = lambda left, right: jnp.einsum("ni,nj->nij", left, right)  # noqa: E731
-    return (
+    pyqsc_component_expression = (
         nn[:, None, None] * outer(normal, normal)
         + bn[:, None, None] * outer(binormal, normal)
         + nb[:, None, None] * outer(normal, binormal)
@@ -90,6 +90,7 @@ def _assemble_gradient(
         + nt[:, None, None] * outer(normal, tangent)
         + tt[:, None, None] * outer(tangent, tangent)
     )
+    return jnp.swapaxes(pyqsc_component_expression, -1, -2)
 
 
 def first_order_solution(

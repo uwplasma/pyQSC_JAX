@@ -14,9 +14,11 @@ limitations
 theory/coordinates-and-conventions
 theory/first-order
 theory/second-order
+theory/field-jet
 api/axis
 api/first-order
 api/second-order
+api/field-jet
 ```
 
 ```{toctree}
@@ -38,9 +40,10 @@ changelog
 
 ## Project status
 
-The immutable first-order API and complete r2 coefficient solve are validated.
-Second-order field Hessian/diagnostics, third order, inverse solves,
-optimization, and plasma/external field jets are under active development.
+The immutable first-order API, complete r2 coefficient solve, total-field
+Hessian, and Mercier diagnostics are validated. Singular-radius diagnostics,
+third order, inverse solves, optimization, and plasma/external field jets are
+under active development.
 The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
 a runtime deprecation warning.
 

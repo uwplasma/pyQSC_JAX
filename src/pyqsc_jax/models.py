@@ -60,6 +60,45 @@ class LinearSolveReport:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class MercierDiagnostics:
+    """Leading near-axis magnetic-well and Mercier contributions."""
+
+    d2_volume_d_psi2: jax.Array
+    DGeod_times_r2: jax.Array
+    DWell_times_r2: jax.Array
+    DMerc_times_r2: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
+class FieldJet:
+    """Total on-axis magnetic field through two Cartesian derivatives.
+
+    ``gradient`` and ``hessian`` use field-component-first ordering:
+    ``gradient[n, i, j] = d B_i / d x_j`` and
+    ``hessian[n, i, j, k] = d² B_i / (d x_j d x_k)``.
+    """
+
+    field: jax.Array
+    gradient: jax.Array
+    hessian: jax.Array
+    hessian_frenet: jax.Array
+    coordinate_jacobian: jax.Array
+    inverse_coordinate_jacobian: jax.Array
+    coordinate_hessian: jax.Array
+    minimum_absolute_coordinate_jacobian: jax.Array
+    maximum_field_error: jax.Array
+    maximum_gradient_error: jax.Array
+    maximum_divergence: jax.Array
+    maximum_derivative_asymmetry: jax.Array
+    maximum_divergence_gradient: jax.Array
+    grad_grad_B_inverse_scale_length_vs_varphi: jax.Array
+    L_grad_grad_B: jax.Array
+    grad_grad_B_inverse_scale_length: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisInputs:
     """Normalized immutable inputs to a near-axis solve."""
 
@@ -179,9 +218,23 @@ class NearAxisSolution:
     grad_B_axis: jax.Array
     L_grad_B: jax.Array
     second_order: SecondOrderData | None = None
+    mercier: MercierDiagnostics | None = None
+    field_jet: FieldJet | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
+    )
+    _MERCIER_NAMES: ClassVar[frozenset[str]] = frozenset(
+        field.name for field in MercierDiagnostics.__dataclass_fields__.values()
+    )
+    _FIELD_JET_NAMES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "grad_grad_B_axis",
+            "grad_grad_B",
+            "L_grad_grad_B",
+            "grad_grad_B_inverse_scale_length_vs_varphi",
+            "grad_grad_B_inverse_scale_length",
+        }
     )
 
     def __getattr__(self, name: str):
@@ -190,7 +243,26 @@ class NearAxisSolution:
             if second_order is None:
                 raise AttributeError(f"First-order solution has no {name!r} quantity.")
             return getattr(second_order, name)
+        if name in self._MERCIER_NAMES:
+            mercier = object.__getattribute__(self, "mercier")
+            if mercier is None:
+                raise AttributeError("First-order solution has no Mercier diagnostics.")
+            return getattr(mercier, name)
+        if name in self._FIELD_JET_NAMES:
+            raise AttributeError("First-order solution has no second-derivative field jet.")
         raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}.")
+
+    def _require_mercier(self) -> MercierDiagnostics:
+        mercier = object.__getattribute__(self, "mercier")
+        if mercier is None:
+            raise AttributeError("First-order solution has no Mercier diagnostics.")
+        return mercier
+
+    def _require_field_jet(self) -> FieldJet:
+        field_jet = object.__getattribute__(self, "field_jet")
+        if field_jet is None:
+            raise AttributeError("First-order solution has no second-derivative field jet.")
+        return field_jet
 
     @property
     def axis(self) -> Axis:
@@ -223,3 +295,43 @@ class NearAxisSolution:
     @property
     def axis_length(self) -> jax.Array:
         return self.geometry.axis_length
+
+    @property
+    def d2_volume_d_psi2(self) -> jax.Array:
+        return self._require_mercier().d2_volume_d_psi2
+
+    @property
+    def DGeod_times_r2(self) -> jax.Array:
+        return self._require_mercier().DGeod_times_r2
+
+    @property
+    def DWell_times_r2(self) -> jax.Array:
+        return self._require_mercier().DWell_times_r2
+
+    @property
+    def DMerc_times_r2(self) -> jax.Array:
+        return self._require_mercier().DMerc_times_r2
+
+    @property
+    def grad_grad_B_axis(self) -> jax.Array:
+        """Cartesian Hessian in ``(sample, field, derivative, derivative)`` order."""
+
+        return self._require_field_jet().hessian
+
+    @property
+    def grad_grad_B(self) -> jax.Array:
+        """pyQSC-compatible Frenet Hessian in ``(sample, d, d, field)`` order."""
+
+        return self._require_field_jet().hessian_frenet
+
+    @property
+    def L_grad_grad_B(self) -> jax.Array:
+        return self._require_field_jet().L_grad_grad_B
+
+    @property
+    def grad_grad_B_inverse_scale_length_vs_varphi(self) -> jax.Array:
+        return self._require_field_jet().grad_grad_B_inverse_scale_length_vs_varphi
+
+    @property
+    def grad_grad_B_inverse_scale_length(self) -> jax.Array:
+        return self._require_field_jet().grad_grad_B_inverse_scale_length

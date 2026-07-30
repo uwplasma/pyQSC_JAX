@@ -96,7 +96,7 @@ class near_axis:  # noqa: N801
             solution.sigma,
             solution.elongation,
             solution.B_axis.T,
-            solution.grad_B_axis.T,
+            jnp.moveaxis(solution.grad_B_axis, 0, -1),
             solution.axis_length,
             solution.iota,
             solution.iotaN,
@@ -158,6 +158,17 @@ class near_axis:  # noqa: N801
         if solution.second_order is not None:
             for name in solution._SECOND_ORDER_NAMES:
                 setattr(self, name, getattr(solution, name))
+            self.d2_volume_d_psi2 = solution.d2_volume_d_psi2
+            self.DGeod_times_r2 = solution.DGeod_times_r2
+            self.DWell_times_r2 = solution.DWell_times_r2
+            self.DMerc_times_r2 = solution.DMerc_times_r2
+            self.grad_grad_B = solution.grad_grad_B
+            self.grad_grad_B_axis = jnp.moveaxis(solution.grad_grad_B_axis, 0, -1)
+            self.L_grad_grad_B = solution.L_grad_grad_B
+            self.grad_grad_B_inverse_scale_length_vs_varphi = (
+                solution.grad_grad_B_inverse_scale_length_vs_varphi
+            )
+            self.grad_grad_B_inverse_scale_length = solution.grad_grad_B_inverse_scale_length
 
     @property
     def dofs(self) -> jax.Array:

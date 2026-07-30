@@ -4,9 +4,9 @@ Differentiable near-axis stellarator construction and plasma–coil field jets i
 JAX.
 
 > **Development status:** the immutable first-order core, complete r2
-> coefficient solve, and ESSOS adapter are validated. Second-order field
-> Hessian/diagnostics, third order, inverse solves, optimization, and
-> plasma/external field jets remain under development on the
+> coefficient solve, total-field Hessian, Mercier diagnostics, and ESSOS
+> adapter are validated. Singular-radius diagnostics, third order, inverse
+> solves, optimization, and plasma/external field jets remain under development on the
 > `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -81,6 +81,8 @@ solution = qsc.Qsc(
 
 print("B20 residual:", solution.B20_residual)
 print("linear condition:", solution.linear_report.matrix_condition_number)
+print("Mercier:", solution.DMerc_times_r2)
+print("Hessian inverse scale:", solution.grad_grad_B_inverse_scale_length)
 ```
 
 The lower-level immutable axis API supports general, not necessarily

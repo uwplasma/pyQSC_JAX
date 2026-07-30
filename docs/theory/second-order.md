@@ -107,8 +107,8 @@ includes the axis-length-weighted mean, anomaly, normalized weighted
 G_2=-\frac{\mu_0p_2G_0}{B_0^2}-\iota I_2.
 \]
 
-All second-order coefficient derivatives needed by the next field-tensor and
-diagnostic milestone are stored. Untwisted zero- and second-harmonic
+All second-order coefficient derivatives needed by the field tensor and
+diagnostics are stored. Untwisted zero- and second-harmonic
 coefficients are used by the ESSOS-compatible boundary conversion.
 
 ## Validation
@@ -126,6 +126,6 @@ JIT, VMAP, JVP/VJP consistency, finite differences, and legacy r2 boundary
 availability are also tested. Reference values are tied to the audited pyQSC
 commit recorded in the refactor baseline.
 
-This milestone does not yet expose the total-field Hessian, Mercier criterion,
-or singular-radius diagnostics. Those are separate validation gates and are
-not implied by `order="r2"`.
+An r2 solve also computes the regular-coordinate total-field Hessian and the
+leading Mercier quantities described in [](field-jet.md). Singular-radius
+diagnostics remain a separate validation gate.

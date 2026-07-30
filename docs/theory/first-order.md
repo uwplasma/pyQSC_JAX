@@ -99,8 +99,9 @@ L_{\nabla B}
 \]
 
 Canonical arrays use a leading sample axis. Thus `B_axis.shape ==
-(nphi, 3)` and `grad_B_axis.shape == (nphi, 3, 3)`. The ESSOS adapter preserves
-the historical transposed layouts. In the vacuum limit, resolution studies
+(nphi, 3)` and `grad_B_axis.shape == (nphi, 3, 3)`, with
+`grad_B_axis[n, i, j] = d B_i / d x_j`. The ESSOS adapter preserves the
+historical component-axis layout. In the vacuum limit, resolution studies
 verify the trace-free and symmetric gradient identities spectrally.
 
 ## Reference configuration
