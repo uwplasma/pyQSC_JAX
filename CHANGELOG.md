@@ -46,6 +46,9 @@ first stable release.
 - Standard-MHS magnetic shear with periodic and secular integrating-factor
   branches, explicit `B31c`, immutable diagnostics, legacy adapter support,
   and upstream QA/QH/asymmetric parity.
+- Branch-local target-transform solves for sign-preserving `etabar` or `I2`,
+  including implicit derivatives, round-trip validation, local response and
+  fold diagnostics, and propagation through r2.
 
 ### Fixed
 

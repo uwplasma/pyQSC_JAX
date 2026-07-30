@@ -6,6 +6,7 @@ from pyqsc_jax.field import total_field_jet
 from pyqsc_jax.first_order import Qsc, solve
 from pyqsc_jax.models import (
     FieldJet,
+    InverseSolveDiagnostics,
     LinearSolveReport,
     MercierDiagnostics,
     NearAxisInputs,
@@ -26,6 +27,7 @@ from pyqsc_jax.third_order import solve_third_order
 __all__ = [
     "Axis",
     "FieldJet",
+    "InverseSolveDiagnostics",
     "LinearSolveReport",
     "MercierDiagnostics",
     "NearAxisInputs",

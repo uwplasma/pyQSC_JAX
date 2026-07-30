@@ -15,6 +15,7 @@ theory/coordinates-and-conventions
 theory/first-order
 theory/second-order
 theory/third-order
+theory/inverse-solves
 theory/field-jet
 api/axis
 api/first-order
@@ -44,8 +45,9 @@ changelog
 
 The immutable first-order API, complete r2 coefficient solve, r3 flux
 constraint, magnetic shear, total-field Hessian, Mercier terms, and
-singular-radius diagnostics are validated. Inverse solves, optimization, and
-plasma/external field jets are under active development.
+singular-radius diagnostics are validated, as are branch-local inverse solves.
+Branch continuation, optimization, and plasma/external field jets are under
+active development.
 The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
 a runtime deprecation warning.
 

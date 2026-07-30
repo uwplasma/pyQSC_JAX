@@ -68,7 +68,7 @@ def test_first_order_shapes_and_coefficients():
 def test_invalid_order_and_inverse_mode_are_explicitly_rejected():
     with pytest.raises(ValueError, match="order must be"):
         standard_solution(order="fourth")
-    with pytest.raises(NotImplementedError, match="Inverse"):
+    with pytest.raises(ValueError, match="iota is required"):
         standard_solution(solve_for="etabar")
 
 

@@ -28,6 +28,11 @@
    :members:
 ```
 
+```{eval-rst}
+.. autoclass:: pyqsc_jax.InverseSolveDiagnostics
+   :members:
+```
+
 ## ESSOS compatibility
 
 ```{eval-rst}

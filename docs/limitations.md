@@ -8,7 +8,13 @@ flux-constraint surface correction.
 Known limitations under active refactor include:
 
 - no plasma/external field-jet separation;
-- no branch-aware target-transform inverse solve.
+- no pseudo-arclength branch continuation yet.
+
+Target-transform solves are branch-local. The sign of the `etabar` seed is
+preserved and the seed magnitude selects a Newton basin. Multiple local
+solutions can have the same transform. `response_derivative` and `branch_fold`
+detect local loss of invertibility, but crossing such a fold awaits the
+pseudo-arclength interface.
 
 The magnetic-shear calculation currently implements the standard-MHS
 specialization with \(B_{31s}=0\), \(I_4=0\), and \(s_G=s_\psi=1\). Other sign

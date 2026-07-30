@@ -42,6 +42,42 @@ The result is an immutable JAX pytree. Its vector samples have shape
 `solution.root_report.converged` and the residual norm when accepting a
 configuration.
 
+## Targeting rotational transform
+
+At fixed target `iota`, solve for `etabar` on a selected sign branch:
+
+```python
+inverse = qsc.solve(
+    axis=axis,
+    iota=0.42,
+    etabar=-1.0,
+    solve_for="etabar",
+    nphi=61,
+)
+
+print(inverse.inputs.etabar)
+print(inverse.response_derivative)
+print(inverse.branch_fold)
+```
+
+The sign of the `etabar` seed is preserved. Omitting it selects the documented
+default negative branch with a seed of `-1.0`. The seed also chooses a local
+basin: distinct magnitudes can yield the same transform. Always check
+`root_report.converged`; `branch_fold` reports a locally vanishing
+\(\partial\iota/\partial\bar\eta\).
+
+To solve for current instead:
+
+```python
+inverse_current = qsc.solve(
+    axis=axis,
+    iota=0.42,
+    etabar=-0.9,
+    I2=0.0,
+    solve_for="I2",
+)
+```
+
 ESSOS code can continue to use:
 
 ```python

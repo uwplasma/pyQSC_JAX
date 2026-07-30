@@ -1,5 +1,6 @@
 """First-order quasisymmetric near-axis construction."""
 
+from dataclasses import replace
 from typing import Any
 
 import jax
@@ -30,6 +31,25 @@ def sigma_residual(
     state = jnp.asarray(state)
     sigma = sigma_from_state(state, inputs.sigma0)
     iota = state[0]
+    return sigma_equation(
+        sigma,
+        iota,
+        inputs=inputs,
+        geometry=geometry,
+    )
+
+
+def sigma_equation(
+    sigma: ArrayLike,
+    iota: ArrayLike,
+    *,
+    inputs: NearAxisInputs,
+    geometry: AxisGeometry,
+) -> jax.Array:
+    """Periodic sigma equation for explicit sigma, iota, and inputs."""
+
+    sigma = jnp.asarray(sigma)
+    iota = jnp.asarray(iota)
     helicity = geometry.frame_helicity * inputs.spsi * inputs.sG
     iotaN = iota + helicity * inputs.axis.nfp
     eta_over_curvature_squared = inputs.etabar**2 / geometry.curvature**2
@@ -210,7 +230,8 @@ def _normalize_order(order: int | str) -> int:
 def solve(
     *,
     axis: Axis,
-    etabar: ArrayLike,
+    etabar: ArrayLike | None = None,
+    iota: ArrayLike | None = None,
     B0: ArrayLike = 1.0,
     sigma0: ArrayLike = 0.0,
     I2: ArrayLike = 0.0,
@@ -223,17 +244,27 @@ def solve(
     spsi: int = 1,
     solve_for: str = "iota",
     root_options: RootSolveOptions = DEFAULT_ROOT_OPTIONS,
+    fold_tolerance: float = 1e-8,
 ) -> NearAxisSolution:
-    """Construct an immutable near-axis solution.
-
-    Only standard first-order ``etabar -> iota`` mode is enabled in this
-    milestone. Other validated modes are added without changing this entry
-    point.
-    """
+    """Construct an immutable forward or target-transform solution."""
 
     normalized_order = _normalize_order(order)
-    if solve_for != "iota":
-        raise NotImplementedError("Inverse near-axis solve modes are not implemented yet.")
+    if solve_for not in ("iota", "etabar", "I2"):
+        raise ValueError("solve_for must be 'iota', 'etabar', or 'I2'.")
+    if fold_tolerance < 0:
+        raise ValueError("fold_tolerance must be nonnegative.")
+    if solve_for == "iota":
+        if etabar is None:
+            raise ValueError("etabar is required when solve_for='iota'.")
+        if iota is not None:
+            raise ValueError("iota is prescribed only when solve_for is 'etabar' or 'I2'.")
+    else:
+        if iota is None:
+            raise ValueError(f"iota is required when solve_for={solve_for!r}.")
+        if solve_for == "I2" and etabar is None:
+            raise ValueError("etabar is required when solve_for='I2'.")
+        if etabar is None:
+            etabar = -1.0
     inputs = NearAxisInputs(
         axis=axis,
         etabar=etabar,
@@ -250,12 +281,25 @@ def solve(
         solve_for=solve_for,
     )
     geometry = compute_axis_geometry(axis, nphi=nphi)
-    sigma, iota, root_report = solve_sigma(
-        inputs,
-        geometry,
-        root_options=root_options,
-    )
-    solution = first_order_solution(inputs, geometry, sigma, iota, root_report)
+    if solve_for == "iota":
+        sigma, solved_iota, root_report = solve_sigma(
+            inputs,
+            geometry,
+            root_options=root_options,
+        )
+        inverse = None
+    else:
+        from pyqsc_jax.inverse import solve_target_iota
+
+        inputs, sigma, solved_iota, root_report, inverse = solve_target_iota(
+            inputs,
+            geometry,
+            target_iota=iota,
+            root_options=root_options,
+            fold_tolerance=fold_tolerance,
+        )
+    solution = first_order_solution(inputs, geometry, sigma, solved_iota, root_report)
+    solution = replace(solution, inverse=inverse)
     if normalized_order >= 2:
         from pyqsc_jax.second_order import solve_second_order
 

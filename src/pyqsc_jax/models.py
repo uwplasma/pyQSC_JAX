@@ -47,6 +47,22 @@ class RootSolveReport:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class InverseSolveDiagnostics:
+    """Local branch and fold diagnostics for a target-transform solve."""
+
+    target_iota: jax.Array
+    achieved_iota: jax.Array
+    solved_value: jax.Array
+    response_derivative: jax.Array
+    absolute_response_derivative: jax.Array
+    fold_tolerance: jax.Array
+    branch_fold: jax.Array
+    parameter_sign: jax.Array
+    parameter: str = field(metadata={"static": True})
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class LinearSolveReport:
     """Residual and conditioning evidence for a dense linear solve."""
 
@@ -302,6 +318,7 @@ class NearAxisSolution:
     singularity: SingularityDiagnostics | None = None
     third_order: ThirdOrderData | None = None
     shear: ShearData | None = None
+    inverse: InverseSolveDiagnostics | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
@@ -311,6 +328,9 @@ class NearAxisSolution:
     )
     _SHEAR_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in ShearData.__dataclass_fields__.values()
+    )
+    _INVERSE_NAMES: ClassVar[frozenset[str]] = frozenset(
+        field.name for field in InverseSolveDiagnostics.__dataclass_fields__.values()
     )
     _MERCIER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in MercierDiagnostics.__dataclass_fields__.values()
@@ -353,6 +373,11 @@ class NearAxisSolution:
                     f"Magnetic shear has not been calculated; no {name!r} quantity."
                 )
             return getattr(shear, name)
+        if name in self._INVERSE_NAMES:
+            inverse = object.__getattribute__(self, "inverse")
+            if inverse is None:
+                raise AttributeError(f"Forward solution has no inverse diagnostic {name!r}.")
+            return getattr(inverse, name)
         if name in self._MERCIER_NAMES:
             mercier = object.__getattribute__(self, "mercier")
             if mercier is None:
