@@ -51,3 +51,24 @@ JAX_ENABLE_X64=true PYTHONPATH=src python benchmarks/benchmark_core.py
 
 All raw timing samples are stored in
 `benchmarks/reports/2026-07-29-apple-m4.json`.
+
+## VMEC boundary export
+
+The VMEC converter is separately benchmarked because its old scalar
+point-by-point root solves obscured the cost of the actual Fourier projection.
+The replacement performs one JIT-compiled, vectorized Newton inversion and a
+two-dimensional FFT.
+
+| grid and spectrum | compile + execute | warm median | max \(R\) error | max \(Z\) error |
+| --- | ---: | ---: | ---: | ---: |
+| `nphi=61`, `ntheta=40`, `mpol=12`, `ntor=14` | 0.476 s | 5.20 ms | 3.42 µm | 2.26 µm |
+
+The command is:
+
+```bash
+JAX_ENABLE_X64=true PYTHONPATH=src python benchmarks/benchmark_vmec_export.py
+```
+
+The reported conversion timer excludes the near-axis solve and file-system
+startup. Both cold and warm calls synchronize the boundary arrays before
+stopping the timer.

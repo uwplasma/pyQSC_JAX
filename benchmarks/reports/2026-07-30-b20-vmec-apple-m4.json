@@ -1,0 +1,108 @@
+{
+  "date": "2026-07-30",
+  "source_tree_base_commit": "f10549a3539b475cbfea2dba5cdf913a6516b75f",
+  "hardware": "Apple M4, 10 CPU cores, 24 GB RAM",
+  "jax": "0.11.0",
+  "jax_backend": "cpu",
+  "jax_enable_x64": true,
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.7",
+  "b20_optimizer_comparison": {
+    "common_case": "Landreman-Paul precise-QA seed; Fourier modes 1-3 varied; exact B2c eliminated at every evaluation; nphi=121 verification",
+    "timing_note": "SciPy timings exclude shared residual/Jacobian compilation; the pyQSC_JAX multistart timing includes compilation of its independent closure.",
+    "results": [
+      {
+        "function_evaluations": 1,
+        "method": "exact B2c only",
+        "seconds": 0.0,
+        "weighted_l2": 0.0003748334323839126
+      },
+      {
+        "function_evaluations": 72,
+        "method": "SciPy L-BFGS-B",
+        "seconds": 0.14576879201922566,
+        "weighted_l2": 0.0001923145250044151
+      },
+      {
+        "function_evaluations": 60,
+        "method": "SciPy least_squares",
+        "seconds": 2.7433434999838937,
+        "weighted_l2": 0.00019145867839143548
+      },
+      {
+        "function_evaluations": 120,
+        "method": "SciPy differential_evolution, low budget",
+        "seconds": 0.13656237500254065,
+        "weighted_l2": 0.10281099494870141
+      },
+      {
+        "distinct_basins": 3,
+        "function_evaluations": 129,
+        "method": "pyQSC_JAX multistart Levenberg-Marquardt",
+        "seconds": 20.765741583018098,
+        "status": "best_found",
+        "weighted_l2": 0.00012441235529252347
+      }
+    ],
+    "selected_refinement": {
+      "function_evaluations": 75,
+      "method": "bounded SciPy least_squares, Fourier modes 1-5",
+      "seconds": null,
+      "verification_nphi": [61, 121, 241, 481],
+      "verification_weighted_l2": [
+        1.590064943168028e-06,
+        1.5900649311201347e-06,
+        1.5900649186197967e-06,
+        1.590064906e-06
+      ]
+    }
+  },
+  "vmec_export": {
+    "case": "QA r2, radius=0.03, nphi=61, ntheta=40, mpol=12, ntor=14",
+    "cold_compile_and_execute_seconds": 0.4759971250023227,
+    "warm_median_seconds": 0.005203832988627255,
+    "warm_samples_seconds": [
+      0.005135457991855219,
+      0.005203832988627255,
+      0.005606082995655015,
+      0.005212290998315439,
+      0.005193958000745624,
+      0.0052505840139929205,
+      0.0050905829994007945
+    ],
+    "maximum_R_reconstruction_error_m": 3.4204787844327456e-06,
+    "maximum_Z_reconstruction_error_m": 2.261107830789366e-06,
+    "maximum_toroidal_angle_residual": 2.22e-16
+  },
+  "vmec_radius_convergence": {
+    "near_axis_iota": 0.41830691021517735,
+    "vmec_version": "9.0",
+    "results": [
+      {
+        "radius": 0.0025,
+        "relative_iota_error": 0.0005645603050142573,
+        "vmec_iota_axis": 0.418543069691998
+      },
+      {
+        "radius": 0.005,
+        "relative_iota_error": 0.002196,
+        "vmec_iota_axis": 0.41922558234541574
+      },
+      {
+        "radius": 0.01,
+        "relative_iota_error": 0.009403,
+        "vmec_iota_axis": 0.42224025
+      },
+      {
+        "radius": 0.02,
+        "relative_iota_error": 0.050798,
+        "vmec_iota_axis": 0.43955604
+      },
+      {
+        "radius": 0.03,
+        "relative_iota_error": 0.173066,
+        "vmec_iota_axis": 0.49070165
+      }
+    ]
+  }
+}

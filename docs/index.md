@@ -45,6 +45,7 @@ tutorials/first_order_qh
 tutorials/second_order_finite_beta
 tutorials/target_iota
 tutorials/optimize_axis
+tutorials/vmec_export
 tutorials/vacuum_coils
 tutorials/finite_beta_coils
 ```
@@ -68,6 +69,7 @@ advanced/limitations
 validation/pyqsc_parity
 validation/literature_cases
 validation/plasma_field
+validation/vmec
 validation/essos
 migration
 ```
@@ -88,6 +90,7 @@ api/optimization
 api/axis-optimization
 api/criteria
 api/plotting
+api/vmec
 ```
 
 ```{toctree}

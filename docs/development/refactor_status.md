@@ -168,3 +168,20 @@ was made for that phase.
 - Verification: final local lint, docs, clean-state, artifact, upstream, and
   ESSOS checks pass. The latest remote CI result is reported in the PR rather
   than hard-coded into this versioned status page.
+
+## Phase 13 — high-signal examples and VMEC equilibrium validation
+
+- Files: vectorized VMEC exporter, deterministic INDATA writer, frozen VMEC
+  9.0 equilibrium, B20/plasma-dominant named cases, optimizer/export
+  benchmarks, publication figures, and expanded validation docs.
+- Verification: 255 tests pass with 98.74% combined line/branch coverage;
+  `vmec.py` has 100% line/branch coverage; warnings-as-errors documentation
+  builds; both frozen and live local-VMEC equilibrium checks pass.
+- Numerical checks: optimized QA weighted B20 residual
+  \(1.5901\times10^{-6}\) at `nphi=121` and stable through `nphi=481`;
+  plasma-field fraction 33.26%; VMEC on-axis-iota error 0.0565% at radius
+  0.0025 with force residuals below \(7.6\times10^{-11}\).
+- Performance: synchronized VMEC conversion is 0.476 s including compilation
+  and 5.20 ms warm at the documented high-resolution boundary setting.
+- Risk/next: on-axis-iota agreement is asymptotic and degrades at larger
+  export radius as documented; remote CI and review remain external gates.

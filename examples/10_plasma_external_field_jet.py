@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_field_jet_norms
 
-CONFIGURATION = "finite_pressure_current"
-FORMAL_RADIUS = 0.025
+CONFIGURATION = "plasma_dominant_channel"
+FORMAL_RADIUS = 0.2
 NPHI = 61
 ANGULAR_RESOLUTION = 96
 SAVE_OUTPUT = True
@@ -24,7 +24,17 @@ result = qsc.plasma_hessian_on_axis(
     angular_resolution=ANGULAR_RESOLUTION,
 )
 enclosed_current = result.field.field.current_source.enclosed_toroidal_current
+plasma_fraction = (
+    (
+        (result.field.field.field**2).sum(axis=-1)
+        / (solution.B_axis**2).sum(axis=-1)
+    )
+    ** 0.5
+)
 print("enclosed toroidal current [A]:", float(enclosed_current))
+print("minimum |B_plasma| / |B_total|:", float(plasma_fraction.min()))
+print("mean |B_plasma| / |B_total|:", float(plasma_fraction.mean()))
+print("formal radius / singular radius:", float(FORMAL_RADIUS / solution.r_singularity))
 print("external gradient STF components:", result.field.external_gradient_independent.shape[-1])
 print("external Hessian STF components:", result.external_hessian_independent.shape[-1])
 print("maximum external-gradient trace:", float(result.field.maximum_external_trace))

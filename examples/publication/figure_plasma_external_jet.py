@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_field_jet_norms
 
-CONFIGURATION = "finite_pressure_current"
-FORMAL_RADIUS = 0.025
+CONFIGURATION = "plasma_dominant_channel"
+FORMAL_RADIUS = 0.2
 NPHI = 121
 ANGULAR_RESOLUTION = 128
 OUTPUT_STEM = Path("examples/output/publication/plasma_external_jet")
@@ -25,6 +25,13 @@ result = qsc.plasma_hessian_on_axis(
     solution,
     formal_radius=FORMAL_RADIUS,
     angular_resolution=ANGULAR_RESOLUTION,
+)
+plasma_fraction = (
+    (
+        (result.field.field.field**2).sum(axis=-1)
+        / (solution.B_axis**2).sum(axis=-1)
+    )
+    ** 0.5
 )
 figure, axes = plot_field_jet_norms(result)
 for label, axis in zip(("a", "b", "c"), axes, strict=True):
@@ -51,6 +58,9 @@ metadata = {
     "nphi": NPHI,
     "angular_resolution": ANGULAR_RESOLUTION,
     "enclosed_current_amperes": float(result.field.field.current_source.enclosed_toroidal_current),
+    "minimum_plasma_field_fraction": float(plasma_fraction.min()),
+    "mean_plasma_field_fraction": float(plasma_fraction.mean()),
+    "formal_radius_to_singular_radius": float(FORMAL_RADIUS / solution.r_singularity),
     "maximum_external_gradient_trace": float(result.field.maximum_external_trace),
     "maximum_external_hessian_trace": float(result.maximum_external_trace),
     "field_remainder": float(result.field.field.estimated_field_remainder),

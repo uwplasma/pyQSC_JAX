@@ -110,9 +110,11 @@ but remains part of the final definition of done.
 
 ## Upstream test audit
 
-At pyQSC commit `cd75359`, 31 tests pass in 22.80 seconds when
-`test_to_vmec.py` is excluded because its optional MPI/VMEC runtime is absent.
-The tests cover:
+At pyQSC commit `cd75359`, 31 tests passed in 22.80 seconds during the initial
+audit when upstream `test_to_vmec.py` was excluded because its optional
+MPI/VMEC runtime was absent from that audit environment. The refactored
+package now has its own frozen-wout equilibrium regression and an opt-in local
+VMEC rerun; see {doc}`../validation/vmec`. The audited upstream tests cover:
 
 - Newton convergence, Fourier differentiation, interpolation, and utilities;
 - axis geometry, helicity, sigma, iota, field gradient, and scale lengths;

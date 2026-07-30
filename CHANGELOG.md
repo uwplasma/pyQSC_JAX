@@ -9,6 +9,19 @@ first stable release.
 
 ### Added
 
+- Vectorized, JIT-compiled VMEC boundary export with all four coefficient
+  families, deterministic INDATA output, conversion diagnostics,
+  legacy-adapter support, a frozen VMEC 9.0 `wout` regression, and an opt-in
+  local-VMEC rerun.
+- Dense-grid `b20_optimized_qa` reference with a verified
+  \(1.59\times10^{-6}\) weighted residual and reproducible comparisons across
+  L-BFGS-B, least-squares, differential-evolution, and multistart
+  Levenberg--Marquardt searches.
+- `plasma_dominant_channel` validation case, for which the plasma field is
+  33.3% of the total field at the documented formal radius.
+- README evidence, benchmark reports, publication figures, executable
+  examples, and validation documentation for B20, plasma-field, and VMEC
+  behavior.
 - Audited compatibility and numerical baselines.
 - Physics traceability and architecture decision records.
 - Modern package, documentation, test, and CI scaffolding.

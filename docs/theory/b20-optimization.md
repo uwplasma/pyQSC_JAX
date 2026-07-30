@@ -81,3 +81,41 @@ Tests establish:
 
 The branch-aware multistart workflow built on these residuals is described in
 {doc}`global-search`.
+
+## Optimizer comparison and selected case
+
+Several optimizers were tested from the Landreman--Paul precise-QA axis. For
+the common comparison, Fourier modes 1--3 were varied and \(B_{2c}\) was
+eliminated exactly at every objective evaluation. Timings are warm local
+measurements and exclude the shared JAX compilation.
+
+| method | evaluations | time [s] | independently evaluated weighted \(L^2\) |
+| --- | ---: | ---: | ---: |
+| exact \(B_{2c}\) only | 1 | — | \(3.7483\times10^{-4}\) |
+| SciPy L-BFGS-B | 72 | 0.146 | \(1.9231\times10^{-4}\) |
+| SciPy `least_squares` | 60 | 2.743 | \(1.9146\times10^{-4}\) |
+| low-budget differential evolution | 120 | 0.137 | \(1.0281\times10^{-1}\) |
+| pyQSC_JAX multistart Levenberg--Marquardt | 129 | 20.766* | \(1.2441\times10^{-4}\) |
+
+The SciPy timings exclude the shared JAX residual/Jacobian compilation; the
+asterisked multistart timing includes compilation of its independent closure.
+The coarse differential-evolution budget is included to show why a method
+label alone does not establish global quality. It did not locate the narrow
+good basin. The selected `b20_optimized_qa` case used bounded
+`least_squares` on modes 1--5 after exact \(B_{2c}\) elimination, followed by
+independent resolution checks:
+
+| `nphi` | weighted \(L^2\) |
+| ---: | ---: |
+| 61 | \(1.5900649432\times10^{-6}\) |
+| 121 | \(1.5900649311\times10^{-6}\) |
+| 241 | \(1.5900649186\times10^{-6}\) |
+| 481 | \(1.5900649060\times10^{-6}\) |
+
+At `nphi=121`, its dense maximum is \(3.20\times10^{-6}\) and peak-to-peak
+variation is \(6.27\times10^{-6}\). This is 26,053 times smaller in weighted
+residual than exact \(B_{2c}\) optimization of the stock README QA axis. The
+result is a verified numerical basin, not a proof that no other basin is
+better. The runnable comparison is
+`benchmarks/benchmark_b20_optimizers.py`; its frozen report records the full
+environment and raw values.
