@@ -52,6 +52,8 @@ jobs:
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      JAX_ENABLE_X64: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
