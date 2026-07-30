@@ -100,3 +100,49 @@ The resulting external gradient is symmetric and trace-free within the
 spectral resolution of the total solve. The result also supplies its five
 independent Cartesian STF components in the order
 `(xx, yy, xy, xz, yz)`.
+
+## Curved-channel Hessian
+
+The plasma Hessian cannot be obtained by naively differentiating the singular
+Biot–Savart kernel through the current-carrying region. Those derivatives
+produce local contact terms. `plasma_hessian_on_axis` instead evaluates the
+cubic interior logarithmic potential of the resolved elliptical channel,
+including three separately determined contributions:
+
+- the affine first-harmonic weighted current;
+- the universal curved-channel metric term; and
+- the second-order deformation of the current cross-section.
+
+The transverse derivatives are evaluated algebraically in the oriented
+principal axes of the ellipse. Tangential derivatives are obtained by
+spectrally differentiating the regular plasma gradient and applying the
+Frenet connection. The public tensors use field-component-first ordering,
+
+\[
+H_{ijk}=\partial_j\partial_k B_i.
+\]
+
+Subtracting the plasma Hessian from the regular-coordinate total Hessian gives
+the external target. In a vacuum neighborhood this tensor is fully symmetric
+and trace-free:
+
+\[
+H^c_{ijk}=H^c_{(ijk)},\qquad H^c_{iik}=0.
+\]
+
+`external_hessian_independent` packs its seven Cartesian STF components in the
+order `(xxx, xxy, xxz, xyy, xyz, yyy, yyz)`. The corresponding
+`pack_symmetric_trace_free_rank3` and
+`unpack_symmetric_trace_free_rank3` functions are reversible.
+
+Validation covers the circular finite-conductor curvature limit, QA and QH
+oriented ellipses, vacuum reduction, spectral convergence of the Maxwell
+identities, JIT/JVP agreement, and all rank-three tensor permutations. The
+resolved-volume field test above validates the free-space source and matching
+normalization. It is intentionally not replaced by differentiation of the
+singular quadrature, which would omit the contact terms that the interior
+potential supplies.
+
+As for the lower-order jet, `estimated_hessian_remainder` is a conservative
+asymptotic scale rather than a rigorous bound. The predicted remainder is
+\(O(a^2|\log a|)\) for fixed near-axis inputs.

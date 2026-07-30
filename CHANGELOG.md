@@ -74,6 +74,10 @@ first stable release.
 - Local straight-ellipse plasma gradient with divergence and Ampère
   diagnostics, external symmetric-trace-free subtraction, vacuum reduction,
   and a reversible five-component Cartesian STF representation.
+- Complete local plasma Hessian from the affine-current, curved-channel, and
+  second-order shape potentials, including Frenet-connection derivatives,
+  external vacuum subtraction, asymptotic metadata, and a reversible
+  seven-component Cartesian STF representation.
 
 ### Fixed
 

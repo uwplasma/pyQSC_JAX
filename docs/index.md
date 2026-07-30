@@ -58,9 +58,10 @@ constraint, magnetic shear, total-field Hessian, Mercier terms, and
 singular-radius diagnostics are validated, as are branch-local inverse solves.
 Pseudo-arclength branch continuation, exact affine \(B_{2c}\) optimization,
 the scalable Curvo et al. screening profile, and bounded multistart axis search
-are also validated. Plasma/external field jets are under active development.
-The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
-a runtime deprecation warning.
+are also validated. The surface-free plasma field, gradient, Hessian, and
+external 3+5+7 vacuum target are validated. The
+`pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without a
+runtime deprecation warning.
 
 ## References
 

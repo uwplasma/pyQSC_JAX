@@ -9,7 +9,8 @@ JAX.
 > validated, along with branch-local inverse solves and pseudo-arclength
 > continuation, exact affine \(B_{2c}\) optimization, and the scalable Curvo
 > et al. screening profile. Deterministic bounded multistart axis optimization
-> is also validated. Plasma/external field jets remain under development on the
+> is also validated. The surface-free plasma field, gradient, Hessian, and
+> external 3+5+7 vacuum target are validated on the
 > `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -131,6 +132,12 @@ correction. Its matching-scale cancellation and predicted
 `qsc.plasma_gradient_on_axis(...)` subtracts the local elliptical
 current-channel gradient from the total field jet and returns the external
 field plus its five independent symmetric-trace-free gradient components.
+
+`qsc.plasma_hessian_on_axis(...)` adds the affine-current, curved-channel, and
+second-order shape contributions to the local plasma Hessian. It returns the
+external Hessian and its seven independent fully symmetric trace-free
+components. The nested result therefore contains the complete 3+5+7 external
+vacuum target without constructing a finite-radius surface.
 
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
