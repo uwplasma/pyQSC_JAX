@@ -82,6 +82,7 @@ print(solution.linear_report.matrix_condition_number)
 print(solution.DMerc_times_r2)
 print(solution.field_jet.maximum_divergence_gradient)
 print(solution.grad_grad_B_inverse_scale_length)
+print(solution.r_singularity)
 ```
 
 The direct r2 outputs are available as attributes such as `X20`, `X2s`,
@@ -89,4 +90,5 @@ The direct r2 outputs are available as attributes such as `X20`, `X2s`,
 available as `solution.second_order`. Check both the nonlinear
 `root_report` and r2 `linear_report` before accepting a result. The canonical
 Hessian `solution.grad_grad_B_axis` has shape `(nphi, 3, 3, 3)` and
-field-component-first ordering.
+field-component-first ordering. `solution.r_singularity` is the first
+quadratic-map coordinate singularity, not an equilibrium-existence bound.

@@ -37,6 +37,9 @@ first stable release.
   pyQSC references.
 - JIT/JVP, resolution, upstream Hessian, full vacuum-symmetry, divergence, and
   derivative-of-divergence validation for the total field jet.
+- Singular-radius diagnostics derived directly from the regular-coordinate
+  Jacobian determinant, with vectorized global angular seeding, Newton
+  refinement, residual reports, and pyQSC QA/QH/finite-current parity.
 
 ### Fixed
 

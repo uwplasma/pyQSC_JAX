@@ -169,6 +169,12 @@ class near_axis:  # noqa: N801
                 solution.grad_grad_B_inverse_scale_length_vs_varphi
             )
             self.grad_grad_B_inverse_scale_length = solution.grad_grad_B_inverse_scale_length
+            self.r_singularity = solution.r_singularity
+            self.r_singularity_vs_varphi = solution.r_singularity_vs_varphi
+            self.inv_r_singularity_vs_varphi = solution.inv_r_singularity_vs_varphi
+            self.r_singularity_basic_vs_varphi = solution.r_singularity_basic_vs_varphi
+            self.r_singularity_theta_vs_varphi = solution.r_singularity_theta_vs_varphi
+            self.r_singularity_residual_sqnorm = solution.r_singularity_residual_sqnorm
 
     @property
     def dofs(self) -> jax.Array:

@@ -93,3 +93,34 @@ require.
 `DMerc_times_r2`. Their normalization and signs match pyQSC at the audited
 upstream commit. The geodesic and well contributions are kept separate so a
 caller can inspect cancellations rather than accepting only their sum.
+
+## Singular radius
+
+The quadratic regular map also gives a concise singular-radius calculation.
+Its determinant through second order in \(r\) is
+
+\[
+\widehat g =
+g_0+r(g_{1c}\cos\vartheta+g_{1s}\sin\vartheta)
++r^2(g_{20}+g_{2s}\sin2\vartheta+g_{2c}\cos2\vartheta).
+\]
+
+The coefficients are obtained by collecting powers of \(q_1,q_2\) using the
+multilinearity of the determinant of the regular coordinate map. This replaces
+the long generated coefficient expressions in pyQSC while producing the same
+quadratic Jacobian. As an internal quasisymmetry check, `g1s` must vanish.
+
+For each toroidal sample, all positive quadratic roots are enumerated on a
+uniform angular grid. The best root seeds a vectorized Newton solve for
+
+\[
+\widehat g=0,\qquad
+\frac{\partial\widehat g}{\partial\vartheta}=0.
+\]
+
+The default 256 angular seeds and eight Newton steps reproduce the audited
+pyQSC radii while retaining JIT and forward-mode differentiation. The result
+contains the radius, angle, and residual at every toroidal sample, together
+with the global minimum. It diagnoses loss of regularity of the truncated
+near-axis map; it is not a guarantee that a finite-radius equilibrium exists
+up to that radius.

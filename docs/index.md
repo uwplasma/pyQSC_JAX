@@ -41,9 +41,9 @@ changelog
 ## Project status
 
 The immutable first-order API, complete r2 coefficient solve, total-field
-Hessian, and Mercier diagnostics are validated. Singular-radius diagnostics,
-third order, inverse solves, optimization, and plasma/external field jets are
-under active development.
+Hessian, Mercier terms, and singular-radius diagnostics are validated. Third
+order, inverse solves, optimization, and plasma/external field jets are under
+active development.
 The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
 a runtime deprecation warning.
 

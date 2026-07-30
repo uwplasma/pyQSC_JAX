@@ -17,3 +17,12 @@
 ```{eval-rst}
 .. autofunction:: pyqsc_jax.mercier_diagnostics
 ```
+
+```{eval-rst}
+.. autoclass:: pyqsc_jax.SingularityDiagnostics
+   :members:
+```
+
+```{eval-rst}
+.. autofunction:: pyqsc_jax.singularity_diagnostics
+```

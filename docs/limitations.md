@@ -2,12 +2,12 @@
 
 The current computational core includes first order and the complete
 finite-pressure/current r2 coefficient solve, including the total on-axis
-field Hessian and Mercier terms. Singular-radius diagnostics and third-order
+field Hessian, Mercier terms, and singular-radius diagnostics. Third-order
 coefficients are not yet exposed.
 
 Known limitations under active refactor include:
 
-- no singular-radius diagnostics or third-order solution;
+- no third-order solution;
 - no plasma/external field-jet separation;
 - no branch-aware target-transform inverse solve.
 
@@ -18,7 +18,7 @@ the structured report. Production workflows must reject
 
 Frenet coordinates are invalid when the magnetic-axis curvature vanishes.
 `GeometryDiagnostics` reports this condition explicitly; high-level rejection
-policy will be added alongside the second-order validity report.
+policy will be added alongside the aggregate design-criteria report.
 
 Near-axis results are asymptotic in distance from the axis. “Surface-free”
 plasma–coil separation does not mean radius-free: a formal minor radius or an

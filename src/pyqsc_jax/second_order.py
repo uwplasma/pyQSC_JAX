@@ -365,11 +365,13 @@ def solve_second_order(first_order: NearAxisSolution) -> NearAxisSolution:
     solution = replace(first_order, second_order=second_order)
     from pyqsc_jax.diagnostics import mercier_diagnostics
     from pyqsc_jax.field import total_field_jet
+    from pyqsc_jax.singularity import singularity_diagnostics
 
     return replace(
         solution,
         mercier=mercier_diagnostics(solution),
         field_jet=total_field_jet(solution),
+        singularity=singularity_diagnostics(solution),
     )
 
 

@@ -5,8 +5,8 @@ JAX.
 
 > **Development status:** the immutable first-order core, complete r2
 > coefficient solve, total-field Hessian, Mercier diagnostics, and ESSOS
-> adapter are validated. Singular-radius diagnostics, third order, inverse
-> solves, optimization, and plasma/external field jets remain under development on the
+> adapter are validated, including singular-radius diagnostics. Third order,
+> inverse solves, optimization, and plasma/external field jets remain under development on the
 > `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -83,6 +83,7 @@ print("B20 residual:", solution.B20_residual)
 print("linear condition:", solution.linear_report.matrix_condition_number)
 print("Mercier:", solution.DMerc_times_r2)
 print("Hessian inverse scale:", solution.grad_grad_B_inverse_scale_length)
+print("singular radius:", solution.r_singularity)
 ```
 
 The lower-level immutable axis API supports general, not necessarily

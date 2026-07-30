@@ -99,6 +99,27 @@ class FieldJet:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class SingularityDiagnostics:
+    """First loss of regularity in the quadratic near-axis coordinate map."""
+
+    r_singularity: jax.Array
+    r_singularity_vs_varphi: jax.Array
+    inv_r_singularity_vs_varphi: jax.Array
+    theta_singularity_vs_varphi: jax.Array
+    residual_norm_vs_varphi: jax.Array
+    maximum_residual_norm: jax.Array
+    g0: jax.Array
+    g1c: jax.Array
+    g1s: jax.Array
+    g20: jax.Array
+    g2s: jax.Array
+    g2c: jax.Array
+    angular_resolution: int = field(metadata={"static": True})
+    newton_iterations: int = field(metadata={"static": True})
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisInputs:
     """Normalized immutable inputs to a near-axis solve."""
 
@@ -220,6 +241,7 @@ class NearAxisSolution:
     second_order: SecondOrderData | None = None
     mercier: MercierDiagnostics | None = None
     field_jet: FieldJet | None = None
+    singularity: SingularityDiagnostics | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
@@ -236,6 +258,16 @@ class NearAxisSolution:
             "grad_grad_B_inverse_scale_length",
         }
     )
+    _SINGULARITY_NAMES: ClassVar[frozenset[str]] = frozenset(
+        {
+            "r_singularity",
+            "r_singularity_vs_varphi",
+            "inv_r_singularity_vs_varphi",
+            "r_singularity_basic_vs_varphi",
+            "r_singularity_theta_vs_varphi",
+            "r_singularity_residual_sqnorm",
+        }
+    )
 
     def __getattr__(self, name: str):
         if name in self._SECOND_ORDER_NAMES:
@@ -250,6 +282,8 @@ class NearAxisSolution:
             return getattr(mercier, name)
         if name in self._FIELD_JET_NAMES:
             raise AttributeError("First-order solution has no second-derivative field jet.")
+        if name in self._SINGULARITY_NAMES:
+            raise AttributeError("First-order solution has no singular-radius diagnostics.")
         raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}.")
 
     def _require_mercier(self) -> MercierDiagnostics:
@@ -263,6 +297,12 @@ class NearAxisSolution:
         if field_jet is None:
             raise AttributeError("First-order solution has no second-derivative field jet.")
         return field_jet
+
+    def _require_singularity(self) -> SingularityDiagnostics:
+        singularity = object.__getattribute__(self, "singularity")
+        if singularity is None:
+            raise AttributeError("First-order solution has no singular-radius diagnostics.")
+        return singularity
 
     @property
     def axis(self) -> Axis:
@@ -335,3 +375,27 @@ class NearAxisSolution:
     @property
     def grad_grad_B_inverse_scale_length(self) -> jax.Array:
         return self._require_field_jet().grad_grad_B_inverse_scale_length
+
+    @property
+    def r_singularity(self) -> jax.Array:
+        return self._require_singularity().r_singularity
+
+    @property
+    def r_singularity_vs_varphi(self) -> jax.Array:
+        return self._require_singularity().r_singularity_vs_varphi
+
+    @property
+    def inv_r_singularity_vs_varphi(self) -> jax.Array:
+        return self._require_singularity().inv_r_singularity_vs_varphi
+
+    @property
+    def r_singularity_basic_vs_varphi(self) -> jax.Array:
+        return self._require_singularity().r_singularity_vs_varphi
+
+    @property
+    def r_singularity_theta_vs_varphi(self) -> jax.Array:
+        return self._require_singularity().theta_singularity_vs_varphi
+
+    @property
+    def r_singularity_residual_sqnorm(self) -> jax.Array:
+        return self._require_singularity().residual_norm_vs_varphi ** 2

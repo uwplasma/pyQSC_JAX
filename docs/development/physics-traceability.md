@@ -13,7 +13,7 @@ to the cited source, not to a duplicated derivation in this repository.
 | Total field Hessian | manuscript Eqs. 55–83 | `field.total_field_jet`; pyQSC generated tensor as comparison only | regular-coordinate chain rule, JIT/JVP, QA and finite-current upstream arrays, full vacuum symmetry, divergence and derivative-of-divergence | implemented and documented |
 | Magnetic well and Mercier terms | Landreman (2021), arXiv:2012.00865 | `diagnostics.mercier_diagnostics`; pyQSC `mercier.py` | vacuum and finite-pressure/current upstream values | implemented and documented |
 | Third-order flux constraint and shear | Landreman & Sengupta (2019); Rodríguez et al. shear equations | pyQSC `calculate_r3.py` | upstream r3 arrays and boundary data | not implemented |
-| Singular radius and scale lengths | Landreman (2021), arXiv:2012.00865 | pyQSC `r_singularity.py` | upstream values; actual coordinate-map regularity | not implemented |
+| Singular radius and scale lengths | Landreman (2021), arXiv:2012.00865 | `singularity.singularity_diagnostics`; pyQSC `r_singularity.py` as comparison | direct regular-map determinant, QA/QH/finite-current upstream radii and arrays, residual, angular convergence, JIT/JVP/finite differences | implemented and documented |
 | Good-stellarator criteria | Curvo, Ferreira & Jorge (2025), Table 3 | none canonical | exact normalized thresholds and margins | not implemented |
 | Plasma current source | manuscript Eqs. 88–97 | none | normalization, enclosed current, straight circular/elliptic channels | not implemented |
 | Plasma on-axis field | manuscript Eqs. 136–138 | none | full-torus periodicity, matching cancellation, resolved volume Biot–Savart | not implemented |

@@ -30,25 +30,18 @@ def _to_cartesian(vector: jax.Array, solution: NearAxisSolution) -> jax.Array:
     return cylindrical_vector_to_cartesian(vector, solution.phi)
 
 
-def total_field_jet(solution: NearAxisSolution) -> FieldJet:
-    """Compute ``B``, ``grad(B)``, and ``grad(grad(B))`` on the axis.
-
-    This is the regular-coordinate chain rule in equations (55)--(83) of the
-    surface-free plasma/coil derivation. It requires the complete second-order
-    near-axis solution but no finite-radius surface.
-    """
+def _regular_map_vectors(
+    solution: NearAxisSolution,
+) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array, jax.Array]:
+    """Return ``d1, d2, h11, h12, h22`` in periodic cylindrical components."""
 
     r2 = solution.second_order
     if r2 is None:
-        raise ValueError("A second-order solution is required for the field Hessian.")
-
+        raise ValueError("A second-order solution is required for the regular coordinate map.")
     geometry = solution.geometry
-    inputs = solution.inputs
-    length_scale = geometry.abs_G0_over_B0
     tangent = geometry.tangent_cylindrical
     normal = geometry.normal_cylindrical
     binormal = geometry.binormal_cylindrical
-
     d1 = solution.X1c[:, None] * normal + solution.Y1c[:, None] * binormal
     d2 = solution.Y1s[:, None] * binormal
     h11 = (
@@ -66,6 +59,26 @@ def total_field_jet(solution: NearAxisSolution) -> FieldJet:
         + 2 * (r2.Y20 - r2.Y2c)[:, None] * binormal
         + 2 * (r2.Z20 - r2.Z2c)[:, None] * tangent
     )
+    return d1, d2, h11, h12, h22
+
+
+def total_field_jet(solution: NearAxisSolution) -> FieldJet:
+    """Compute ``B``, ``grad(B)``, and ``grad(grad(B))`` on the axis.
+
+    This is the regular-coordinate chain rule in equations (55)--(83) of the
+    surface-free plasma/coil derivation. It requires the complete second-order
+    near-axis solution but no finite-radius surface.
+    """
+
+    r2 = solution.second_order
+    if r2 is None:
+        raise ValueError("A second-order solution is required for the field Hessian.")
+
+    geometry = solution.geometry
+    inputs = solution.inputs
+    length_scale = geometry.abs_G0_over_B0
+    tangent = geometry.tangent_cylindrical
+    d1, d2, h11, h12, h22 = _regular_map_vectors(solution)
 
     derivative = lambda vector: _differentiate_cylindrical_vector(vector, solution)  # noqa: E731
     V0 = length_scale * tangent

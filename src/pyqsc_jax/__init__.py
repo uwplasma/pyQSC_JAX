@@ -12,9 +12,11 @@ from pyqsc_jax.models import (
     NearAxisSolution,
     RootSolveReport,
     SecondOrderData,
+    SingularityDiagnostics,
 )
 from pyqsc_jax.near_axis import near_axis
 from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
+from pyqsc_jax.singularity import singularity_diagnostics
 from pyqsc_jax.solvers import RootSolveOptions
 
 __all__ = [
@@ -29,10 +31,12 @@ __all__ = [
     "RootSolveReport",
     "SecondOrderData",
     "SecondOrderResiduals",
+    "SingularityDiagnostics",
     "near_axis",
     "mercier_diagnostics",
     "second_order_residuals",
     "solve",
+    "singularity_diagnostics",
     "total_field_jet",
 ]
 __version__ = "0.2.0.dev0"
