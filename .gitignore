@@ -5,6 +5,7 @@ __pycache__/
 coverage.xml
 htmlcov/
 .audit/
+docs/_build/
 build/
 dist/
 *.egg-info/

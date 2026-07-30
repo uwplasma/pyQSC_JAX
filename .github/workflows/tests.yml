@@ -1,0 +1,68 @@
+name: tests
+
+on:
+  push:
+    branches: [main, refactor/pyqsc-jax-complete]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: python -m pip install ruff
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: ubuntu-latest
+            python: "3.14"
+          - os: macos-latest
+            python: "3.14"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      JAX_ENABLE_X64: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python -c "import jax, pyqsc_jax; print(jax.__version__, pyqsc_jax.__version__, pyqsc_jax.__file__)"
+      - run: pytest
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - run: python -m pip install --force-reinstall dist/*.whl
+      - run: >-
+          python -c "from pyqsc_jax.near_axis import near_axis;
+          q = near_axis(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9);
+          assert abs(float(q.iota) - 0.41830690943386617) < 1e-10"

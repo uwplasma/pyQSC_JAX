@@ -1,3 +1,9 @@
+"""Legacy mutable near-axis interface.
+
+This module is retained while the immutable computational core is introduced.
+The public import path is a hard ESSOS compatibility contract.
+"""
+
 import jax
 import jax.numpy as jnp
 from jax import jit, jacfwd, grad, vmap, tree_util, lax

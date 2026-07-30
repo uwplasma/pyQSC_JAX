@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use pyQSC_JAX, please cite this software and the theory papers relevant to your calculation."
+title: "pyQSC_JAX"
+type: software
+version: 0.2.0-dev
+date-released: 2026-07-29
+authors:
+  - family-names: Jorge
+    given-names: Rogério
+    affiliation: University of Wisconsin–Madison
+repository-code: "https://github.com/uwplasma/pyQSC_JAX"
+url: "https://github.com/uwplasma/pyQSC_JAX"
+license: MIT
+keywords:
+  - stellarator
+  - near-axis expansion
+  - quasisymmetry
+  - JAX
+  - automatic differentiation

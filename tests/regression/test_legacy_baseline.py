@@ -32,9 +32,7 @@ def test_standard_first_order_baseline():
         [-2.272197039914583, 0.6057564303422814],
         rtol=2e-13,
     )
-    np.testing.assert_allclose(
-        jnp.max(jnp.abs(field.sigma)), 0.9920706836908618, rtol=2e-13
-    )
+    np.testing.assert_allclose(jnp.max(jnp.abs(field.sigma)), 0.9920706836908618, rtol=2e-13)
     assert field.B_axis.shape == (3, 31)
     assert field.grad_B_axis.shape == (3, 3, 31)
 
@@ -55,21 +53,13 @@ def test_first_order_field_methods_are_finite():
 )
 def test_dofs_noop_preserves_derived_frame():
     field = standard_field()
-    normal_before = jnp.stack(
-        [field.normal_R, field.normal_phi, field.normal_z], axis=1
-    )
-    binormal_before = jnp.stack(
-        [field.binormal_R, field.binormal_phi, field.binormal_z], axis=1
-    )
+    normal_before = jnp.stack([field.normal_R, field.normal_phi, field.normal_z], axis=1)
+    binormal_before = jnp.stack([field.binormal_R, field.binormal_phi, field.binormal_z], axis=1)
 
     field.dofs = field.dofs
 
-    normal_after = jnp.stack(
-        [field.normal_R, field.normal_phi, field.normal_z], axis=1
-    )
-    binormal_after = jnp.stack(
-        [field.binormal_R, field.binormal_phi, field.binormal_z], axis=1
-    )
+    normal_after = jnp.stack([field.normal_R, field.normal_phi, field.normal_z], axis=1)
+    binormal_after = jnp.stack([field.binormal_R, field.binormal_phi, field.binormal_z], axis=1)
     np.testing.assert_array_equal(normal_after, normal_before)
     np.testing.assert_array_equal(binormal_after, binormal_before)
 
