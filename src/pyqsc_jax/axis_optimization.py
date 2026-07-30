@@ -402,16 +402,23 @@ def _levenberg_marquardt(
         if converged:
             break
 
-    normal_singular_values = jnp.linalg.svd(jacobian, compute_uv=False)
-    tiny = jnp.finfo(jacobian.dtype).tiny
-    condition_number = normal_singular_values[0] / jnp.maximum(
-        normal_singular_values[-1],
-        tiny,
+    normal_eigenvalues = jnp.maximum(
+        jnp.linalg.eigvalsh(jacobian.T @ jacobian),
+        0,
     )
+    largest_eigenvalue = normal_eigenvalues[-1]
+    smallest_eigenvalue = normal_eigenvalues[0]
+    rank_deficient = smallest_eigenvalue <= (jnp.finfo(jacobian.dtype).eps * largest_eigenvalue)
+    condition_number = jnp.where(
+        rank_deficient,
+        jnp.inf,
+        jnp.sqrt(largest_eigenvalue / smallest_eigenvalue),
+    )
+    condition_number = jnp.where(jnp.isnan(condition_number), jnp.inf, condition_number)
     finite = (
         jnp.all(jnp.isfinite(internal))
         & jnp.all(jnp.isfinite(current_residual))
-        & jnp.isfinite(condition_number)
+        & jnp.all(jnp.isfinite(jacobian))
     )
     return internal, LocalLeastSquaresReport(
         initial_residual_norm=initial_norm,

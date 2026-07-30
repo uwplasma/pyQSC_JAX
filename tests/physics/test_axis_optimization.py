@@ -13,6 +13,7 @@ from pyqsc_jax.axis_optimization import (
     _copy_retained_axis_modes,
     _halton_box,
     _internal_from_physical,
+    _levenberg_marquardt,
     _physical_from_internal,
     _selector_value,
     _validate_problem,
@@ -77,6 +78,19 @@ def test_bound_transform_round_trip_and_strict_interior():
     np.testing.assert_allclose(reconstructed, physical)
     assert np.all(np.asarray(reconstructed) > np.asarray(lower))
     assert np.all(np.asarray(reconstructed) < np.asarray(upper))
+
+
+def test_local_solve_accepts_a_finite_rank_deficient_exact_zero():
+    options = small_options(maximum_iterations=1)
+    initial = jnp.asarray([0.0, 0.0])
+    residual = lambda value: jnp.zeros((3,), dtype=value.dtype)  # noqa: E731
+
+    internal, report = _levenberg_marquardt(residual, initial, options)
+
+    np.testing.assert_allclose(internal, initial)
+    assert report.converged
+    assert report.finite
+    assert np.isinf(float(report.jacobian_condition_number))
 
 
 def test_fourier_continuation_copies_retained_modes_and_runs_stages():
