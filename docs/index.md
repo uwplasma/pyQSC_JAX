@@ -46,6 +46,7 @@ tutorials/second_order_finite_beta
 tutorials/target_iota
 tutorials/optimize_axis
 tutorials/vmec_export
+tutorials/vmex_equilibrium
 tutorials/vacuum_coils
 tutorials/finite_beta_coils
 ```
@@ -70,6 +71,7 @@ validation/pyqsc_parity
 validation/literature_cases
 validation/plasma_field
 validation/vmec
+validation/vmex_interface
 validation/essos
 migration
 ```
@@ -91,6 +93,7 @@ api/axis-optimization
 api/criteria
 api/plotting
 api/vmec
+api/vmex
 ```
 
 ```{toctree}

@@ -25,6 +25,7 @@ to the cited source, not to a duplicated derivation in this repository.
 | Plasma Hessian | manuscript Eqs. 194 and 210–219 | `plasma.plasma_hessian_on_axis` | circular finite-conductor contact-term limit, QA/QH oriented ellipses, commuting plasma derivatives, spectral convergence, JIT/JVP/finite differences | implemented and documented |
 | External vacuum jet | manuscript Eqs. 218–224 | nested `PlasmaHessianData`; rank-2/rank-3 STF packers | 3+5+7 representation, full Hessian symmetry, trace-free gradient/Hessian, vacuum reduction, asymptotic error metadata | implemented and documented; normalized ESSOS objective remains |
 | VMEC fixed-boundary conversion | near-axis surface expansion plus VMEC Fourier boundary convention | `vmec.uniform_cylindrical_surface`; `vmec.vmec_boundary`; upstream pyQSC `to_vmec.py` as an independent comparison | vectorized/legacy surface agreement, Fourier reconstruction, asymmetric coefficients, deterministic input, warm timing, frozen and live VMEC on-axis iota and force residuals, radius convergence | implemented and documented |
+| VMEX radial equilibrium | VMEX fixed-boundary ideal-MHD fixed point and public implicit adjoint | `vmex.to_vmex_problem`; `vmex.vmex_radial_quantities`; VMEX 0.3.0 commit `2a40d756` | vacuum and finite-beta live solves, radial iota sign audit, QS profile, magnetic well, boundary/profile gradients, current-main CI | implemented and documented |
 
 ## Source policy
 

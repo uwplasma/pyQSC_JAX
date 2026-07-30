@@ -115,7 +115,12 @@ independent resolution checks:
 At `nphi=121`, its dense maximum is \(3.20\times10^{-6}\) and peak-to-peak
 variation is \(6.27\times10^{-6}\). This is 26,053 times smaller in weighted
 residual than exact \(B_{2c}\) optimization of the stock README QA axis. The
-result is a verified numerical basin, not a proof that no other basin is
+computed singular radius is 0.2484 m. The README surface is drawn at
+0.075 m, so it has a 3.31-fold radial clearance relative to that truncated-map
+diagnostic. Both numbers appear next to the actual 3D surface; a flat
+\(B_{20}\) curve is not presented without its geometry.
+
+The result is a verified numerical basin, not a proof that no other basin is
 better. The runnable comparison is
 `benchmarks/benchmark_b20_optimizers.py`; its frozen report records the full
 environment and raw values.

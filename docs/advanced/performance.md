@@ -72,3 +72,23 @@ JAX_ENABLE_X64=true PYTHONPATH=src python benchmarks/benchmark_vmec_export.py
 The reported conversion timer excludes the near-axis solve and file-system
 startup. Both cold and warm calls synchronize the boundary arrays before
 stopping the timer.
+
+## VMEX implicit equilibrium
+
+The 5.20 ms number above is only the boundary conversion. A converged VMEX
+equilibrium is a separate fixed-point solve. Its cold cost includes XLA
+compilation and its gradient includes an implicit adjoint linear solve.
+
+The low-resolution live compatibility case (`ns=7`, `mpol=4`, `ntor=2`) took
+23.1 s for a cold forward solve and 17.5 s for a subsequent magnetic-well
+value-and-gradient on the development Apple CPU before persistent-cache
+reuse. These are integration-smoke timings, not production performance
+claims. Repeated optimization should reuse one `VmexProblem`, static shapes,
+and VMEX's compilation cache.
+
+The synchronized benchmark that records the dependency versions, validated
+VMEX commit, case parameters, objective value, and gradient norms is:
+
+```bash
+JAX_ENABLE_X64=true PYTHONPATH=src python benchmarks/benchmark_vmex_interface.py
+```

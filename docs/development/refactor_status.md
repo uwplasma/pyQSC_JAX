@@ -185,3 +185,24 @@ was made for that phase.
   and 5.20 ms warm at the documented high-resolution boundary setting.
 - Risk/next: on-axis-iota agreement is asymptotic and degrades at larger
   export radius as documented; remote CI and review remain external gates.
+
+## Phase 14 — VMEX radial equilibria and visual design audit
+
+- Files: optional VMEX bridge, live current-main compatibility job, radial
+  equilibrium tutorial and publication figure, full-torus 3D plotting
+  helpers, four-case gallery, and angle-dependent plasma configuration.
+- Verification: vacuum and finite-beta VMEX solves; radial \(\iota\), QS,
+  magnetic-well, energy, and boundary-gradient checks; traceable
+  `parameters_for` differentiation; focused plotting and plasma regressions.
+- Numerical checks: low-resolution vacuum VMEX/near-axis on-axis-\(\iota\)
+  difference 0.249%; finite-beta magnetic well
+  \(-4.2297\times10^{-4}\); angle-dependent minimum plasma-field fraction
+  32.70%; optimized \(B_{20}\) surface shown 3.3 times inside its singular
+  radius.
+- Performance: the VMEX smoke benchmark separates the converged forward solve
+  from the magnetic-well value-and-implicit-gradient cost; it is documented
+  as an integration timing, not a production throughput claim.
+- Risk/next: VMEX quasisymmetry diagnostics currently require stellarator
+  symmetry and the bridge covers fixed-boundary implicit differentiation, not
+  a reconverged free-boundary NESTOR adjoint. Remote CI and review remain
+  external gates.

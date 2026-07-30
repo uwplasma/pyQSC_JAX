@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import pyqsc_jax as qsc
+from pyqsc_jax.plotting import plot_surface_3d
 
 STOCK_CONFIGURATION = "qa"
 OPTIMIZED_CONFIGURATION = "b20_optimized_qa"
 NPHI = 121
+SURFACE_RADIUS = 0.075
 OUTPUT_STEM = Path("examples/output/publication/B20_optimization")
 README_PNG = Path("docs/_static/B20_optimization.png")
 SAVE_OUTPUT = True
@@ -27,19 +29,38 @@ improvement = float(stock.diagnostics.weighted_l2 / optimized_diagnostics.weight
 stock_angle = np.asarray(stock.solution.varphi * stock.solution.inputs.axis.nfp / (2 * np.pi))
 optimized_angle = np.asarray(optimized.varphi * optimized.inputs.axis.nfp / (2 * np.pi))
 
-figure, axes = plt.subplots(1, 3, figsize=(12.8, 3.8))
-axes[0].plot(stock_angle, np.asarray(stock.diagnostics.anomaly), linewidth=2.2)
-axes[0].set_title(r"stock axis + exact $B_{2c}$")
-axes[0].set_xlabel("Boozer angle / field period")
-axes[0].set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
-axes[1].plot(
+figure = plt.figure(figsize=(13.2, 8.2))
+surface_axis = figure.add_subplot(2, 2, 1, projection="3d")
+plot_surface_3d(
+    optimized,
+    radius=SURFACE_RADIUS,
+    ntheta=36,
+    ax=surface_axis,
+    cmap="viridis",
+)
+surface_axis.view_init(elev=24, azim=38)
+surface_axis.set_title(
+    "optimized QA surface\n"
+    rf"$\iota={float(optimized.iota):.3f}$, "
+    rf"$r_\mathrm{{sing}}={float(optimized.r_singularity):.3f}$ m"
+)
+
+stock_axis = figure.add_subplot(2, 2, 2)
+stock_axis.plot(stock_angle, np.asarray(stock.diagnostics.anomaly), linewidth=2.2)
+stock_axis.set_title(r"stock axis + exact $B_{2c}$")
+stock_axis.set_xlabel("Boozer angle / field period")
+stock_axis.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
+
+optimized_axis = figure.add_subplot(2, 2, 3)
+optimized_axis.plot(
     optimized_angle,
     np.asarray(optimized_diagnostics.anomaly),
     linewidth=2.2,
     color="tab:green",
 )
-axes[1].set_title("optimized Fourier axis")
-axes[1].set_xlabel("Boozer angle / field period")
+optimized_axis.set_title("optimized Fourier axis")
+optimized_axis.set_xlabel("Boozer angle / field period")
+optimized_axis.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
 diagnostic_names = ("weighted $L^2$", "dense maximum", "peak-to-peak")
 stock_values = (
     float(stock.diagnostics.weighted_l2),
@@ -51,29 +72,34 @@ optimized_values = (
     float(optimized_diagnostics.grid_maximum),
     float(optimized_diagnostics.peak_to_peak),
 )
-axes[2].bar(
+summary_axis = figure.add_subplot(2, 2, 4)
+summary_axis.bar(
     np.arange(3) - 0.18,
     stock_values,
     width=0.36,
     label=r"exact $B_{2c}$ only",
 )
-axes[2].bar(
+summary_axis.bar(
     np.arange(3) + 0.18,
     optimized_values,
     width=0.36,
     label="axis + $B_{2c}$",
     color="tab:green",
 )
-axes[2].set_xticks(np.arange(3), diagnostic_names, rotation=15)
-axes[2].set_yscale("log")
-axes[2].set_ylabel(r"$B_{20}$ nonuniformity [T/m$^2$]")
-axes[2].legend(fontsize=8)
-axes[2].text(
+summary_axis.set_xticks(np.arange(3), diagnostic_names, rotation=12)
+summary_axis.set_yscale("log")
+summary_axis.set_ylabel(r"$B_{20}$ nonuniformity [T/m$^2$]")
+summary_axis.legend(fontsize=8)
+clearance = float(optimized.r_singularity) / SURFACE_RADIUS
+summary_axis.text(
     0.04,
     0.05,
-    f"{improvement:,.0f}x lower weighted residual",
-    transform=axes[2].transAxes,
+    f"{improvement:,.0f}x lower residual\n"
+    rf"shown surface: $r={SURFACE_RADIUS:.3f}$ m"
+    f" ({clearance:.1f}x inside singular radius)",
+    transform=summary_axis.transAxes,
     fontweight="bold",
+    bbox={"facecolor": "white", "edgecolor": "0.7", "alpha": 0.9},
 )
 figure.tight_layout()
 
@@ -96,6 +122,9 @@ metadata = {
     "optimized_weighted_l2": float(optimized_diagnostics.weighted_l2),
     "optimized_grid_maximum": float(optimized_diagnostics.grid_maximum),
     "optimized_peak_to_peak": float(optimized_diagnostics.peak_to_peak),
+    "optimized_singular_radius": float(optimized.r_singularity),
+    "surface_radius": SURFACE_RADIUS,
+    "singular_radius_clearance": clearance,
     "improvement_factor": improvement,
     "verification_nphi": np.asarray(verification.resolutions).tolist(),
     "verification_weighted_l2": np.asarray(verification.weighted_l2).tolist(),

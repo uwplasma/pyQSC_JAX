@@ -6,13 +6,21 @@ pyQSC_JAX requires Python 3.12 or newer.
 python -m pip install pyqsc-jax
 ```
 
-Install optional plotting or development tools explicitly:
+Install optional plotting, VMEX equilibrium, or development tools explicitly:
 
 ```bash
 python -m pip install 'pyqsc-jax[plot]'
+python -m pip install 'pyqsc-jax[plot,vmex]'
 git clone https://github.com/uwplasma/pyQSC_JAX.git
 cd pyQSC_JAX
-python -m pip install -e '.[dev,docs,plot]'
+python -m pip install -e '.[dev,docs,plot,vmex]'
+```
+
+The `vmex` extra enables differentiable fixed-boundary radial quantities. To
+test the current upstream development head directly:
+
+```bash
+python -m pip install 'git+https://github.com/uwplasma/vmex.git'
 ```
 
 The project declares `jax`, not `jaxlib`, and never changes JAX configuration

@@ -7,6 +7,7 @@
 | Flux-consistent boundary and magnetic shear | `order="r3"` plus `solve_magnetic_shear` | r3 residuals and applicable sign restrictions |
 | Prescribed transform | `solve_for="etabar"` or `"I2"` | local response and fold flag |
 | Surface-free plasma/external target | `plasma_hessian_on_axis` | positive formal radius and asymptotic metadata |
+| Radial iota, QS, and magnetic well | `to_vmex_problem` | VMEX convergence, implicit-gradient and resolution checks |
 | Legacy ESSOS consumer | `near_axis` adapter | compatibility orientation and mutable-DOF contract |
 
 Use the lowest order that supplies the observable being optimized. Higher

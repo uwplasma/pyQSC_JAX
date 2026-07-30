@@ -12,6 +12,11 @@
   existence.
 - Plasma-field and Hessian remainder fields are asymptotic scales, not
   rigorous bounds.
+- The optional VMEX bridge covers differentiable fixed-boundary equilibria.
+  It does not differentiate a reconverged free-boundary NESTOR root.
+- Traceable VMEX quasisymmetry profiles currently require stellarator
+  symmetry; use `qs_surfaces=()` for an asymmetric equilibrium without QS.
+- VMEX magnetic well is an endpoint scalar, not a radial profile.
 - “Surface-free” plasma/coil separation still requires a positive formal
   radius or equivalent current/flux normalization.
 - Coil feasibility and fast-particle confinement remain ESSOS or external

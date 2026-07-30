@@ -3,11 +3,12 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 import pyqsc_jax as qsc
-from pyqsc_jax.plotting import plot_field_jet_norms
+from pyqsc_jax.plotting import plot_field_split_components
 
-CONFIGURATION = "plasma_dominant_channel"
+CONFIGURATION = "plasma_stellarator"
 FORMAL_RADIUS = 0.2
 NPHI = 61
 ANGULAR_RESOLUTION = 96
@@ -30,6 +31,8 @@ plasma_fraction = (
 print("enclosed toroidal current [A]:", float(enclosed_current))
 print("minimum |B_plasma| / |B_total|:", float(plasma_fraction.min()))
 print("mean |B_plasma| / |B_total|:", float(plasma_fraction.mean()))
+plasma_norm = np.linalg.norm(np.asarray(result.field.field.field), axis=-1)
+print("plasma |B| peak-to-peak / mean:", float(np.ptp(plasma_norm) / np.mean(plasma_norm)))
 print("formal radius / singular radius:", float(FORMAL_RADIUS / solution.r_singularity))
 print("external gradient STF components:", result.field.external_gradient_independent.shape[-1])
 print("external Hessian STF components:", result.external_hessian_independent.shape[-1])
@@ -41,7 +44,7 @@ print(
     float(result.estimated_hessian_remainder),
 )
 
-figure, _ = plot_field_jet_norms(result)
+figure, _ = plot_field_split_components(result, solution)
 if SAVE_OUTPUT:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(OUTPUT, dpi=180, bbox_inches="tight")

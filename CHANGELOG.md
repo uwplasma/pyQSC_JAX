@@ -9,6 +9,15 @@ first stable release.
 
 ### Added
 
+- Optional, lazy pyQSC_JAX-to-VMEX bridge for differentiable fixed-boundary
+  radial \(\iota\), quasisymmetry, magnetic-well, energy, volume, and
+  aspect-ratio quantities in vacuum and finite beta, with a live current-VMEX
+  compatibility job.
+- Full-torus 3D surface helpers and a four-stellarator README gallery covering
+  QA, QH, the \(B_{20}\)-optimized case, and the finite-current plasma case.
+- `plasma_stellarator`, an angle-dependent finite-pressure/current case whose
+  minimum plasma-field fraction is 32.70%, whose plasma-field norm varies by
+  3.53%, and whose formal radius remains inside the singular surface.
 - Vectorized, JIT-compiled VMEC boundary export with all four coefficient
   families, deterministic INDATA output, conversion diagnostics,
   legacy-adapter support, a frozen VMEC 9.0 `wout` regression, and an opt-in
@@ -93,7 +102,7 @@ first stable release.
   seven-component Cartesian STF representation.
 - Named immutable QA, QH, and finite-pressure/current configurations.
 - Lazy plotting helpers that return Matplotlib figure and axes objects.
-- Twelve direct tutorial scripts and five deterministic publication-figure
+- Fourteen direct tutorial scripts and eight deterministic publication-figure
   scripts with commit/parameter metadata and clean-directory CI execution.
 - Downstream ESSOS external-field-jet integration with normalized 3+5+7
   objectives, finite-beta stage-two and single-stage examples, and
