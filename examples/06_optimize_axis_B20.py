@@ -1,4 +1,4 @@
-"""Compare a stock QA axis with a dense-grid B20-optimized QA axis."""
+"""Refine a screened database axis into a nearly constant-B20 stellarator."""
 
 from pathlib import Path
 
@@ -7,14 +7,14 @@ import numpy as np
 
 import pyqsc_jax as qsc
 
-STOCK_CONFIGURATION = "qa"
-OPTIMIZED_CONFIGURATION = "b20_optimized_qa"
+STOCK_CONFIGURATION = "database_low_b20_57409"
+OPTIMIZED_CONFIGURATION = "b20_optimized_good"
 NPHI = 121
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
 OUTPUT = Path("examples/output/06_optimize_axis_B20.png")
 
-print("Eliminating B2c exactly for the stock QA axis...")
+print("Eliminating B2c exactly for database configuration 57409...")
 stock = qsc.optimize_B2c(qsc.solve_configuration(STOCK_CONFIGURATION, nphi=NPHI))
 print("Loading the independently optimized Fourier axis...")
 optimized = qsc.solve_configuration(OPTIMIZED_CONFIGURATION, nphi=NPHI)
@@ -28,12 +28,16 @@ print("optimized-axis dense maximum:", float(optimized_diagnostics.grid_maximum)
 print("improvement factor:", improvement)
 print("nphi verification:", np.asarray(verification.resolutions))
 print("verified weighted L2:", np.asarray(verification.weighted_l2))
+criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+print("Curvo profile passed:", criteria.evaluate(optimized).passed)
+print("|iota|:", abs(float(optimized.iota)))
+print("singular radius:", float(optimized.r_singularity))
 
 stock_angle = np.asarray(stock.solution.varphi * stock.solution.inputs.axis.nfp / (2 * np.pi))
 optimized_angle = np.asarray(optimized.varphi * optimized.inputs.axis.nfp / (2 * np.pi))
 figure, axes = plt.subplots(1, 2, figsize=(9.4, 3.8))
 axes[0].plot(stock_angle, np.asarray(stock.diagnostics.anomaly), linewidth=2)
-axes[0].set_title(r"stock axis + exact $B_{2c}$")
+axes[0].set_title(r"database ID 57409 + exact $B_{2c}$")
 axes[0].set_xlabel("Boozer angle / field period")
 axes[0].set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
 axes[1].plot(

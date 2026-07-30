@@ -21,3 +21,24 @@ The validation matrix is tied to primary literature:
 The [physics traceability table](../development/physics-traceability.md)
 connects every block to code and independent tests. Numerical constants are
 never copied from prose without a test or local, checksummed reference.
+
+## Public stellarator-database cases
+
+The README design gallery is traceable to the
+[University of Wisconsin stellarator database](https://stellarator.physics.wisc.edu/)
+and its [interactive application](https://stellarator.physics.wisc.edu/app).
+The app reports transform magnitude, while the JSON downloads retain the
+signed convention. pyQSC_JAX therefore states the showcase gate as
+\(\lvert\iota\rvert\ge0.4\).
+
+| bundled name | public source | role |
+| --- | --- | --- |
+| `database_example_3` | [ID 3](https://stellarator.physics.wisc.edu/app/plot/3) | documented API/download example |
+| `database_low_b20_57409` | [ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409) | low-\(B_{20}\) optimization seed |
+| `b20_optimized_good` | derived from [ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409) | constrained eight-mode refinement |
+| `database_large_singularity_107579` | [ID 107579](https://stellarator.physics.wisc.edu/app/plot/107579) | large-singular-radius example |
+
+Every case is solved again rather than trusting displayed database metrics.
+Regression tests require all four to pass the full configurable Curvo profile
+with the stricter transform threshold. The derived ID-57409 refinement also
+retains the source ID and URL in `ReferenceConfiguration` metadata.

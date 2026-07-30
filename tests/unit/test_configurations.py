@@ -12,6 +12,10 @@ def test_named_configurations_are_immutable_and_solve():
         "qh",
         "finite_pressure_current",
         "b20_optimized_qa",
+        "database_example_3",
+        "database_low_b20_57409",
+        "b20_optimized_good",
+        "database_large_singularity_107579",
         "plasma_dominant_channel",
         "plasma_stellarator",
     )
@@ -36,6 +40,28 @@ def test_solve_configuration_preserves_topology_and_overrides():
     assert finite.second_order is not None
     np.testing.assert_allclose(finite.inputs.I2, 0.9)
     np.testing.assert_allclose(finite.inputs.p2, -600000.0)
+
+
+@pytest.mark.physics
+def test_database_showcase_configurations_are_traceable_and_screened():
+    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+    expected_sources = {
+        "database_example_3": 3,
+        "database_low_b20_57409": 57409,
+        "b20_optimized_good": 57409,
+        "database_large_singularity_107579": 107579,
+    }
+
+    for name, database_id in expected_sources.items():
+        configuration = qsc.get_configuration(name)
+        solution = configuration.solve(nphi=61)
+
+        assert configuration.source_database_id == database_id
+        assert configuration.source_url == (
+            f"https://stellarator.physics.wisc.edu/app/plot/{database_id}"
+        )
+        assert criteria.evaluate(solution).passed
+        assert abs(float(solution.iota)) >= 0.4
 
 
 def test_unknown_configuration_is_rejected():

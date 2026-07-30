@@ -14,12 +14,16 @@ plasma–coil field jets in JAX.
 > compatibility, and external 3+5+7 field-jet paths are validated; release
 > hardening is still in progress.
 
-![QA, QH, B20-optimized, and finite-current stellarators](docs/_static/stellarator_gallery.png)
+![Four independently screened stellarators](docs/_static/stellarator_gallery.png)
 
-Four runnable configurations: vacuum QA and QH references, the
-\(B_{20}\)-optimized QA surface, and an angle-dependent finite-current
-stellarator. Every displayed surface reports its transform and/or singular
-radius; the plotting radius is recorded in the figure metadata.
+Four runnable, independently re-evaluated designs: [database ID 3](https://stellarator.physics.wisc.edu/app/plot/3),
+an eight-mode refinement of [database ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409),
+the large-clearance [database ID 107579](https://stellarator.physics.wisc.edu/app/plot/107579),
+and an angle-dependent finite-current case. Every displayed design passes the
+configurable Curvo/Table-3 profile with the stricter
+\(\lvert\iota\rvert\geq0.4\); each panel reports transform, singular radius,
+and its defining diagnostic. Plotting radii and database provenance are in
+the adjacent JSON metadata.
 
 | \(B_{20}\) optimization, geometry, and singular margin | Angle-dependent plasma/external field |
 | --- | --- |
@@ -49,19 +53,15 @@ python -m pip install 'pyqsc-jax[plot,vmex]'
 ```python
 import pyqsc_jax as qsc
 
-solution = qsc.Qsc(
-    rc=[1.0, 0.155, 0.0102],
-    zs=[0.0, 0.154, 0.0111],
-    nfp=2,
-    etabar=0.64,
-    B2c=-0.00322,
-    nphi=61,
-    order="r2",
-)
+configuration = qsc.get_configuration("database_example_3")
+solution = configuration.solve(nphi=81)
+criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
 
 assert solution.root_report.converged
 assert solution.linear_report.converged
-print("iota:", solution.iota)
+assert criteria.evaluate(solution).passed
+print("source:", configuration.source_url)
+print("|iota|:", abs(solution.iota))
 print("B20 residual:", solution.B20_residual)
 print("Mercier D r^2:", solution.DMerc_times_r2)
 print("singular radius:", solution.r_singularity)
@@ -111,22 +111,24 @@ resolution, timing, and radius-convergence tables are in the
 
 | Check | Result | Regression gate |
 | --- | ---: | ---: |
-| Optimized QA \(B_{20}\), weighted \(L^2\), `nphi=121` | \(1.5901\times10^{-6}\) | \(<1.6\times10^{-6}\) |
-| Improvement over stock-axis exact-\(B_{2c}\) solve | \(26{,}053\times\) | \(>25{,}000\times\) |
-| \(B_{20}\)-optimized singular radius | 0.248 m | displayed \(r=0.075\) m gives 3.3× clearance |
-| Angle-dependent minimum \(\lvert B_\mathrm{plasma}\rvert/\lvert B_\mathrm{total}\rvert\) | 32.70% | \(>30\%\) |
-| Plasma-field norm peak-to-peak / mean | 3.53% | \(>3\%\) |
+| Database-seeded QH \(B_{20}\), weighted \(L^2\), `nphi=121` | \(1.2743\times10^{-10}\) | \(<1.4\times10^{-10}\) |
+| Improvement over ID-57409 exact-\(B_{2c}\) solve | \(2.4321\times10^8\)× | \(>2.0\times10^8\)× |
+| \(B_{20}\)-optimized singular radius | 0.249 m | displayed \(r=0.075\) m gives 3.3× clearance |
+| Largest showcased singular radius, database ID 107579 | 0.432 m | \(>0.4\) m |
+| Four-case showcase design screen | all pass | Curvo profile with \(\lvert\iota\rvert\ge0.4\) |
+| Angle-dependent minimum \(\lvert B_\mathrm{plasma}\rvert/\lvert B_\mathrm{total}\rvert\) | 32.99% at \(a=0.45\) m | \(>30\%\) |
+| Plasma-field norm peak-to-peak / mean | 4.43% | \(>3\%\) |
 | VMEC/near-axis on-axis \(\iota\), \(r=0.0025\) | 0.418543 / 0.418307 | relative error \(<0.1\%\) |
 | VMEC force residuals | \(2.4\)–\(7.6\times10^{-11}\) | maximum \(<10^{-9}\) |
 | `to_vmec`, Apple M4 CPU, compile+execute / warm | 0.476 s / 5.20 ms | warm unit gate \(<0.5\) s |
 
 ```python
-optimized = qsc.solve_configuration("b20_optimized_qa", nphi=121)
+optimized = qsc.solve_configuration("b20_optimized_good", nphi=121)
 diagnostics = qsc.b20_diagnostics(optimized)
 print(diagnostics.weighted_l2, diagnostics.grid_maximum)
 
 plasma_case = qsc.solve_configuration("plasma_stellarator", nphi=61)
-plasma = qsc.plasma_field_on_axis(plasma_case, formal_radius=0.2)
+plasma = qsc.plasma_field_on_axis(plasma_case, formal_radius=0.45)
 ```
 
 ## Target rotational transform
@@ -169,23 +171,27 @@ mathematical global-minimum claim.
 ```python
 from pyqsc_jax.plotting import plot_surface_3d
 
-optimized = qsc.solve_configuration("b20_optimized_qa", nphi=121)
+optimized = qsc.solve_configuration("b20_optimized_good", nphi=121)
 figure, axis = plot_surface_3d(optimized, radius=0.075)
 
-print(optimized.B20_residual)   # 1.5901e-6 T/m^2
-print(optimized.r_singularity) # 0.248 m
+print(abs(optimized.iota))      # 2.9636
+print(optimized.B20_residual)  # 1.2743e-10 T/m^2
+print(optimized.r_singularity) # 0.249 m
 ```
 
-The displayed surface is therefore 3.3 times inside the computed singular
-radius. The optimizer comparison, Fourier-resolution audit, full coefficient
-set, and the distinction between `best_found` and a certified zero are in the
+This configuration is a staged eight-mode refinement of public database ID
+57409, not an unconstrained toy optimum. It passes every named design
+criterion with \(\lvert\iota\rvert=2.964\); the displayed surface is 3.3 times
+inside the computed singular radius. The optimizer comparison,
+Fourier-resolution audit, full coefficient set, provenance, and the
+distinction between `best_found` and a certified zero are in the
 [B20 optimization notes](docs/theory/b20-optimization.md).
 
 ## Finite-beta coil targets
 
 ```python
 solution = qsc.solve_configuration("plasma_stellarator", nphi=61)
-target = qsc.plasma_hessian_on_axis(solution, formal_radius=0.2)
+target = qsc.plasma_hessian_on_axis(solution, formal_radius=0.45)
 
 print(target.field.external_field.shape)                 # (nphi, 3)
 print(target.field.external_gradient_independent.shape) # (nphi, 5)
@@ -196,17 +202,20 @@ ESSOS consumes these external vacuum targets for normalized field, gradient,
 and Hessian coil objectives. The dependency remains one-way:
 `ESSOS -> pyQSC_JAX`.
 
-The public plot uses Frenet components rather than only \(|B|\). This makes
-the angle dependence and exact cancellation of plasma and external transverse
-components visible; \(|B_\mathrm{total}|=B_0\) is constant on axis by
-construction.
+This case independently passes the Curvo profile with
+\(\lvert\iota\rvert=0.730\) and \(r_\mathrm{sing}=0.992\) m. The stated
+formal radius \(a=0.45\) m is mandatory model metadata and remains inside that
+singular-radius estimate. The public plot uses Frenet components rather than
+only \(|B|\), making the angle dependence and exact cancellation of plasma
+and external transverse components visible;
+\(|B_\mathrm{total}|=B_0\) is constant on axis by construction.
 
 ## Differentiable radial equilibria with VMEX
 
 ```python
 import jax
 
-near_axis = qsc.solve_configuration("qa", nphi=61)
+near_axis = qsc.solve_configuration("plasma_stellarator", nphi=61)
 problem = qsc.to_vmex_problem(
     near_axis,
     r=0.02,
@@ -250,7 +259,9 @@ print(export.conversion_seconds)
 print(export.boundary.maximum_R_reconstruction_error)
 ```
 
-The exporter uses a vectorized Newton inversion and a two-dimensional FFT,
+This small-radius QA input is a conversion-validation reference, not one of
+the screened finite-beta showcase devices above. The exporter uses a
+vectorized Newton inversion and a two-dimensional FFT,
 supports all four VMEC boundary coefficient families, and returns conversion
 diagnostics. The committed `wout` regression checks the resulting equilibrium,
 including the on-axis transform; an opt-in test can rerun a local VMEC

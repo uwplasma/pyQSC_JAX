@@ -94,12 +94,14 @@ def _periodic_interpolate(
     return jnp.interp(wrapped, extended_grid, extended_values)
 
 
-def _interpolated_displacements(
+def frenet_displacements(
     solution: NearAxisSolution,
     radius: jax.Array,
     theta: jax.Array,
     phi0: jax.Array,
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Evaluate all available near-axis Frenet displacements."""
+
     period = 2 * jnp.pi / solution.inputs.axis.nfp
     grid = solution.phi
     interpolate = lambda values: _periodic_interpolate(phi0, grid, values, period)  # noqa: E731
@@ -163,7 +165,7 @@ def _surface_at_axis_angle(
     period = 2 * jnp.pi / solution.inputs.axis.nfp
     grid = solution.phi
     interpolate = lambda values: _periodic_interpolate(phi0, grid, values, period)  # noqa: E731
-    X, Y, Z = _interpolated_displacements(solution, radius, theta, phi0)
+    X, Y, Z = frenet_displacements(solution, radius, theta, phi0)
     normal = solution.geometry.normal_cylindrical
     binormal = solution.geometry.binormal_cylindrical
     tangent = solution.geometry.tangent_cylindrical

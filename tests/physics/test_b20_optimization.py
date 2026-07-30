@@ -135,16 +135,19 @@ def test_resolution_verification_recomputes_fixed_candidate():
 
 @pytest.mark.physics
 def test_documented_optimized_axis_has_nearly_constant_B20():
-    stock = qsc.optimize_B2c(qsc.solve_configuration("qa", nphi=121))
-    optimized = qsc.solve_configuration("b20_optimized_qa", nphi=121)
+    stock = qsc.optimize_B2c(qsc.solve_configuration("database_low_b20_57409", nphi=121))
+    optimized = qsc.solve_configuration("b20_optimized_good", nphi=121)
     diagnostics = qsc.b20_diagnostics(optimized)
     verification = qsc.verify_B20_resolution(optimized, multipliers=(1, 2))
+    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
 
-    assert float(diagnostics.weighted_l2) < 1.6e-6
-    assert float(diagnostics.grid_maximum) < 3.3e-6
-    assert float(diagnostics.peak_to_peak) < 6.4e-6
-    assert float(stock.diagnostics.weighted_l2 / diagnostics.weighted_l2) > 25000
-    assert float(verification.relative_weighted_l2_change[1]) < 2.0e-7
+    assert float(diagnostics.weighted_l2) < 1.4e-10
+    assert float(diagnostics.grid_maximum) < 3.0e-10
+    assert float(diagnostics.peak_to_peak) < 6.0e-10
+    assert float(stock.diagnostics.weighted_l2 / diagnostics.weighted_l2) > 2.0e8
+    assert float(verification.relative_weighted_l2_change[1]) < 2.0e-3
+    assert criteria.evaluate(optimized).passed
+    assert abs(float(optimized.iota)) > 0.4
 
 
 def test_B20_optimization_input_guards():

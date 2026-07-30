@@ -206,3 +206,22 @@ was made for that phase.
   symmetry and the bridge covers fixed-boundary implicit differentiation, not
   a reconverged free-boundary NESTOR adjoint. Remote CI and review remain
   external gates.
+
+## Phase 15 — screened database showcase and constrained \(B_{20}\)
+
+- Files: traceable configurations from Wisconsin database IDs 3, 57409, and
+  107579; an eight-mode constrained refinement of ID 57409; direct-Frenet 3D
+  surface plotting; regenerated README figures and optimizer report.
+- Verification: every showcased design independently passes the Curvo profile
+  with \(\lvert\iota\rvert\ge0.4\); the database source ID and URL are frozen
+  in configuration and figure metadata; strong-axis surface smoothness is a
+  regression test.
+- Numerical checks: the derived ID-57409 case has
+  \(\lvert\iota\rvert=2.964\), \(r_\mathrm{sing}=0.249\) m, and weighted
+  \(B_{20}\) residual \(1.2743\times10^{-10}\) at `nphi=121`, stable through
+  `nphi=481`. The finite-current showcase has a 32.99% minimum plasma
+  fraction and 4.43% angular variation while passing the same screen.
+- Limitation: the current-visible split uses formal radius 0.45 m and carries
+  a 0.2286 T estimated field remainder. It is explicitly a field-jet
+  demonstration; smaller-radius production studies require radius
+  convergence and current/geometry re-optimization.

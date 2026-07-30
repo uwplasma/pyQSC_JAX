@@ -84,41 +84,60 @@ The branch-aware multistart workflow built on these residuals is described in
 
 ## Optimizer comparison and selected case
 
-Several optimizers were tested from the Landreman--Paul precise-QA axis. For
-the common comparison, Fourier modes 1--3 were varied and \(B_{2c}\) was
+The public [Curvo stellarator database](https://stellarator.physics.wisc.edu/)
+was screened before optimization. Configuration
+[57409](https://stellarator.physics.wisc.edu/app/plot/57409) was selected as
+the traceable low-\(B_{20}\) seed: pyQSC_JAX independently reproduces
+\(\lvert\iota\rvert=2.833\), \(r_\mathrm{sing}=0.238\) m, and a complete
+Curvo/Table-3 pass when the minimum-transform threshold is tightened to 0.4.
+
+Several optimizers were then tested from exactly that downloaded axis. For the
+common comparison, Fourier modes 1--3 were varied and \(B_{2c}\) was
 eliminated exactly at every objective evaluation. Timings are warm local
 measurements and exclude the shared JAX compilation.
 
 | method | evaluations | time [s] | independently evaluated weighted \(L^2\) |
 | --- | ---: | ---: | ---: |
-| exact \(B_{2c}\) only | 1 | — | \(3.7483\times10^{-4}\) |
-| SciPy L-BFGS-B | 72 | 0.146 | \(1.9231\times10^{-4}\) |
-| SciPy `least_squares` | 60 | 2.743 | \(1.9146\times10^{-4}\) |
-| low-budget differential evolution | 120 | 0.137 | \(1.0281\times10^{-1}\) |
-| pyQSC_JAX multistart Levenberg--Marquardt | 129 | 20.766* | \(1.2441\times10^{-4}\) |
+| exact \(B_{2c}\) only | 1 | — | \(3.09928\times10^{-2}\) |
+| SciPy L-BFGS-B | 70 | 0.181 | \(2.01392\times10^{-4}\) |
+| SciPy `least_squares` | 28 | 1.309 | \(1.02501\times10^{-4}\) |
+| low-budget differential evolution | 120 | 0.113 | \(2.65766\times10^{-1}\) |
+| pyQSC_JAX multistart Levenberg--Marquardt | 130 | 21.914* | \(1.08279\times10^{-4}\) |
 
 The SciPy timings exclude the shared JAX residual/Jacobian compilation; the
 asterisked multistart timing includes compilation of its independent closure.
 The coarse differential-evolution budget is included to show why a method
 label alone does not establish global quality. It did not locate the narrow
-good basin. The selected `b20_optimized_qa` case used bounded
-`least_squares` on modes 1--5 after exact \(B_{2c}\) elimination, followed by
+good basin. Bounded `least_squares` was then continued one Fourier mode at a
+time, re-eliminating \(B_{2c}\) at every evaluation:
+
+| highest varied mode | independently evaluated weighted \(L^2\) |
+| ---: | ---: |
+| 3 | \(1.02501\times10^{-4}\) |
+| 4 | \(1.13643\times10^{-6}\) |
+| 5 | \(5.58886\times10^{-7}\) |
+| 6 | \(2.75804\times10^{-7}\) |
+| 7 | \(3.02110\times10^{-8}\) |
+| 8 | \(1.27645\times10^{-10}\) |
+
+The resulting `b20_optimized_good` configuration was held fixed for the
 independent resolution checks:
 
 | `nphi` | weighted \(L^2\) |
 | ---: | ---: |
-| 61 | \(1.5900649432\times10^{-6}\) |
-| 121 | \(1.5900649311\times10^{-6}\) |
-| 241 | \(1.5900649186\times10^{-6}\) |
-| 481 | \(1.5900649060\times10^{-6}\) |
+| 121 | \(1.27431807\times10^{-10}\) |
+| 241 | \(1.27645060\times10^{-10}\) |
+| 481 | \(1.28075313\times10^{-10}\) |
 
-At `nphi=121`, its dense maximum is \(3.20\times10^{-6}\) and peak-to-peak
-variation is \(6.27\times10^{-6}\). This is 26,053 times smaller in weighted
-residual than exact \(B_{2c}\) optimization of the stock README QA axis. The
-computed singular radius is 0.2484 m. The README surface is drawn at
-0.075 m, so it has a 3.31-fold radial clearance relative to that truncated-map
-diagnostic. Both numbers appear next to the actual 3D surface; a flat
-\(B_{20}\) curve is not presented without its geometry.
+At `nphi=121`, its dense maximum is \(2.62\times10^{-10}\) and peak-to-peak
+variation is \(5.23\times10^{-10}\). This is \(2.4321\times10^8\) times
+smaller in weighted residual than exact \(B_{2c}\) optimization of its public
+database seed. The independently recomputed design has
+\(\lvert\iota\rvert=2.964\), \(r_\mathrm{sing}=0.2493\) m, maximum elongation
+2.95, minimum \(L_{\nabla B}=0.437\) m, minimum
+\(L_{\nabla\nabla B}=0.340\) m, positive Mercier margin, and a complete
+Curvo-profile pass. The README surface is drawn at 0.075 m, giving 3.32-fold
+radial clearance relative to the truncated-map singularity diagnostic.
 
 The result is a verified numerical basin, not a proof that no other basin is
 better. The runnable comparison is

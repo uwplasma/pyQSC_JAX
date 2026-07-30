@@ -37,9 +37,9 @@ The publication example records finite-beta values of:
 
 | Quantity | Value |
 | --- | ---: |
-| magnetic well | \(-4.22969\times10^{-4}\) |
-| \(\partial W/\partial p_\mathrm{scale}\) | \(+5.24435\times10^{-5}\) |
-| \(\|\partial W/\partial RBC\|_2\) | \(2.01871\) |
+| magnetic well | \(-7.70343\times10^{-5}\) |
+| \(\partial W/\partial p_\mathrm{scale}\) | \(+6.55641\times10^{-7}\) |
+| \(\|\partial W/\partial RBC\|_2\) | \(1.85853\) |
 
 These values are finite, nonzero regression evidence that the pressure and
 boundary adjoint paths are active.

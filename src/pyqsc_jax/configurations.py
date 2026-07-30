@@ -24,6 +24,8 @@ class ReferenceConfiguration:
     I2: float = 0.0
     p2: float = 0.0
     order: str = "r2"
+    source_database_id: int | None = None
+    source_url: str | None = None
 
     def parameters(self, **overrides: Any) -> dict[str, Any]:
         """Return fresh keyword arguments, with explicit caller overrides."""
@@ -114,6 +116,91 @@ REFERENCE_CONFIGURATIONS = (
         B2c=0.9427285320639192,
     ),
     ReferenceConfiguration(
+        name="database_example_3",
+        description=(
+            "Curvo stellarator-database configuration 3, retained as the "
+            "documented download/API example."
+        ),
+        rc=(1.0, -0.53677857, -0.046455786, -0.0070183445),
+        zs=(0.0, -0.5888703, -0.04447083, -0.009581006),
+        nfp=4,
+        etabar=1.4014399,
+        B2c=-0.7512066,
+        p2=-74635.375,
+        order="r3",
+        source_database_id=3,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/3",
+    ),
+    ReferenceConfiguration(
+        name="database_low_b20_57409",
+        description=(
+            "Low-B20 Curvo stellarator-database configuration 57409, used as "
+            "the traceable seed for the bundled constrained refinement."
+        ),
+        rc=(1.0, -0.51677144, -0.009499784, -0.005914526),
+        zs=(0.0, -0.5420635, -0.012225689, -0.0059485724),
+        nfp=4,
+        etabar=-1.3295174,
+        B2c=-0.7577404,
+        p2=-23501.281,
+        order="r3",
+        source_database_id=57409,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/57409",
+    ),
+    ReferenceConfiguration(
+        name="b20_optimized_good",
+        description=(
+            "Eight-mode QH refinement of database configuration 57409. Exact "
+            "B2c elimination and staged bounded least-squares flatten B20 while "
+            "retaining every Curvo Table-3 margin with |iota| above 0.4."
+        ),
+        rc=(
+            1.0,
+            -0.5039436500066075,
+            -0.043965867334349464,
+            -0.00654919263283669,
+            -3.047898633100702e-06,
+            2.7519909478191202e-05,
+            6.071324626161564e-06,
+            8.46692978641554e-07,
+            5.99743474381913e-08,
+        ),
+        zs=(
+            0.0,
+            -0.5050020451312105,
+            -0.045010140721391825,
+            -0.006585874304053245,
+            -1.5550078876295003e-05,
+            2.6653739413147386e-05,
+            5.978859527401134e-06,
+            8.327402553082346e-07,
+            5.9109366390399247e-08,
+        ),
+        nfp=4,
+        etabar=-1.3295174,
+        B2c=-1.132420959333329,
+        p2=-23501.281,
+        order="r3",
+        source_database_id=57409,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/57409",
+    ),
+    ReferenceConfiguration(
+        name="database_large_singularity_107579",
+        description=(
+            "Curvo stellarator-database configuration 107579, selected for its "
+            "large independently recomputed singular radius."
+        ),
+        rc=(1.0, -0.54465365, 0.005908036, 0.0054288576),
+        zs=(0.0, 0.540987, -0.009328544, -0.003327578),
+        nfp=3,
+        etabar=-0.95917624,
+        B2c=0.10977107,
+        p2=-19211.062,
+        order="r3",
+        source_database_id=107579,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/107579",
+    ),
+    ReferenceConfiguration(
         name="plasma_dominant_channel",
         description=(
             "Circular finite-pressure/current channel for which the matched plasma "
@@ -129,16 +216,16 @@ REFERENCE_CONFIGURATIONS = (
     ReferenceConfiguration(
         name="plasma_stellarator",
         description=(
-            "Two-field-period finite-pressure/current stellarator with an "
-            "angle-dependent plasma/external split and more than 30 percent "
-            "plasma field at formal radius 0.2."
+            "Curvo-screened two-field-period finite-pressure/current "
+            "stellarator with an angle-dependent plasma/external split and "
+            "more than 30 percent plasma field at formal radius 0.45."
         ),
         rc=(1.0, 0.008),
         zs=(0.0, -0.008),
         nfp=2,
         etabar=0.5,
-        I2=4.2,
-        p2=-100000.0,
+        I2=1.55,
+        p2=-1000.0,
     ),
 )
 

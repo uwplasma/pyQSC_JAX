@@ -11,8 +11,8 @@ import pyqsc_jax as qsc
 from pyqsc_jax.plotting import field_split_frenet_components, plot_surface_3d
 
 CONFIGURATION = "plasma_stellarator"
-FORMAL_RADIUS = 0.2
-DISPLAY_RADIUS = 0.12
+FORMAL_RADIUS = 0.45
+DISPLAY_RADIUS = 0.18
 NPHI = 121
 ANGULAR_RESOLUTION = 128
 OUTPUT_STEM = Path("examples/output/publication/plasma_external_jet")
@@ -47,7 +47,8 @@ plot_surface_3d(
 )
 surface_axis.view_init(elev=25, azim=35)
 surface_axis.set_title(
-    "finite-current stellarator\n"
+    "screened finite-current stellarator\n"
+    rf"$|\iota|={abs(float(solution.iota)):.3f}$, "
     rf"$r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
 )
 

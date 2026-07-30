@@ -1,4 +1,4 @@
-"""Compare local, multistart, and coarse-global B20 axis optimizers."""
+"""Compare optimizers from screened stellarator-database configuration 57409."""
 
 from __future__ import annotations
 
@@ -22,44 +22,36 @@ OUTPUT = Path(
     os.environ.get("PYQSC_B20_BENCHMARK_OUTPUT", "benchmarks/results/b20_optimizers.json")
 )
 RC = (
-    1.0038581971135636,
-    0.18400998741139907,
-    0.021723381370503204,
-    0.0025968236014410812,
-    0.00030601568477064874,
-    3.5540509760304384e-05,
-    4.102693907398271e-06,
-    5.154300428457222e-07,
-    4.8802742243232844e-08,
-    7.3011320375259876e-09,
+    1.0,
+    -0.51677144,
+    -0.009499784,
+    -0.005914526,
 )
 ZS = (
     0.0,
-    -0.1581148860568176,
-    -0.02060702320552523,
-    -0.002558840496952667,
-    -0.0003061368667524159,
-    -3.600111450532304e-05,
-    -4.174376962124085e-06,
-    -4.557462755956434e-07,
-    -8.173481495049928e-08,
-    -3.732477282851326e-09,
+    -0.5420635,
+    -0.012225689,
+    -0.0059485724,
 )
-AXIS = qsc.Axis(rc=RC, zs=ZS, nfp=2)
+AXIS = qsc.Axis(rc=RC, zs=ZS, nfp=4)
 VARIABLE_INDICES = qsc.stellarator_symmetric_variable_indices(AXIS, modes=MODES)
 INITIAL = AXIS.dofs[jnp.asarray(VARIABLE_INDICES)]
-HALF_WIDTH = jnp.asarray((0.06, 0.012, 0.004, 0.06, 0.012, 0.004))
+HALF_WIDTH = jnp.asarray((0.14, 0.07, 0.03, 0.14, 0.07, 0.03))
 LOWER = INITIAL - HALF_WIDTH
 UPPER = INITIAL + HALF_WIDTH
+ETABAR = -1.3295174
+P2 = -23501.281
+SOURCE_DATABASE_ID = 57409
 
 
 def projected_residual(variables):
     axis = AXIS.with_dofs(AXIS.dofs.at[jnp.asarray(VARIABLE_INDICES)].set(variables))
     solution = qsc.solve(
         axis=axis,
-        etabar=-0.6783912804454629,
-        B0=1.006541121335688,
+        etabar=ETABAR,
+        B0=1.0,
         B2c=0.0,
+        p2=P2,
         nphi=NPHI,
         order="r2",
     )
@@ -172,9 +164,11 @@ problem = qsc.AxisSearchProblem(
     variable_indices=VARIABLE_INDICES,
     lower_bounds=LOWER,
     upper_bounds=UPPER,
-    etabar=-0.6783912804454629,
-    B0=1.006541121335688,
+    etabar=ETABAR,
+    B0=1.0,
+    p2=P2,
     nphi=NPHI,
+    criteria=qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4),
 )
 options = qsc.AxisSearchOptions(
     coarse_samples=12,
@@ -213,6 +207,9 @@ report = {
     "jax_enable_x64": bool(jax.config.jax_enable_x64),
     "nphi": NPHI,
     "modes": MODES,
+    "source_database_id": SOURCE_DATABASE_ID,
+    "source_url": (f"https://stellarator.physics.wisc.edu/app/plot/{SOURCE_DATABASE_ID}"),
+    "selected_configuration": "b20_optimized_good",
     "timing_note": (
         "SciPy timings exclude shared residual/Jacobian compilation; the "
         "pyQSC_JAX multistart timing includes compilation of its independent closure."

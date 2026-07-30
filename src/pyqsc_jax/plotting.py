@@ -11,7 +11,7 @@ import numpy as np
 from pyqsc_jax.axis import Axis, evaluate_axis
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.plasma import PlasmaHessianData
-from pyqsc_jax.vmec import uniform_cylindrical_surface
+from pyqsc_jax.vmec import frenet_displacements
 
 
 def _matplotlib():
@@ -79,20 +79,47 @@ def surface_coordinates(
         raise ValueError("radius must be positive.")
     if not isinstance(ntheta, int) or isinstance(ntheta, bool) or ntheta < 4:
         raise ValueError("ntheta must be an integer >= 4.")
-    R, Z, _, _ = uniform_cylindrical_surface(solution, radius, ntheta=ntheta)
-    period = 2 * jnp.pi / solution.inputs.axis.nfp
-    phi_periods = tuple(
-        solution.phi + period_index * period for period_index in range(solution.inputs.axis.nfp)
+    theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)[:, None]
+    phi0 = solution.phi[None, :]
+    X, Y, Z = frenet_displacements(
+        solution,
+        jnp.asarray(radius),
+        theta,
+        phi0,
     )
-    phi = jnp.concatenate(phi_periods)
-    R = jnp.concatenate((R,) * solution.inputs.axis.nfp, axis=1)
-    Z = jnp.concatenate((Z,) * solution.inputs.axis.nfp, axis=1)
-    x = R * jnp.cos(phi[None, :])
-    y = R * jnp.sin(phi[None, :])
+    axis_position = jnp.stack(
+        (
+            solution.R0 * jnp.cos(solution.phi),
+            solution.R0 * jnp.sin(solution.phi),
+            solution.Z0,
+        ),
+        axis=-1,
+    )
+    period_position = (
+        axis_position[None, :, :]
+        + X[..., None] * solution.geometry.normal_cartesian[None, :, :]
+        + Y[..., None] * solution.geometry.binormal_cartesian[None, :, :]
+        + Z[..., None] * solution.geometry.tangent_cartesian[None, :, :]
+    )
+    period = 2 * jnp.pi / solution.inputs.axis.nfp
+    period_angles = jnp.arange(solution.inputs.axis.nfp) * period
+    cosine = jnp.cos(period_angles)[None, :, None]
+    sine = jnp.sin(period_angles)[None, :, None]
+    x_period = period_position[..., 0][:, None, :]
+    y_period = period_position[..., 1][:, None, :]
+    x = x_period * cosine - y_period * sine
+    y = x_period * sine + y_period * cosine
+    z = jnp.broadcast_to(
+        period_position[..., 2][:, None, :],
+        x.shape,
+    )
+    x = x.reshape(ntheta, -1)
+    y = y.reshape(ntheta, -1)
+    z = z.reshape(ntheta, -1)
     return (
         jnp.concatenate((x, x[:, :1]), axis=1),
         jnp.concatenate((y, y[:, :1]), axis=1),
-        jnp.concatenate((Z, Z[:, :1]), axis=1),
+        jnp.concatenate((z, z[:, :1]), axis=1),
     )
 
 

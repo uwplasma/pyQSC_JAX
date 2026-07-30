@@ -212,7 +212,7 @@ def test_documented_plasma_dominant_case_exceeds_thirty_percent():
 @pytest.mark.physics
 def test_documented_plasma_stellarator_is_dominant_and_angle_dependent():
     solution = qsc.solve_configuration("plasma_stellarator", nphi=121)
-    formal_radius = 0.2
+    formal_radius = 0.45
     plasma = qsc.plasma_field_on_axis(
         solution,
         formal_radius=formal_radius,
@@ -225,8 +225,9 @@ def test_documented_plasma_stellarator_is_dominant_and_angle_dependent():
 
     assert np.min(fraction) > 0.30
     assert peak_to_peak_over_mean > 0.03
-    assert formal_radius / float(solution.r_singularity) < 0.60
-    np.testing.assert_allclose(np.mean(fraction), 0.33255168104046495, rtol=3.0e-12)
+    assert formal_radius / float(solution.r_singularity) < 0.46
+    assert qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4).evaluate(solution).passed
+    np.testing.assert_allclose(np.mean(fraction), 0.3378675182784863, rtol=3.0e-12)
 
 
 def test_plasma_field_guards():

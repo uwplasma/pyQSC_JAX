@@ -9,7 +9,7 @@ import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_field_split_components
 
 CONFIGURATION = "plasma_stellarator"
-FORMAL_RADIUS = 0.2
+FORMAL_RADIUS = 0.45
 NPHI = 61
 ANGULAR_RESOLUTION = 96
 SAVE_OUTPUT = True

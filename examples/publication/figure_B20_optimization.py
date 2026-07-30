@@ -10,8 +10,8 @@ import numpy as np
 import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_surface_3d
 
-STOCK_CONFIGURATION = "qa"
-OPTIMIZED_CONFIGURATION = "b20_optimized_qa"
+STOCK_CONFIGURATION = "database_low_b20_57409"
+OPTIMIZED_CONFIGURATION = "b20_optimized_good"
 NPHI = 121
 SURFACE_RADIUS = 0.075
 OUTPUT_STEM = Path("examples/output/publication/B20_optimization")
@@ -20,7 +20,7 @@ SAVE_OUTPUT = True
 SHOW_FIGURE = False
 
 plt.style.use("seaborn-v0_8-whitegrid")
-print("Comparing exact B2c elimination with the optimized Fourier axis...")
+print("Refining the traceable low-B20 database configuration 57409...")
 stock = qsc.optimize_B2c(qsc.solve_configuration(STOCK_CONFIGURATION, nphi=NPHI))
 optimized = qsc.solve_configuration(OPTIMIZED_CONFIGURATION, nphi=NPHI)
 optimized_diagnostics = qsc.b20_diagnostics(optimized)
@@ -40,14 +40,14 @@ plot_surface_3d(
 )
 surface_axis.view_init(elev=24, azim=38)
 surface_axis.set_title(
-    "optimized QA surface\n"
-    rf"$\iota={float(optimized.iota):.3f}$, "
+    "database-seeded optimized QH surface\n"
+    rf"$|\iota|={abs(float(optimized.iota)):.3f}$, "
     rf"$r_\mathrm{{sing}}={float(optimized.r_singularity):.3f}$ m"
 )
 
 stock_axis = figure.add_subplot(2, 2, 2)
 stock_axis.plot(stock_angle, np.asarray(stock.diagnostics.anomaly), linewidth=2.2)
-stock_axis.set_title(r"stock axis + exact $B_{2c}$")
+stock_axis.set_title(r"database ID 57409 + exact $B_{2c}$")
 stock_axis.set_xlabel("Boozer angle / field period")
 stock_axis.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
 
@@ -95,6 +95,7 @@ summary_axis.text(
     0.04,
     0.05,
     f"{improvement:,.0f}x lower residual\n"
+    "all Curvo criteria pass\n"
     rf"shown surface: $r={SURFACE_RADIUS:.3f}$ m"
     f" ({clearance:.1f}x inside singular radius)",
     transform=summary_axis.transAxes,
@@ -129,6 +130,12 @@ metadata = {
     "verification_nphi": np.asarray(verification.resolutions).tolist(),
     "verification_weighted_l2": np.asarray(verification.weighted_l2).tolist(),
     "optimizer": "bounded scipy least_squares after exact B2c elimination",
+    "source_database_id": 57409,
+    "source_url": "https://stellarator.physics.wisc.edu/app/plot/57409",
+    "curvo_profile_minimum_abs_iota": 0.4,
+    "curvo_profile_passed": qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+    .evaluate(optimized)
+    .passed,
 }
 if SAVE_OUTPUT:
     OUTPUT_STEM.parent.mkdir(parents=True, exist_ok=True)

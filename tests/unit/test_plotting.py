@@ -66,6 +66,25 @@ def test_surface_and_angle_dependent_field_split_plotters():
         plot_field_split_components(result, solution, axes=axes[:2])
 
 
+@pytest.mark.physics
+@pytest.mark.parametrize(
+    ("configuration", "radius"),
+    (
+        ("database_example_3", 0.075),
+        ("b20_optimized_good", 0.075),
+        ("database_large_singularity_107579", 0.15),
+    ),
+)
+def test_database_surface_coordinates_are_finite_and_smooth(configuration, radius):
+    solution = qsc.solve_configuration(configuration, nphi=121)
+    x, y, z = surface_coordinates(solution, radius=radius, ntheta=36)
+    points = np.stack((x, y, z), axis=-1)
+    toroidal_edges = np.linalg.norm(np.diff(points, axis=1), axis=-1)
+
+    assert np.all(np.isfinite(points))
+    assert np.max(toroidal_edges) < 0.25
+
+
 def test_plotter_guards():
     first_order = qsc.solve_configuration("qa", nphi=15, order="r1")
     with pytest.raises(ValueError, match="r2"):

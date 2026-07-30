@@ -1,4 +1,4 @@
-"""Publication gallery of the bundled QA, QH, B20, and plasma stellarators."""
+"""Publication gallery of independently screened stellarator designs."""
 
 import json
 import subprocess
@@ -10,10 +10,15 @@ import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_surface_3d
 
 CASES = (
-    ("qa", "QA reference", 0.055, "viridis"),
-    ("qh", "QH reference", 0.055, "plasma"),
-    ("b20_optimized_qa", r"$B_{20}$-optimized QA", 0.075, "cividis"),
-    ("plasma_stellarator", "finite-current plasma case", 0.12, "magma"),
+    ("database_example_3", "database ID 3", 0.075, "viridis"),
+    ("b20_optimized_good", r"database-seeded flat $B_{20}$", 0.075, "cividis"),
+    (
+        "database_large_singularity_107579",
+        r"database ID 107579: large $r_\mathrm{sing}$",
+        0.15,
+        "plasma",
+    ),
+    ("plasma_stellarator", "finite-current 33% plasma case", 0.18, "magma"),
 )
 NPHI = 121
 OUTPUT_STEM = Path("examples/output/publication/stellarator_gallery")
@@ -28,6 +33,8 @@ metadata = {"nphi": NPHI, "configurations": {}}
 print("Rendering the bundled stellarator gallery...")
 for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
     solution = qsc.solve_configuration(name, nphi=NPHI)
+    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
+    assert criteria.evaluate(solution).passed
     axis = figure.add_subplot(2, 2, panel, projection="3d")
     plot_surface_3d(
         solution,
@@ -37,14 +44,18 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
         cmap=cmap,
     )
     axis.view_init(elev=24, azim=35)
-    if name == "b20_optimized_qa":
+    if name == "b20_optimized_good":
         diagnostic = rf"$\|P B_{{20}}\|_2={float(solution.B20_residual):.2e}$"
     elif name == "plasma_stellarator":
-        diagnostic = r"$\min |B_p|/|B|=32.7\%$ at $a=0.2$ m"
+        diagnostic = r"$\min |B_p|/|B|=33.0\%$ at $a=0.45$ m"
     else:
-        diagnostic = rf"$\iota={float(solution.iota):.3f}$"
+        diagnostic = rf"$|\iota|={abs(float(solution.iota)):.3f}$"
     axis.set_title(
-        title + "\n" + diagnostic + rf", $r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+        title
+        + "\n"
+        + diagnostic
+        + rf", $r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+        + "\nCurvo profile: pass"
     )
     metadata["configurations"][name] = {
         "surface_radius": radius,
@@ -52,6 +63,10 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
         "B20_residual": float(solution.B20_residual),
         "singular_radius": float(solution.r_singularity),
         "surface_to_singular_radius": radius / float(solution.r_singularity),
+        "curvo_profile_minimum_abs_iota": 0.4,
+        "curvo_profile_passed": True,
+        "source_database_id": qsc.get_configuration(name).source_database_id,
+        "source_url": qsc.get_configuration(name).source_url,
     }
 figure.tight_layout()
 
