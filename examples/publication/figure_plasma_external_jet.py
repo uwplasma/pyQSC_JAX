@@ -27,12 +27,8 @@ result = qsc.plasma_hessian_on_axis(
     angular_resolution=ANGULAR_RESOLUTION,
 )
 plasma_fraction = (
-    (
-        (result.field.field.field**2).sum(axis=-1)
-        / (solution.B_axis**2).sum(axis=-1)
-    )
-    ** 0.5
-)
+    (result.field.field.field**2).sum(axis=-1) / (solution.B_axis**2).sum(axis=-1)
+) ** 0.5
 figure, axes = plot_field_jet_norms(result)
 for label, axis in zip(("a", "b", "c"), axes, strict=True):
     axis.text(

@@ -20,9 +20,7 @@ NTHETA = 40
 MPOL = 12
 NTOR = 14
 WARM_REPETITIONS = 7
-OUTPUT = Path(
-    os.environ.get("PYQSC_VMEC_BENCHMARK_OUTPUT", "benchmarks/results/vmec_export.json")
-)
+OUTPUT = Path(os.environ.get("PYQSC_VMEC_BENCHMARK_OUTPUT", "benchmarks/results/vmec_export.json"))
 
 solution = qsc.Qsc(
     rc=[1.0, 0.045],
@@ -81,15 +79,9 @@ report = {
     "cold_compile_and_execute_seconds": cold.conversion_seconds,
     "warm_median_seconds": statistics.median(warm),
     "warm_samples_seconds": warm,
-    "maximum_toroidal_angle_residual": float(
-        cold.boundary.maximum_toroidal_angle_residual
-    ),
-    "maximum_R_reconstruction_error": float(
-        cold.boundary.maximum_R_reconstruction_error
-    ),
-    "maximum_Z_reconstruction_error": float(
-        cold.boundary.maximum_Z_reconstruction_error
-    ),
+    "maximum_toroidal_angle_residual": float(cold.boundary.maximum_toroidal_angle_residual),
+    "maximum_R_reconstruction_error": float(cold.boundary.maximum_R_reconstruction_error),
+    "maximum_Z_reconstruction_error": float(cold.boundary.maximum_Z_reconstruction_error),
 }
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 OUTPUT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

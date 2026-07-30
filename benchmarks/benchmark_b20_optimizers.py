@@ -54,9 +54,7 @@ UPPER = INITIAL + HALF_WIDTH
 
 
 def projected_residual(variables):
-    axis = AXIS.with_dofs(
-        AXIS.dofs.at[jnp.asarray(VARIABLE_INDICES)].set(variables)
-    )
+    axis = AXIS.with_dofs(AXIS.dofs.at[jnp.asarray(VARIABLE_INDICES)].set(variables))
     solution = qsc.solve(
         axis=axis,
         etabar=-0.6783912804454629,

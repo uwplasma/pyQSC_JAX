@@ -25,12 +25,8 @@ result = qsc.plasma_hessian_on_axis(
 )
 enclosed_current = result.field.field.current_source.enclosed_toroidal_current
 plasma_fraction = (
-    (
-        (result.field.field.field**2).sum(axis=-1)
-        / (solution.B_axis**2).sum(axis=-1)
-    )
-    ** 0.5
-)
+    (result.field.field.field**2).sum(axis=-1) / (solution.B_axis**2).sum(axis=-1)
+) ** 0.5
 print("enclosed toroidal current [A]:", float(enclosed_current))
 print("minimum |B_plasma| / |B_total|:", float(plasma_fraction.min()))
 print("mean |B_plasma| / |B_total|:", float(plasma_fraction.mean()))
