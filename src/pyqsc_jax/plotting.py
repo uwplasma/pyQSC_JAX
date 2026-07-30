@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 
 from pyqsc_jax.axis import Axis, evaluate_axis
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.plasma import PlasmaHessianData
+from pyqsc_jax.vmec import uniform_cylindrical_surface
 
 
 def _matplotlib():
@@ -62,6 +64,80 @@ def plot_axis(
     ax.set_box_aspect((1, 1, 1))
     if label is not None:
         ax.legend()
+    return figure, ax
+
+
+def surface_coordinates(
+    solution: NearAxisSolution,
+    *,
+    radius: float = 0.05,
+    ntheta: int = 32,
+) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Return full-torus Cartesian coordinates of a near-axis surface."""
+
+    if radius <= 0:
+        raise ValueError("radius must be positive.")
+    if not isinstance(ntheta, int) or isinstance(ntheta, bool) or ntheta < 4:
+        raise ValueError("ntheta must be an integer >= 4.")
+    R, Z, _, _ = uniform_cylindrical_surface(solution, radius, ntheta=ntheta)
+    period = 2 * jnp.pi / solution.inputs.axis.nfp
+    phi_periods = tuple(
+        solution.phi + period_index * period for period_index in range(solution.inputs.axis.nfp)
+    )
+    phi = jnp.concatenate(phi_periods)
+    R = jnp.concatenate((R,) * solution.inputs.axis.nfp, axis=1)
+    Z = jnp.concatenate((Z,) * solution.inputs.axis.nfp, axis=1)
+    x = R * jnp.cos(phi[None, :])
+    y = R * jnp.sin(phi[None, :])
+    return (
+        jnp.concatenate((x, x[:, :1]), axis=1),
+        jnp.concatenate((y, y[:, :1]), axis=1),
+        jnp.concatenate((Z, Z[:, :1]), axis=1),
+    )
+
+
+def plot_surface_3d(
+    solution: NearAxisSolution,
+    *,
+    radius: float = 0.05,
+    ntheta: int = 32,
+    ax: Any = None,
+    cmap: str = "viridis",
+    alpha: float = 0.9,
+    plot_axis_line: bool = True,
+    **surface_kwargs: Any,
+):
+    """Plot a full-torus near-axis surface and return ``(figure, axes)``."""
+
+    x, y, z = surface_coordinates(solution, radius=radius, ntheta=ntheta)
+    plt = _matplotlib()
+    if ax is None:
+        figure = plt.figure(figsize=(6.0, 4.8))
+        ax = figure.add_subplot(111, projection="3d")
+    else:
+        figure = ax.figure
+    defaults = {
+        "cmap": cmap,
+        "linewidth": 0,
+        "antialiased": True,
+        "alpha": alpha,
+    }
+    defaults.update(surface_kwargs)
+    ax.plot_surface(np.asarray(x), np.asarray(y), np.asarray(z), **defaults)
+    if plot_axis_line:
+        phi = jnp.linspace(0, 2 * jnp.pi, 361)
+        axis_samples = evaluate_axis(solution.inputs.axis, phi)
+        ax.plot(
+            np.asarray(axis_samples.R * jnp.cos(phi)),
+            np.asarray(axis_samples.R * jnp.sin(phi)),
+            np.asarray(axis_samples.Z),
+            color="black",
+            linewidth=1.8,
+        )
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_zlabel("z [m]")
+    ax.set_box_aspect((1, 1, 0.5))
     return figure, ax
 
 
@@ -158,6 +234,60 @@ def plot_field_jet_norms(
         )
         axis.set_ylabel(ylabel)
     axes[-1].set_xlabel("axis sample / field period")
+    axes[0].legend(ncol=3)
+    figure.tight_layout()
+    return figure, axes
+
+
+def field_split_frenet_components(
+    result: PlasmaHessianData,
+    solution: NearAxisSolution,
+) -> jax.Array:
+    """Return total/plasma/external field components in the Frenet frame.
+
+    The result has shape ``(3, 3, nphi)``. The first index orders
+    ``(total, plasma, external)`` and the second orders
+    ``(tangent, normal, binormal)``.
+    """
+
+    plasma = result.field.field.field
+    external = result.field.external_field
+    fields = jnp.stack((plasma + external, plasma, external))
+    frames = jnp.stack(
+        (
+            solution.geometry.tangent_cartesian,
+            solution.geometry.normal_cartesian,
+            solution.geometry.binormal_cartesian,
+        )
+    )
+    return jnp.einsum("fpi,cpi->fcp", fields, frames)
+
+
+def plot_field_split_components(
+    result: PlasmaHessianData,
+    solution: NearAxisSolution,
+    *,
+    axes: Any = None,
+):
+    """Plot angle-dependent total/plasma/external Frenet field components."""
+
+    plt = _matplotlib()
+    if axes is None:
+        figure, axes = plt.subplots(3, 1, figsize=(7.0, 7.2), sharex=True)
+    else:
+        axes = np.asarray(axes)
+        if axes.shape != (3,):
+            raise ValueError("axes must contain exactly three Matplotlib axes.")
+        figure = axes[0].figure
+    components = np.asarray(field_split_frenet_components(result, solution))
+    angle = np.asarray(solution.varphi * solution.inputs.axis.nfp / (2 * jnp.pi))
+    contributions = ("total", "plasma", "external")
+    component_labels = (r"$B_t$ [T]", r"$B_n$ [T]", r"$B_b$ [T]")
+    for component_index, (axis, ylabel) in enumerate(zip(axes, component_labels, strict=True)):
+        for field_index, label in enumerate(contributions):
+            axis.plot(angle, components[field_index, component_index], label=label)
+        axis.set_ylabel(ylabel)
+    axes[-1].set_xlabel("Boozer angle / field period")
     axes[0].legend(ncol=3)
     figure.tight_layout()
     return figure, axes

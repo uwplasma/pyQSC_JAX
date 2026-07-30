@@ -82,6 +82,16 @@ from pyqsc_jax.vmec import (
     uniform_cylindrical_surface,
     vmec_boundary,
 )
+from pyqsc_jax.vmex import (
+    VMEX_VALIDATED_COMMIT,
+    VmexEquilibrium,
+    VmexProblem,
+    VmexRadialQuantities,
+    solve_vmex,
+    to_vmex_problem,
+    vmex_parameters_from_solution,
+    vmex_radial_quantities,
+)
 
 __all__ = [
     "Axis",
@@ -121,6 +131,10 @@ __all__ = [
     "VmecBoundary",
     "VmecExport",
     "VmecInputParameters",
+    "VmexEquilibrium",
+    "VmexProblem",
+    "VmexRadialQuantities",
+    "VMEX_VALIDATED_COMMIT",
     "near_axis",
     "b20_diagnostics",
     "available_configurations",
@@ -145,8 +159,12 @@ __all__ = [
     "solve_third_order",
     "total_field_jet",
     "to_vmec",
+    "to_vmex_problem",
     "uniform_cylindrical_surface",
     "vmec_boundary",
+    "vmex_parameters_from_solution",
+    "vmex_radial_quantities",
+    "solve_vmex",
     "optimal_B2c_value",
     "optimize_B2c",
     "plasma_current_source",

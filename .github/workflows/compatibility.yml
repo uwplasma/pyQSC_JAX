@@ -64,3 +64,25 @@ jobs:
           pytest
           essos-integration/tests/test_field_jet.py
           essos-integration/tests/test_field_jet_examples.py
+
+  vmex-implicit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      JAX_ENABLE_X64: "true"
+      PYQSC_RUN_VMEX: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: uwplasma/vmex
+          ref: main
+          path: vmex-integration
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install -e ./vmex-integration
+      - run: python -m pip install -e .
+      - run: pytest tests/integration/test_vmex_live.py

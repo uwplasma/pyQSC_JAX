@@ -33,6 +33,7 @@ Source = "https://github.com/uwplasma/pyQSC_JAX"
 
 [project.optional-dependencies]
 plot = ["matplotlib"]
+vmex = ["vmex"]
 docs = [
   "furo",
   "myst-parser",

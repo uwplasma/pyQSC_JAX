@@ -126,6 +126,20 @@ REFERENCE_CONFIGURATIONS = (
         I2=4.2,
         p2=-100000.0,
     ),
+    ReferenceConfiguration(
+        name="plasma_stellarator",
+        description=(
+            "Two-field-period finite-pressure/current stellarator with an "
+            "angle-dependent plasma/external split and more than 30 percent "
+            "plasma field at formal radius 0.2."
+        ),
+        rc=(1.0, 0.008),
+        zs=(0.0, -0.008),
+        nfp=2,
+        etabar=0.5,
+        I2=4.2,
+        p2=-100000.0,
+    ),
 )
 
 
