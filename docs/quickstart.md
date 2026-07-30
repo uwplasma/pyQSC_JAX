@@ -112,8 +112,11 @@ solution = qsc.Qsc(
 print(solution.flux_constraint_residual)
 print(solution.consistency_error)
 print(solution.B0_order_a_squared_to_cancel)
+
+solution = qsc.solve_magnetic_shear(solution, B31c=0.0)
+print(solution.iota2)
 ```
 
 The r3 result supplies first- and third-poloidal-harmonic coefficient arrays
-and their untwisted forms to boundary conversion. Magnetic shear is a
-separate, later milestone.
+and their untwisted forms to boundary conversion. The shear calculation is
+explicit because `B31c` is an independent third-order input.

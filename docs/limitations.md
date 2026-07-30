@@ -7,9 +7,12 @@ flux-constraint surface correction.
 
 Known limitations under active refactor include:
 
-- no magnetic-shear or \(\iota_2\) calculation yet;
 - no plasma/external field-jet separation;
 - no branch-aware target-transform inverse solve.
+
+The magnetic-shear calculation currently implements the standard-MHS
+specialization with \(B_{31s}=0\), \(I_4=0\), and \(s_G=s_\psi=1\). Other sign
+conventions are rejected explicitly pending a traced derivation.
 
 The sigma equation is solved to configurable residual and step tolerances, but
 a result object is still returned after nonconvergence so callers can inspect

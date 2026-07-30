@@ -246,6 +246,26 @@ class ThirdOrderData:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class ShearData:
+    """Order-r-squared rotational-transform correction and intermediates."""
+
+    B31c: jax.Array
+    iota2: jax.Array
+    numerator: jax.Array
+    denominator: jax.Array
+    Lambda_tilde: jax.Array
+    integrating_factor: jax.Array
+    sigma_average: jax.Array
+    Z31c: jax.Array
+    Z31s: jax.Array
+    X31c: jax.Array
+    X31s: jax.Array
+    Y31s: jax.Array
+    stellarator_symmetric: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisSolution:
     """Canonical immutable near-axis solution.
 
@@ -281,12 +301,16 @@ class NearAxisSolution:
     field_jet: FieldJet | None = None
     singularity: SingularityDiagnostics | None = None
     third_order: ThirdOrderData | None = None
+    shear: ShearData | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
     )
     _THIRD_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in ThirdOrderData.__dataclass_fields__.values()
+    )
+    _SHEAR_NAMES: ClassVar[frozenset[str]] = frozenset(
+        field.name for field in ShearData.__dataclass_fields__.values()
     )
     _MERCIER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in MercierDiagnostics.__dataclass_fields__.values()
@@ -322,6 +346,13 @@ class NearAxisSolution:
             if third_order is None:
                 raise AttributeError(f"Lower-order solution has no {name!r} quantity.")
             return getattr(third_order, name)
+        if name in self._SHEAR_NAMES:
+            shear = object.__getattribute__(self, "shear")
+            if shear is None:
+                raise AttributeError(
+                    f"Magnetic shear has not been calculated; no {name!r} quantity."
+                )
+            return getattr(shear, name)
         if name in self._MERCIER_NAMES:
             mercier = object.__getattribute__(self, "mercier")
             if mercier is None:

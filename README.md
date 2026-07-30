@@ -4,9 +4,9 @@ Differentiable near-axis stellarator construction and plasma–coil field jets i
 JAX.
 
 > **Development status:** the immutable first-order core, complete r2
-> coefficient solve, r3 flux constraint, total-field Hessian, Mercier
-> diagnostics, singular-radius diagnostics, and ESSOS adapter are validated.
-> Magnetic shear, inverse solves, optimization, and plasma/external field jets
+> coefficient solve, r3 flux constraint, magnetic shear, total-field Hessian,
+> Mercier diagnostics, singular-radius diagnostics, and ESSOS adapter are
+> validated. Inverse solves, optimization, and plasma/external field jets
 > remain under development on the `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -89,6 +89,8 @@ print("singular radius:", solution.r_singularity)
 Use `order="r3"` to add the differentiable flux-constraint correction and its
 untwisted boundary coefficients. The result reports independent
 `flux_constraint_residual` and `consistency_error` checks.
+`qsc.solve_magnetic_shear(solution, B31c=0.0)` then attaches the
+order-\(r^2\) rotational-transform correction as `solution.iota2`.
 
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:

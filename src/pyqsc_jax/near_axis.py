@@ -10,6 +10,7 @@ import jax.numpy as jnp
 from pyqsc_jax.axis import Axis
 from pyqsc_jax.first_order import solve
 from pyqsc_jax.models import NearAxisSolution
+from pyqsc_jax.shear import solve_magnetic_shear
 from pyqsc_jax.solvers import implicit_dense_root
 
 ArrayLike = Any
@@ -126,6 +127,8 @@ class near_axis:  # noqa: N801
         )
 
     def _refresh(self) -> None:
+        for name in NearAxisSolution._SHEAR_NAMES:
+            self.__dict__.pop(name, None)
         solution = self._canonical_solution(self.rc, self.zs, self.etabar)
         self.solution = solution
         self.phi = solution.phi
@@ -251,6 +254,13 @@ class near_axis:  # noqa: N801
         """Return the historical tuple, evaluated by the canonical core."""
 
         return self._legacy_tuple(self._canonical_solution(rc, zs, etabar))
+
+    def calculate_shear(self, B31c: ArrayLike = 0.0) -> None:
+        """Populate the historical order-r-squared transform correction."""
+
+        self.solution = solve_magnetic_shear(self.solution, B31c=B31c)
+        for name in self.solution._SHEAR_NAMES:
+            setattr(self, name, getattr(self.solution, name))
 
     def B_covariant(self, points: ArrayLike) -> jax.Array:
         """First-order covariant Boozer components ``(B_r, B_theta, B_phi)``."""

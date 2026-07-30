@@ -43,6 +43,9 @@ first stable release.
 - Differentiable r3 flux-constraint surface corrections, untwisted boundary
   coefficients, and two independent consistency checks with upstream pyQSC
   QA, finite-pressure/current, and QH parity.
+- Standard-MHS magnetic shear with periodic and secular integrating-factor
+  branches, explicit `B31c`, immutable diagnostics, legacy adapter support,
+  and upstream QA/QH/asymmetric parity.
 
 ### Fixed
 
