@@ -21,7 +21,7 @@ to the cited source, not to a duplicated derivation in this repository.
 | Good-stellarator criteria | Curvo, Ferreira & Jorge (2025), Table 3 | `criteria.Criteria.from_curvo_2025` | exact normalized thresholds, strict/inclusive comparisons, signed margins, scaling, JIT/JVP/finite differences | implemented and documented |
 | Plasma current source | manuscript Eqs. 88–97 | `plasma.plasma_current_source`; `plasma.evaluate_weighted_current` | exact \(I_2\)/ampere normalization, regular radial power, pressure-only and vacuum limits, batch/JIT evaluation | implemented and documented |
 | Plasma on-axis field | manuscript Eqs. 118 and 133–138 | `plasma.regularized_axis_integral`; `plasma.plasma_field_on_axis` | circular finite part/core/logarithm, full-torus construction, matching-length cancellation, angular/toroidal convergence, vacuum/pressure limits, JIT/JVP, resolved volume Biot–Savart \(a^4|\log a|\) scaling | implemented and documented |
-| Plasma gradient | manuscript Eqs. 156–160 | none | Ampère antisymmetry, divergence, external STF projection | not implemented |
+| Plasma gradient | manuscript Eqs. 142–160 | `plasma.elliptical_channel_gradient`; `plasma.plasma_gradient_on_axis` | straight circular and sheared elliptical channels, frame covariance, Ampère antisymmetry, divergence, external symmetry/trace, vacuum reduction, 5-component pack/unpack, JIT/JVP/finite differences | implemented and documented |
 | Plasma Hessian | manuscript Eqs. 194 and 210–219 | none | resolved volume Biot–Savart, full symmetry, trace-free external tensor | blocked by validation gate |
 | External vacuum jet | manuscript Eqs. 220–224 | none | 3+5+7 representation, asymptotic error scaling, vacuum reduction | not implemented |
 

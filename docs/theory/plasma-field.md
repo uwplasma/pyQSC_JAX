@@ -67,3 +67,36 @@ Validation includes:
 The returned `estimated_field_remainder` is an order-of-magnitude asymptotic
 scale, not a rigorous error bound. `formal_radius_to_curvature_radius` should
 be inspected before treating the slender-channel expansion as accurate.
+
+## Local elliptical gradient
+
+At leading gradient order the current channel is locally straight. In the
+ordered Frenet basis \((\mathbf t,\mathbf n,\mathbf b)\), with the first tensor
+index denoting derivative direction, the manuscript gives
+
+\[
+D^p=\frac{j}{\mathcal T+2}
+\begin{pmatrix}
+0&0&0\\
+0&\chi\sigma&1+(1+\sigma^2)/x^2\\
+0&-(1+x^2)&-\chi\sigma
+\end{pmatrix}.
+\]
+
+The canonical package tensor is field-component-first, so
+`gradient_frenet` is the transpose of this matrix.
+`elliptical_channel_gradient` implements the formula independently of a
+near-axis solution and optionally rotates it into Cartesian coordinates.
+
+The local tensor satisfies
+
+\[
+\nabla\cdot\mathbf B_p=0,\qquad
+D^p_{nb}-D^p_{bn}=j=\mu_0J_\parallel(0).
+\]
+
+`plasma_gradient_on_axis` subtracts it from the total near-axis gradient.
+The resulting external gradient is symmetric and trace-free within the
+spectral resolution of the total solve. The result also supplies its five
+independent Cartesian STF components in the order
+`(xx, yy, xy, xz, yz)`.

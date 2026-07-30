@@ -7,9 +7,9 @@ flux-constraint surface correction.
 
 Known limitations under active refactor include:
 
-- plasma field gradient, plasma Hessian, and the assembled external vacuum jet
-  are not yet exposed; the positive-volume source and matched on-axis plasma
-  field are implemented.
+- the plasma Hessian and complete 3+5+7 external vacuum jet are not yet
+  exposed; the positive-volume source, matched on-axis plasma field, local
+  plasma gradient, and 3+5 external target are implemented.
 - pseudo-arclength continuation currently traces `etabar` branches only and
   uses a fixed arclength step.
 

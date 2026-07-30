@@ -128,6 +128,10 @@ regularized axis integral, local elliptical core, and second-order shape
 correction. Its matching-scale cancellation and predicted
 \(a^4|\log a|\) remainder have independent numerical tests.
 
+`qsc.plasma_gradient_on_axis(...)` subtracts the local elliptical
+current-channel gradient from the total field jet and returns the external
+field plus its five independent symmetric-trace-free gradient components.
+
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
 

@@ -71,6 +71,9 @@ first stable release.
   finite-part integral, elliptical core constants, second-order local shape
   correction, arbitrary matching-length cancellation, asymptotic error
   metadata, and independent resolved-volume Biot–Savart validation.
+- Local straight-ellipse plasma gradient with divergence and Ampère
+  diagnostics, external symmetric-trace-free subtraction, vacuum reduction,
+  and a reversible five-component Cartesian STF representation.
 
 ### Fixed
 

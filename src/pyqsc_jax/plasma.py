@@ -96,6 +96,25 @@ class PlasmaFieldData:
     angular_resolution: int = field(metadata={"static": True})
 
 
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
+class PlasmaGradientData:
+    """Local plasma gradient and external vacuum value/gradient target."""
+
+    field: PlasmaFieldData
+    gradient: jax.Array
+    gradient_frenet: jax.Array
+    external_field: jax.Array
+    external_gradient: jax.Array
+    external_gradient_frenet: jax.Array
+    external_gradient_stf: jax.Array
+    external_gradient_independent: jax.Array
+    maximum_divergence: jax.Array
+    maximum_ampere_error: jax.Array
+    maximum_external_asymmetry: jax.Array
+    maximum_external_trace: jax.Array
+
+
 def plasma_current_source(
     solution: NearAxisSolution,
     *,
@@ -399,4 +418,200 @@ def plasma_field_on_axis(
         estimated_field_remainder=estimated_remainder,
         current_source=source,
         angular_resolution=angular_resolution,
+    )
+
+
+def project_symmetric_trace_free_rank2(tensor: ArrayLike) -> jax.Array:
+    """Project final two axes onto symmetric trace-free rank-two tensors."""
+
+    tensor = jnp.asarray(tensor)
+    if tensor.shape[-2:] != (3, 3):
+        raise ValueError("A rank-two Cartesian tensor must end in shape (3, 3).")
+    symmetric = 0.5 * (tensor + jnp.swapaxes(tensor, -1, -2))
+    trace = jnp.trace(symmetric, axis1=-2, axis2=-1)
+    return (
+        symmetric
+        - trace[..., None, None]
+        * jnp.eye(
+            3,
+            dtype=tensor.dtype,
+        )
+        / 3
+    )
+
+
+def pack_symmetric_trace_free_rank2(tensor: ArrayLike) -> jax.Array:
+    """Pack an STF matrix as ``(xx, yy, xy, xz, yz)``."""
+
+    tensor = project_symmetric_trace_free_rank2(tensor)
+    return jnp.stack(
+        (
+            tensor[..., 0, 0],
+            tensor[..., 1, 1],
+            tensor[..., 0, 1],
+            tensor[..., 0, 2],
+            tensor[..., 1, 2],
+        ),
+        axis=-1,
+    )
+
+
+def unpack_symmetric_trace_free_rank2(components: ArrayLike) -> jax.Array:
+    """Unpack ``(xx, yy, xy, xz, yz)`` into an STF matrix."""
+
+    components = jnp.asarray(components)
+    if components.shape[-1:] != (5,):
+        raise ValueError("STF rank-two components must end in length 5.")
+    xx, yy, xy, xz, yz = jnp.moveaxis(components, -1, 0)
+    return jnp.stack(
+        (
+            jnp.stack((xx, xy, xz), axis=-1),
+            jnp.stack((xy, yy, yz), axis=-1),
+            jnp.stack((xz, yz, -xx - yy), axis=-1),
+        ),
+        axis=-2,
+    )
+
+
+def elliptical_channel_gradient(
+    x: ArrayLike,
+    sigma: ArrayLike,
+    *,
+    parallel_current_mu0: ArrayLike,
+    chi: int,
+    frame: ArrayLike | None = None,
+) -> jax.Array:
+    """Return the leading field-component-first gradient of an elliptical channel."""
+
+    if chi not in (-1, 1):
+        raise ValueError("chi must be +1 or -1.")
+    x = jnp.asarray(x)
+    sigma = jnp.asarray(sigma)
+    parallel_current_mu0 = jnp.asarray(parallel_current_mu0)
+    trace_Q = x**2 + (1 + sigma**2) / x**2
+    derivative_first = (
+        parallel_current_mu0[..., None, None]
+        / (trace_Q + 2)[..., None, None]
+        * jnp.stack(
+            (
+                jnp.stack(
+                    (
+                        jnp.zeros_like(x),
+                        jnp.zeros_like(x),
+                        jnp.zeros_like(x),
+                    ),
+                    axis=-1,
+                ),
+                jnp.stack(
+                    (
+                        jnp.zeros_like(x),
+                        chi * sigma,
+                        1 + (1 + sigma**2) / x**2,
+                    ),
+                    axis=-1,
+                ),
+                jnp.stack(
+                    (
+                        jnp.zeros_like(x),
+                        -(1 + x**2),
+                        -chi * sigma,
+                    ),
+                    axis=-1,
+                ),
+            ),
+            axis=-2,
+        )
+    )
+    field_first_frenet = jnp.swapaxes(derivative_first, -1, -2)
+    if frame is None:
+        return field_first_frenet
+    frame = jnp.asarray(frame)
+    if frame.shape[-2:] != (3, 3):
+        raise ValueError("frame must end in shape (3, 3).")
+    return jnp.einsum(
+        "...ai,...ab,...bj->...ij",
+        frame,
+        field_first_frenet,
+        frame,
+    )
+
+
+def plasma_gradient_on_axis(
+    solution: NearAxisSolution,
+    *,
+    formal_radius: ArrayLike,
+    angular_resolution: int = 128,
+) -> PlasmaGradientData:
+    """Evaluate the local plasma gradient and subtract it from the total jet."""
+
+    plasma_field = plasma_field_on_axis(
+        solution,
+        formal_radius=formal_radius,
+        angular_resolution=angular_resolution,
+    )
+    x = solution.X1c
+    sigma = solution.Y1c / solution.Y1s
+    frame = jnp.stack(
+        (
+            solution.geometry.tangent_cartesian,
+            solution.geometry.normal_cartesian,
+            solution.geometry.binormal_cartesian,
+        ),
+        axis=-2,
+    )
+    gradient_frenet = elliptical_channel_gradient(
+        x,
+        sigma,
+        parallel_current_mu0=plasma_field.current_source.parallel_current_mu0,
+        chi=plasma_field.current_source.chi,
+    )
+    gradient = elliptical_channel_gradient(
+        x,
+        sigma,
+        parallel_current_mu0=plasma_field.current_source.parallel_current_mu0,
+        chi=plasma_field.current_source.chi,
+        frame=frame,
+    )
+    external_field = solution.B_axis - plasma_field.field
+    external_gradient = solution.grad_B_axis - gradient
+    external_gradient_frenet = jnp.einsum(
+        "...ai,...ij,...bj->...ab",
+        frame,
+        external_gradient,
+        frame,
+    )
+    external_gradient_stf = project_symmetric_trace_free_rank2(
+        external_gradient,
+    )
+    plasma_divergence = jnp.trace(gradient, axis1=-2, axis2=-1)
+    ampere = (
+        gradient_frenet[:, 2, 1]
+        - gradient_frenet[:, 1, 2]
+        - plasma_field.current_source.parallel_current_mu0
+    )
+    external_asymmetry = external_gradient - jnp.swapaxes(
+        external_gradient,
+        -1,
+        -2,
+    )
+    external_trace = jnp.trace(
+        external_gradient,
+        axis1=-2,
+        axis2=-1,
+    )
+    return PlasmaGradientData(
+        field=plasma_field,
+        gradient=gradient,
+        gradient_frenet=gradient_frenet,
+        external_field=external_field,
+        external_gradient=external_gradient,
+        external_gradient_frenet=external_gradient_frenet,
+        external_gradient_stf=external_gradient_stf,
+        external_gradient_independent=pack_symmetric_trace_free_rank2(
+            external_gradient,
+        ),
+        maximum_divergence=jnp.max(jnp.abs(plasma_divergence)),
+        maximum_ampere_error=jnp.max(jnp.abs(ampere)),
+        maximum_external_asymmetry=jnp.max(jnp.abs(external_asymmetry)),
+        maximum_external_trace=jnp.max(jnp.abs(external_trace)),
     )

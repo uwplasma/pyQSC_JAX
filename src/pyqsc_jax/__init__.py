@@ -43,13 +43,19 @@ from pyqsc_jax.optimize import (
 from pyqsc_jax.plasma import (
     PlasmaCurrentSource,
     PlasmaFieldData,
+    PlasmaGradientData,
     covariant_current_from_enclosed,
+    elliptical_channel_gradient,
     enclosed_current_from_covariant,
     evaluate_weighted_current,
     matched_plasma_field_kernel,
+    pack_symmetric_trace_free_rank2,
     plasma_current_source,
     plasma_field_on_axis,
+    plasma_gradient_on_axis,
+    project_symmetric_trace_free_rank2,
     regularized_axis_integral,
+    unpack_symmetric_trace_free_rank2,
 )
 from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
 from pyqsc_jax.shear import solve_magnetic_shear
@@ -80,6 +86,7 @@ __all__ = [
     "NearAxisSolution",
     "PlasmaCurrentSource",
     "PlasmaFieldData",
+    "PlasmaGradientData",
     "Qsc",
     "RootSolveOptions",
     "RootSolveReport",
@@ -94,8 +101,10 @@ __all__ = [
     "continue_axis_search",
     "covariant_current_from_enclosed",
     "enclosed_current_from_covariant",
+    "elliptical_channel_gradient",
     "evaluate_weighted_current",
     "matched_plasma_field_kernel",
+    "pack_symmetric_trace_free_rank2",
     "mercier_diagnostics",
     "second_order_residuals",
     "search_axis",
@@ -109,7 +118,10 @@ __all__ = [
     "optimize_B2c",
     "plasma_current_source",
     "plasma_field_on_axis",
+    "plasma_gradient_on_axis",
+    "project_symmetric_trace_free_rank2",
     "regularized_axis_integral",
+    "unpack_symmetric_trace_free_rank2",
     "verify_B20_resolution",
 ]
 __version__ = "0.2.0.dev0"

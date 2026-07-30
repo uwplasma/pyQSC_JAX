@@ -1,6 +1,26 @@
 # Plasma/current API
 
 ```{eval-rst}
+.. autofunction:: pyqsc_jax.plasma_gradient_on_axis
+```
+
+```{eval-rst}
+.. autofunction:: pyqsc_jax.elliptical_channel_gradient
+```
+
+```{eval-rst}
+.. autofunction:: pyqsc_jax.project_symmetric_trace_free_rank2
+```
+
+```{eval-rst}
+.. autofunction:: pyqsc_jax.pack_symmetric_trace_free_rank2
+```
+
+```{eval-rst}
+.. autofunction:: pyqsc_jax.unpack_symmetric_trace_free_rank2
+```
+
+```{eval-rst}
 .. autofunction:: pyqsc_jax.plasma_field_on_axis
 ```
 
@@ -35,5 +55,10 @@
 
 ```{eval-rst}
 .. autoclass:: pyqsc_jax.PlasmaFieldData
+   :members:
+```
+
+```{eval-rst}
+.. autoclass:: pyqsc_jax.PlasmaGradientData
    :members:
 ```
