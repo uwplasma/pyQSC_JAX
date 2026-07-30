@@ -10,8 +10,13 @@ Known limitations under active refactor include:
 - no plasma/external field-jet separation;
 - pseudo-arclength continuation currently traces `etabar` branches only and
   uses a fixed arclength step.
-- no multistart axis optimization or basin enumeration yet; only the exact
-  affine `B2c` subproblem is eliminated.
+
+The bounded axis search is deterministic and enumerates distinct locally
+refined basins, but a finite multistart budget is not an exhaustive proof over
+a high-dimensional coefficient box. Only `verified_zero` certifies the known
+zero lower bound of the nonnegative primary \(B_{20}\) residual. Built-in
+secondary selectors currently rank the distinct primary-refined basins; they
+do not carry a separate global certificate.
 
 `Criteria.from_curvo_2025` is a configurable reproduction of one published
 screening profile. Its thresholds are not hard-coded package-wide acceptance

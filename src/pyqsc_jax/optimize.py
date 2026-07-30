@@ -26,6 +26,7 @@ class B20Diagnostics:
     fourier_modes: jax.Array
     fourier_coefficients: jax.Array
     nonzero_fourier_norm: jax.Array
+    nonzero_fourier_l1: jax.Array
     fourier_tail_ratio: jax.Array
     smooth_maximum_power: int
 
@@ -55,6 +56,7 @@ class B20ResolutionVerification:
     smooth_maximum: jax.Array
     grid_maximum: jax.Array
     peak_to_peak: jax.Array
+    nonzero_fourier_l1: jax.Array
     fourier_tail_ratio: jax.Array
     relative_weighted_l2_change: jax.Array
     relative_grid_maximum_change: jax.Array
@@ -95,6 +97,7 @@ def b20_diagnostics(
     coefficients = jnp.sum(weights[None, :] * anomaly[None, :] * phase, axis=1) / weight_sum
     coefficient_power = jnp.abs(coefficients / B0) ** 2
     nonzero_fourier_norm = jnp.sqrt(2 * jnp.sum(coefficient_power))
+    nonzero_fourier_l1 = 2 * jnp.sum(jnp.abs(coefficients / B0))
     tail_start = maximum_mode * 3 // 4
     tiny = jnp.finfo(B20.dtype).tiny
     fourier_tail_ratio = jnp.sqrt(
@@ -110,6 +113,7 @@ def b20_diagnostics(
         fourier_modes=modes,
         fourier_coefficients=coefficients,
         nonzero_fourier_norm=nonzero_fourier_norm,
+        nonzero_fourier_l1=nonzero_fourier_l1,
         fourier_tail_ratio=fourier_tail_ratio,
         smooth_maximum_power=smooth_maximum_power,
     )
@@ -244,6 +248,7 @@ def verify_B20_resolution(
     smooth_maximum = jnp.stack(tuple(item.smooth_maximum for item in diagnostics))
     grid_maximum = jnp.stack(tuple(item.grid_maximum for item in diagnostics))
     peak_to_peak = jnp.stack(tuple(item.peak_to_peak for item in diagnostics))
+    nonzero_fourier_l1 = jnp.stack(tuple(item.nonzero_fourier_l1 for item in diagnostics))
     tail_ratio = jnp.stack(tuple(item.fourier_tail_ratio for item in diagnostics))
     tiny = jnp.finfo(weighted_l2.dtype).tiny
     relative_l2_change = jnp.concatenate(
@@ -264,6 +269,7 @@ def verify_B20_resolution(
         smooth_maximum=smooth_maximum,
         grid_maximum=grid_maximum,
         peak_to_peak=peak_to_peak,
+        nonzero_fourier_l1=nonzero_fourier_l1,
         fourier_tail_ratio=tail_ratio,
         relative_weighted_l2_change=relative_l2_change,
         relative_grid_maximum_change=relative_maximum_change,

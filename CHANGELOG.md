@@ -58,6 +58,12 @@ first stable release.
 - Scalable Curvo et al. (2025) Table 3 screening criteria with configurable
   thresholds, strict/inclusive comparison semantics, units, measured values,
   signed margins, aggregate status, and differentiable array results.
+- Deterministic bounded axis exploration, damped JAX-Jacobian local
+  least-squares refinement, normalized basin clustering, hard criteria,
+  canonical secondary selectors, staged Fourier warm starts, independent
+  verification, and explicit global-certificate status semantics.
+- Nonzero \(B_{20}\) Fourier-\(L^1\) certificates in dense and
+  resolution-verification diagnostics.
 
 ### Fixed
 

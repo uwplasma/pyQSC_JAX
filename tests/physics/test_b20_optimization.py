@@ -49,6 +49,10 @@ def test_dense_B20_diagnostics_match_direct_definitions():
     assert diagnostics.smooth_maximum_power == 12
     assert diagnostics.fourier_modes.shape == (15,)
     assert diagnostics.fourier_coefficients.shape == (15,)
+    np.testing.assert_allclose(
+        diagnostics.nonzero_fourier_l1,
+        2 * np.sum(np.abs(diagnostics.fourier_coefficients / solution.inputs.B0)),
+    )
     assert diagnostics.weighted_l2 <= diagnostics.smooth_maximum <= diagnostics.grid_maximum
     assert 0 <= float(diagnostics.fourier_tail_ratio) <= 1
 
@@ -125,6 +129,7 @@ def test_resolution_verification_recomputes_fixed_candidate():
     np.testing.assert_allclose(verification.weighted_l2[0], result.diagnostics.weighted_l2)
     assert verification.relative_weighted_l2_change[1] < 2.0e-6
     assert verification.fourier_tail_ratio[1] < verification.fourier_tail_ratio[0]
+    assert np.all(np.asarray(verification.nonzero_fourier_l1) >= 0)
     assert verification.relative_grid_maximum_change[1] < 0.03
 
 

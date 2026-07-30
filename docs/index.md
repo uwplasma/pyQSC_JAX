@@ -18,11 +18,13 @@ theory/third-order
 theory/inverse-solves
 theory/b20-optimization
 theory/criteria
+theory/global-search
 theory/field-jet
 api/axis
 api/first-order
 api/continuation
 api/optimization
+api/axis-optimization
 api/criteria
 api/second-order
 api/third-order
@@ -52,9 +54,8 @@ The immutable first-order API, complete r2 coefficient solve, r3 flux
 constraint, magnetic shear, total-field Hessian, Mercier terms, and
 singular-radius diagnostics are validated, as are branch-local inverse solves.
 Pseudo-arclength branch continuation, exact affine \(B_{2c}\) optimization,
-and the scalable Curvo et al. screening profile are also validated.
-Multistart axis optimization and plasma/external field jets are under active
-development.
+the scalable Curvo et al. screening profile, and bounded multistart axis search
+are also validated. Plasma/external field jets are under active development.
 The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
 a runtime deprecation warning.
 

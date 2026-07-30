@@ -1,6 +1,17 @@
 """Differentiable near-axis stellarator construction in JAX."""
 
 from pyqsc_jax.axis import Axis
+from pyqsc_jax.axis_optimization import (
+    AxisSearchCandidate,
+    AxisSearchContinuation,
+    AxisSearchOptions,
+    AxisSearchProblem,
+    AxisSearchResult,
+    LocalLeastSquaresReport,
+    continue_axis_search,
+    search_axis,
+    stellarator_symmetric_variable_indices,
+)
 from pyqsc_jax.continuation import ContinuationResult, continue_etabar_branch
 from pyqsc_jax.criteria import Criteria, CriteriaReport, CriterionEvaluation
 from pyqsc_jax.diagnostics import mercier_diagnostics
@@ -37,6 +48,11 @@ from pyqsc_jax.third_order import solve_third_order
 
 __all__ = [
     "Axis",
+    "AxisSearchCandidate",
+    "AxisSearchContinuation",
+    "AxisSearchOptions",
+    "AxisSearchProblem",
+    "AxisSearchResult",
     "B2cOptimizationResult",
     "B20Diagnostics",
     "B20ResolutionVerification",
@@ -47,6 +63,7 @@ __all__ = [
     "FieldJet",
     "InverseSolveDiagnostics",
     "LinearSolveReport",
+    "LocalLeastSquaresReport",
     "MercierDiagnostics",
     "NearAxisInputs",
     "NearAxisSolution",
@@ -61,11 +78,14 @@ __all__ = [
     "near_axis",
     "b20_diagnostics",
     "continue_etabar_branch",
+    "continue_axis_search",
     "mercier_diagnostics",
     "second_order_residuals",
+    "search_axis",
     "solve",
     "solve_magnetic_shear",
     "singularity_diagnostics",
+    "stellarator_symmetric_variable_indices",
     "solve_third_order",
     "total_field_jet",
     "optimal_B2c_value",

@@ -8,8 +8,8 @@ JAX.
 > Mercier diagnostics, singular-radius diagnostics, and ESSOS adapter are
 > validated, along with branch-local inverse solves and pseudo-arclength
 > continuation, exact affine \(B_{2c}\) optimization, and the scalable Curvo
-> et al. screening profile. Multistart axis optimization and plasma/external
-> field jets remain under development on the
+> et al. screening profile. Deterministic bounded multistart axis optimization
+> is also validated. Plasma/external field jets remain under development on the
 > `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -110,6 +110,13 @@ candidate on doubled and quadrupled grids.
 published Table 3 screening profile and returns every measured value, signed
 margin, and pass flag. The thresholds are normalization-aware and fully
 overridable; the profile is not treated as a universal feasibility theorem.
+
+`qsc.search_axis(...)` combines deterministic bounded exploration, full-JAX
+residual Jacobians, damped local refinement, basin clustering, exact
+\(B_{2c}\) elimination, criteria checks, and independent resolution
+verification. It returns `verified_zero` only for a verified zero of the
+nonnegative primary residual; every nonzero candidate is `best_found` without
+a global claim.
 
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:

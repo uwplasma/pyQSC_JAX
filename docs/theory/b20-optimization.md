@@ -20,9 +20,10 @@ For positive quadrature weights \(w_j\), define
 
 `b20_diagnostics` also returns a smooth high-\(p\) norm, the sampled maximum,
 peak-to-peak variation, all nonzero toroidal Fourier coefficients, their norm,
-and a high-mode tail ratio. The Fourier coefficients use direct weighted
-quadrature in Boozer toroidal angle \(\varphi\), so they do not assume that the
-uniform cylindrical-\(\phi\) samples are uniform in \(\varphi\).
+their \(L^1\) certificate, and a high-mode tail ratio. The Fourier coefficients
+use direct weighted quadrature in Boozer toroidal angle \(\varphi\), so they do
+not assume that the uniform cylindrical-\(\phi\) samples are uniform in
+\(\varphi\).
 
 ## Exact affine elimination
 
@@ -78,5 +79,5 @@ Tests establish:
 - r3 and shear recomputation;
 - convergence of weighted and maximum residuals under grid refinement.
 
-Multistart axis optimization and basin enumeration build on these residuals but
-remain a separate milestone.
+The branch-aware multistart workflow built on these residuals is described in
+{doc}`global-search`.

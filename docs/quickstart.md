@@ -142,6 +142,37 @@ print(report["B20_variation"].margin)
 Every threshold can be overridden. This report is a near-axis screening
 profile, not a proof of finite-radius equilibrium or coil feasibility.
 
+## Bounded multistart axis search
+
+Choose explicit packed-axis coefficients and physical bounds:
+
+```python
+axis = qsc.Axis(
+    rc=[1.0, 0.155, 0.0102],
+    zs=[0.0, 0.154, 0.0111],
+    nfp=2,
+)
+indices = qsc.stellarator_symmetric_variable_indices(axis, modes=(1,))
+problem = qsc.AxisSearchProblem(
+    axis=axis,
+    variable_indices=indices,
+    lower_bounds=[0.11, 0.11],
+    upper_bounds=[0.19, 0.19],
+    etabar=0.64,
+    selector="maximum_singular_radius",
+)
+result = qsc.search_axis(problem)
+
+print(result.status)
+print(result.search_budget)
+print(result.distinct_basins)
+print(result.best.primary_residual)
+```
+
+Only `verified_zero` supplies a global certificate, and only for the
+nonnegative primary \(B_{20}\) residual. `best_found` means exactly that: the
+best distinct basin found within the reported finite budget.
+
 ESSOS code can continue to use:
 
 ```python
