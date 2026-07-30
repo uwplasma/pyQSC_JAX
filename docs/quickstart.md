@@ -78,6 +78,26 @@ inverse_current = qsc.solve(
 )
 ```
 
+Trace a branch through a fold with two nearby forward seeds:
+
+```python
+branch = qsc.continue_etabar_branch(
+    axis=axis,
+    etabar_start=-1.0,
+    etabar_next=-0.98,
+    num_points=20,
+    nphi=61,
+)
+
+print(branch.status)
+print(branch.etabar)
+print(branch.iota)
+print(branch.fold_detected)
+```
+
+Each corrected point has its own `root_report`. `branch.complete` is true only
+when every requested point converged.
+
 ESSOS code can continue to use:
 
 ```python

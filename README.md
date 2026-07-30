@@ -6,9 +6,9 @@ JAX.
 > **Development status:** the immutable first-order core, complete r2
 > coefficient solve, r3 flux constraint, magnetic shear, total-field Hessian,
 > Mercier diagnostics, singular-radius diagnostics, and ESSOS adapter are
-> validated, along with branch-local inverse solves. Branch continuation,
-> optimization, and plasma/external field jets remain under development on the
-> `refactor/pyqsc-jax-complete` branch.
+> validated, along with branch-local inverse solves and pseudo-arclength
+> continuation. Optimization and plasma/external field jets remain under
+> development on the `refactor/pyqsc-jax-complete` branch.
 
 ## Install
 
@@ -96,8 +96,8 @@ order-\(r^2\) rotational-transform correction as `solution.iota2`.
 Prescribe transform with
 `qsc.solve(axis=axis, iota=target, etabar=seed, solve_for="etabar")`, or hold
 `etabar` fixed and use `solve_for="I2"`. The inverse result reports its local
-response derivative and fold flag; pseudo-arclength continuation is the next
-branch-tracking milestone.
+response derivative and fold flag. `qsc.continue_etabar_branch(...)` traces
+the full sigma collocation state across such a fold.
 
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:

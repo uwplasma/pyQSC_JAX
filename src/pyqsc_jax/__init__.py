@@ -1,6 +1,7 @@
 """Differentiable near-axis stellarator construction in JAX."""
 
 from pyqsc_jax.axis import Axis
+from pyqsc_jax.continuation import ContinuationResult, continue_etabar_branch
 from pyqsc_jax.diagnostics import mercier_diagnostics
 from pyqsc_jax.field import total_field_jet
 from pyqsc_jax.first_order import Qsc, solve
@@ -26,6 +27,7 @@ from pyqsc_jax.third_order import solve_third_order
 
 __all__ = [
     "Axis",
+    "ContinuationResult",
     "FieldJet",
     "InverseSolveDiagnostics",
     "LinearSolveReport",
@@ -41,6 +43,7 @@ __all__ = [
     "SingularityDiagnostics",
     "ThirdOrderData",
     "near_axis",
+    "continue_etabar_branch",
     "mercier_diagnostics",
     "second_order_residuals",
     "solve",

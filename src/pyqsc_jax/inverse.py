@@ -16,6 +16,37 @@ from pyqsc_jax.solvers import DEFAULT_ROOT_OPTIONS, RootSolveOptions, implicit_d
 ArrayLike = Any
 
 
+def parameter_response_derivative(
+    inputs: NearAxisInputs,
+    geometry: AxisGeometry,
+    sigma: jax.Array,
+    iota: jax.Array,
+    *,
+    parameter: str,
+) -> jax.Array:
+    """Return the local forward derivative d(iota)/d(parameter)."""
+
+    if parameter not in ("etabar", "I2"):
+        raise ValueError("parameter must be 'etabar' or 'I2'.")
+    parameter_value = getattr(inputs, parameter)
+    forward_state = jnp.asarray(sigma).at[0].set(iota)
+    forward_jacobian = jax.jacfwd(
+        lambda candidate: sigma_residual(
+            candidate,
+            inputs=inputs,
+            geometry=geometry,
+        )
+    )(forward_state)
+    parameter_derivative = jax.jacfwd(
+        lambda value: sigma_residual(
+            forward_state,
+            inputs=replace(inputs, **{parameter: value}),
+            geometry=geometry,
+        )
+    )(parameter_value)
+    return jnp.linalg.solve(forward_jacobian, -parameter_derivative)[0]
+
+
 def solve_target_iota(
     inputs: NearAxisInputs,
     geometry: AxisGeometry,
@@ -80,23 +111,13 @@ def solve_target_iota(
     solved_inputs = inputs_from_parameter(solved_parameter)
     sigma = state.at[0].set(inputs.sigma0)
 
-    forward_state = state.at[0].set(target_iota)
-    forward_jacobian = jax.jacfwd(
-        lambda candidate: sigma_residual(
-            candidate,
-            inputs=solved_inputs,
-            geometry=geometry,
-        )
-    )(forward_state)
-    parameter_derivative = jax.jacfwd(
-        lambda parameter: sigma_residual(
-            forward_state,
-            inputs=inputs_from_parameter(parameter),
-            geometry=geometry,
-        )
-    )(solved_parameter)
-    forward_response = jnp.linalg.solve(forward_jacobian, -parameter_derivative)
-    response_derivative = forward_response[0]
+    response_derivative = parameter_response_derivative(
+        solved_inputs,
+        geometry,
+        sigma,
+        target_iota,
+        parameter=inputs.solve_for,
+    )
     absolute_response = jnp.abs(response_derivative)
     branch_fold = ~jnp.isfinite(response_derivative) | (absolute_response <= fold_tolerance)
     diagnostics = InverseSolveDiagnostics(

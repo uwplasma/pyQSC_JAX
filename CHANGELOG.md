@@ -49,6 +49,9 @@ first stable release.
 - Branch-local target-transform solves for sign-preserving `etabar` or `I2`,
   including implicit derivatives, round-trip validation, local response and
   fold diagnostics, and propagation through r2.
+- Full-state fixed-sign pseudo-arclength continuation for `etabar`, including
+  fold-crossing detection, corrected solution records, and explicit partial
+  completion statuses.
 
 ### Fixed
 

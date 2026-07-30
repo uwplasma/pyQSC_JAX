@@ -8,13 +8,15 @@ flux-constraint surface correction.
 Known limitations under active refactor include:
 
 - no plasma/external field-jet separation;
-- no pseudo-arclength branch continuation yet.
+- pseudo-arclength continuation currently traces `etabar` branches only and
+  uses a fixed arclength step.
 
 Target-transform solves are branch-local. The sign of the `etabar` seed is
 preserved and the seed magnitude selects a Newton basin. Multiple local
 solutions can have the same transform. `response_derivative` and `branch_fold`
-detect local loss of invertibility, but crossing such a fold awaits the
-pseudo-arclength interface.
+detect local loss of invertibility. `continue_etabar_branch` crosses these
+folds using the full sigma collocation state and an augmented arclength
+condition.
 
 The magnetic-shear calculation currently implements the standard-MHS
 specialization with \(B_{31s}=0\), \(I_4=0\), and \(s_G=s_\psi=1\). Other sign
