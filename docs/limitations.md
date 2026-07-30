@@ -13,6 +13,12 @@ Known limitations under active refactor include:
 - no multistart axis optimization or basin enumeration yet; only the exact
   affine `B2c` subproblem is eliminated.
 
+`Criteria.from_curvo_2025` is a configurable reproduction of one published
+screening profile. Its thresholds are not hard-coded package-wide acceptance
+requirements. In particular, `r_singularity` is the first singularity of the
+truncated near-axis coordinate map; it does not guarantee nested,
+nonintersecting finite-radius flux surfaces.
+
 Target-transform solves are branch-local. The sign of the `etabar` seed is
 preserved and the seed magnitude selects a Newton basin. Multiple local
 solutions can have the same transform. `response_derivative` and `branch_fold`
@@ -30,8 +36,9 @@ the structured report. Production workflows must reject
 `root_report.converged == False`.
 
 Frenet coordinates are invalid when the magnetic-axis curvature vanishes.
-`GeometryDiagnostics` reports this condition explicitly; high-level rejection
-policy will be added alongside the aggregate design-criteria report.
+`GeometryDiagnostics` reports this condition explicitly. The published Curvo
+profile does not add a minimum-curvature threshold, but callers can reject
+invalid geometry independently.
 
 Near-axis results are asymptotic in distance from the axis. “Surface-free”
 plasma–coil separation does not mean radius-free: a formal minor radius or an

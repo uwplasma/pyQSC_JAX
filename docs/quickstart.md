@@ -122,6 +122,26 @@ The scalar optimum is exact for the weighted-\(L^2\) affine subproblem.
 Fine-grid maximum and spectral-tail checks remain independent acceptance
 criteria.
 
+## Evaluate a published screening profile
+
+Curvo, Ferreira, and Jorge's Table 3 profile is available with explicit
+normalization and signed margins:
+
+```python
+criteria = qsc.Criteria.from_curvo_2025(
+    major_radius=1.0,
+    B0=1.0,
+)
+report = criteria.evaluate(solution)
+
+print(report.passed)
+print(report["abs_iota"].margin)
+print(report["B20_variation"].margin)
+```
+
+Every threshold can be overridden. This report is a near-axis screening
+profile, not a proof of finite-radius equilibrium or coil feasibility.
+
 ESSOS code can continue to use:
 
 ```python

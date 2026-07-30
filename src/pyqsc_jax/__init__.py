@@ -2,6 +2,7 @@
 
 from pyqsc_jax.axis import Axis
 from pyqsc_jax.continuation import ContinuationResult, continue_etabar_branch
+from pyqsc_jax.criteria import Criteria, CriteriaReport, CriterionEvaluation
 from pyqsc_jax.diagnostics import mercier_diagnostics
 from pyqsc_jax.field import total_field_jet
 from pyqsc_jax.first_order import Qsc, solve
@@ -40,6 +41,9 @@ __all__ = [
     "B20Diagnostics",
     "B20ResolutionVerification",
     "ContinuationResult",
+    "Criteria",
+    "CriteriaReport",
+    "CriterionEvaluation",
     "FieldJet",
     "InverseSolveDiagnostics",
     "LinearSolveReport",

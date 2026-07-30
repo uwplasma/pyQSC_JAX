@@ -55,6 +55,9 @@ first stable release.
 - Dense nonconstant-`B20` diagnostics, exact affine elimination of `B2c`,
   degenerate-response handling, and independent doubled/quadrupled-grid
   verification.
+- Scalable Curvo et al. (2025) Table 3 screening criteria with configurable
+  thresholds, strict/inclusive comparison semantics, units, measured values,
+  signed margins, aggregate status, and differentiable array results.
 
 ### Fixed
 

@@ -2,7 +2,6 @@
 
 from pyqsc_jax import __version__
 
-
 project = "pyQSC_JAX"
 author = "UW Plasma"
 copyright = "2026, UW Plasma"

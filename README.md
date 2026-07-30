@@ -7,8 +7,10 @@ JAX.
 > coefficient solve, r3 flux constraint, magnetic shear, total-field Hessian,
 > Mercier diagnostics, singular-radius diagnostics, and ESSOS adapter are
 > validated, along with branch-local inverse solves and pseudo-arclength
-> continuation. Optimization and plasma/external field jets remain under
-> development on the `refactor/pyqsc-jax-complete` branch.
+> continuation, exact affine \(B_{2c}\) optimization, and the scalable Curvo
+> et al. screening profile. Multistart axis optimization and plasma/external
+> field jets remain under development on the
+> `refactor/pyqsc-jax-complete` branch.
 
 ## Install
 
@@ -103,6 +105,11 @@ the full sigma collocation state across such a fold.
 exactly and returns dense weighted, smooth-maximum, grid-maximum, Fourier, and
 tail diagnostics. `qsc.verify_B20_resolution(...)` independently rebuilds the
 candidate on doubled and quadrupled grids.
+
+`qsc.Criteria.from_curvo_2025(major_radius=1.0, B0=1.0)` evaluates the
+published Table 3 screening profile and returns every measured value, signed
+margin, and pass flag. The thresholds are normalization-aware and fully
+overridable; the profile is not treated as a universal feasibility theorem.
 
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
