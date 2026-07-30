@@ -415,10 +415,12 @@ def _levenberg_marquardt(
         jnp.sqrt(largest_eigenvalue / smallest_eigenvalue),
     )
     condition_number = jnp.where(jnp.isnan(condition_number), jnp.inf, condition_number)
+    residual_converged = jnp.linalg.norm(current_residual) <= options.residual_tolerance
+    derivative_finite = jnp.all(jnp.isfinite(jacobian))
     finite = (
         jnp.all(jnp.isfinite(internal))
         & jnp.all(jnp.isfinite(current_residual))
-        & jnp.all(jnp.isfinite(jacobian))
+        & (derivative_finite | residual_converged)
     )
     return internal, LocalLeastSquaresReport(
         initial_residual_norm=initial_norm,

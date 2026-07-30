@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -84,6 +85,29 @@ def test_local_solve_accepts_a_finite_rank_deficient_exact_zero():
     options = small_options(maximum_iterations=1)
     initial = jnp.asarray([0.0, 0.0])
     residual = lambda value: jnp.zeros((3,), dtype=value.dtype)  # noqa: E731
+
+    internal, report = _levenberg_marquardt(residual, initial, options)
+
+    np.testing.assert_allclose(internal, initial)
+    assert report.converged
+    assert report.finite
+    assert np.isinf(float(report.jacobian_condition_number))
+
+
+def test_local_solve_accepts_a_finite_converged_residual_with_nan_derivative():
+    @jax.custom_vjp
+    def residual(_value):
+        return jnp.zeros((3,), dtype=_value.dtype)
+
+    def residual_forward(value):
+        return jnp.zeros((3,), dtype=value.dtype), value.shape
+
+    def residual_backward(shape, cotangent):
+        return (jnp.full(shape, jnp.nan, dtype=cotangent.dtype),)
+
+    residual.defvjp(residual_forward, residual_backward)
+    options = small_options(maximum_iterations=1)
+    initial = jnp.asarray([0.0, 0.0])
 
     internal, report = _levenberg_marquardt(residual, initial, options)
 
