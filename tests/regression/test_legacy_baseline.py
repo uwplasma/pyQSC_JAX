@@ -47,10 +47,6 @@ def test_first_order_field_methods_are_finite():
     assert jnp.all(jnp.isfinite(field.B_contravariant(point)))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Constructor and dofs setter swap normal/binormal phi and z components.",
-)
 def test_dofs_noop_preserves_derived_frame():
     field = standard_field()
     normal_before = jnp.stack([field.normal_R, field.normal_phi, field.normal_z], axis=1)

@@ -3,9 +3,10 @@
 Differentiable near-axis stellarator construction and plasma–coil field jets in
 JAX.
 
-> **Development status:** the current release preserves the ESSOS first-order
-> interface while an immutable, fully validated pyQSC-compatible core is built
-> on the `refactor/pyqsc-jax-complete` branch.
+> **Development status:** the immutable first-order core and ESSOS adapter are
+> validated. Complete second order, third order, inverse solves, optimization,
+> and plasma/external field jets remain under development on the
+> `refactor/pyqsc-jax-complete` branch.
 
 ## Install
 
@@ -22,7 +23,31 @@ python -m pip install -e .
 No JAX backend policy is imposed by the package. Install the JAX build suitable
 for your accelerator and platform.
 
-## Current quickstart
+## Quickstart
+
+```python
+import pyqsc_jax as qsc
+
+solution = qsc.Qsc(
+    rc=[1.0, 0.045],
+    zs=[0.0, -0.045],
+    nfp=3,
+    etabar=-0.9,
+    order="r1",
+)
+
+print("iota:", solution.iota)
+print("sigma residual:", solution.root_report.residual_norm)
+print("axis length:", solution.axis_length)
+print("minimum L_grad_B:", solution.L_grad_B.min())
+```
+
+`solution` is an immutable JAX pytree. Vector samples use shape `(nphi, 3)`,
+and tensor samples use `(nphi, 3, 3)`. JIT, VMAP, JVP, and VJP act on explicit
+array arguments, while the nonlinear sigma solution is differentiated
+implicitly at its converged root.
+
+The supported ESSOS compatibility API remains:
 
 ```python
 from pyqsc_jax.near_axis import near_axis
@@ -33,31 +58,14 @@ field = near_axis(
     nfp=3,
     etabar=-0.9,
 )
-
-print("iota:", field.iota)
-print("axis length:", field.axis_length)
-print("minimum L_grad_B:", field.L_grad_B.min())
 ```
 
-The import above is the supported ESSOS compatibility API. The refactor is
-introducing the canonical immutable form:
+The adapter preserves historical component-axis ordering and mutable
+`field.x`/`field.dofs` behavior for ESSOS, but delegates its physics to the
+immutable core.
 
-```python
-import pyqsc_jax as qsc
-
-configuration = qsc.Qsc(
-    rc=[1.0, 0.045],
-    zs=[0.0, -0.045],
-    nfp=3,
-    etabar=-0.9,
-    order="r2",
-)
-```
-
-That API will become the primary quickstart once its first- and second-order
-validation gates are green.
-
-The lower-level immutable axis API is already available:
+The lower-level immutable axis API supports general, not necessarily
+stellarator-symmetric Fourier axes:
 
 ```python
 import pyqsc_jax as qsc

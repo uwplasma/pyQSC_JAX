@@ -1,20 +1,23 @@
 # Limitations
 
-The current released computational core is first order only. Although the
-legacy constructor accepts `order`, `B2c`, and `p2`, those arguments do not yet
-activate second-order physics.
+The current computational core is first order only. Although the legacy
+constructor accepts `order`, `B2c`, and `p2` for compatibility, those arguments
+do not yet activate second-order physics.
 
 Known limitations under active refactor include:
 
-- exactly five Newton updates without a convergence report;
-- only stellarator-symmetric `rc`/`zs` axes;
-- a confirmed normal/binormal unpacking defect in the mutable `dofs` setter;
 - no complete second- or third-order solution;
 - no plasma/external field-jet separation;
 - no branch-aware target-transform inverse solve.
 
-Frenet coordinates are invalid when the magnetic-axis curvature vanishes. The
-new geometry API will report that validity condition explicitly.
+The sigma equation is solved to configurable residual and step tolerances, but
+a result object is still returned after nonconvergence so callers can inspect
+the structured report. Production workflows must reject
+`root_report.converged == False`.
+
+Frenet coordinates are invalid when the magnetic-axis curvature vanishes.
+`GeometryDiagnostics` reports this condition explicitly; high-level rejection
+policy will be added alongside the second-order validity report.
 
 Near-axis results are asymptotic in distance from the axis. “Surface-free”
 plasma–coil separation does not mean radius-free: a formal minor radius or an

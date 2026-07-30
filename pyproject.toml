@@ -57,8 +57,6 @@ path = "src/pyqsc_jax/__init__.py"
 packages = ["src/pyqsc_jax"]
 
 [tool.ruff]
-# Removed when the immutable core replaces this audited compatibility monolith.
-exclude = ["src/pyqsc_jax/near_axis.py"]
 line-length = 100
 src = ["src", "tests"]
 

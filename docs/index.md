@@ -12,7 +12,9 @@ installation
 quickstart
 limitations
 theory/coordinates-and-conventions
+theory/first-order
 api/axis
+api/first-order
 ```
 
 ```{toctree}
@@ -34,9 +36,10 @@ changelog
 
 ## Project status
 
-The immutable canonical API is under active development. The
-`pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without a
-runtime deprecation warning.
+The immutable first-order API is validated. Complete second and third order,
+inverse solves, optimization, and plasma/external field jets are under active
+development. The `pyqsc_jax.near_axis.near_axis` import remains supported for
+ESSOS without a runtime deprecation warning.
 
 ## References
 

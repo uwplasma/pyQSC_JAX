@@ -1,5 +1,3 @@
-import pytest
-
 from pyqsc_jax.near_axis import near_axis
 
 
@@ -54,10 +52,6 @@ def test_legacy_import_and_essos_on_axis_contract():
     assert all(callable(getattr(field, name)) for name in methods)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Plotting exists only on the unmerged ESSOS bridge branch.",
-)
 def test_legacy_plot_method_is_available():
     field = near_axis()
 
