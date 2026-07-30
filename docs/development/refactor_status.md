@@ -161,9 +161,10 @@ was made for that phase.
 
 ## Phase 12 — final review
 
-- Commit: in progress.
+- Commit: `fb7ddac`.
 - Evidence: convention/API/dependency audits complete; two representative
   physics mutations are killed by targeted tests; exact limitations and
   external release gates are recorded in `final_review.md`.
-- Verification: final local lint/docs/clean-state checks and remote CI are
-  required before closing this phase.
+- Verification: final local lint, docs, clean-state, artifact, upstream, and
+  ESSOS checks pass. The latest remote CI result is reported in the PR rather
+  than hard-coded into this versioned status page.
