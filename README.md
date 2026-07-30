@@ -57,6 +57,19 @@ configuration = qsc.Qsc(
 That API will become the primary quickstart once its first- and second-order
 validation gates are green.
 
+The lower-level immutable axis API is already available:
+
+```python
+import pyqsc_jax as qsc
+from pyqsc_jax.geometry import compute_axis_geometry
+
+axis = qsc.Axis(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3)
+geometry = compute_axis_geometry(axis, nphi=31)
+
+print("axis length:", geometry.axis_length)
+print("minimum curvature:", geometry.diagnostics.minimum_curvature)
+```
+
 ## Scope
 
 The completed package will provide:

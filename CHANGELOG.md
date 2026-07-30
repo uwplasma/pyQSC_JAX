@@ -12,3 +12,7 @@ first stable release.
 - Audited compatibility and numerical baselines.
 - Physics traceability and architecture decision records.
 - Modern package, documentation, test, and CI scaffolding.
+- Immutable general Fourier axes with normalized coefficient packing.
+- JAX-native periodic differentiation, interpolation, and integration.
+- Sampled Frenet geometry with explicit validity diagnostics and independent
+  symmetric/asymmetric regression references.

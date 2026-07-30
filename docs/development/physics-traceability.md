@@ -6,7 +6,7 @@ to the cited source, not to a duplicated derivation in this repository.
 
 | Physics block | Primary source | Reference implementation | Required validation | Status |
 | --- | --- | --- | --- | --- |
-| General Fourier axis and Frenet frame | Landreman & Sengupta (2018), arXiv:1809.10233 | pyQSC `init_axis.py` | analytic curves; spectral convergence; independent curvature/torsion | baseline audited |
+| General Fourier axis and Frenet frame | Landreman & Sengupta (2018), arXiv:1809.10233 | `Axis`, `evaluate_axis`, `compute_axis_geometry`; pyQSC `init_axis.py` | analytic circle; asymmetric Fortran curvature/torsion/varphi; frame identities; JIT/VMAP/grad | implemented and documented |
 | First-order QS and sigma equation | Landreman & Sengupta (2019), arXiv:1908.10253 | pyQSC `solve_sigma_equation.py` | residual, convergence report, pyQSC values, JVP/VJP | baseline values only |
 | Field gradient and `L_grad_B` | Landreman (2021), arXiv:2012.00865, Eq. 3.12 | pyQSC `grad_B_tensor.py` | Cartesian AD/finite differences; Maxwell identities | baseline values only |
 | Complete second order | Landreman & Sengupta (2019), arXiv:1908.10253 | pyQSC `calculate_r2.py`; manuscript Eqs. 36–54 | all coefficients, operator residual, Fortran arrays, resolution convergence | not implemented |

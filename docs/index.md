@@ -11,6 +11,8 @@ plasma-generated, and external vacuum field jets.
 installation
 quickstart
 limitations
+theory/coordinates-and-conventions
+api/axis
 ```
 
 ```{toctree}
