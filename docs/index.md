@@ -1,37 +1,110 @@
 # pyQSC_JAX
 
-pyQSC_JAX is a differentiable JAX implementation of the near-axis expansion
-for stellarator design, including a surface-free separation of total,
-plasma-generated, and external vacuum field jets.
+pyQSC_JAX constructs differentiable near-axis stellarators in JAX and
+separates their on-axis total field jet into plasma-generated and external
+vacuum targets without constructing a finite-radius surface.
 
 ```{toctree}
 :maxdepth: 2
-:caption: User guide
+:caption: Getting started
 
-installation
-quickstart
-limitations
-theory/coordinates-and-conventions
-theory/first-order
-theory/second-order
-theory/third-order
-theory/inverse-solves
-theory/b20-optimization
-theory/criteria
-theory/global-search
-theory/plasma-current
-theory/plasma-field
-theory/field-jet
+getting_started/installation
+getting_started/quickstart
+getting_started/choosing_a_model
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Concepts
+
+concepts/coordinates_and_conventions
+concepts/magnetic_axis
+concepts/inputs_and_outputs
+concepts/precision_and_units
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Theory
+
+theory/first_order
+theory/second_order
+theory/third_order
+theory/field_tensors
+theory/diagnostics
+theory/axis_optimization
+theory/plasma_coil_separation
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Tutorials
+
+tutorials/first_order_qa
+tutorials/first_order_qh
+tutorials/second_order_finite_beta
+tutorials/target_iota
+tutorials/optimize_axis
+tutorials/vacuum_coils
+tutorials/finite_beta_coils
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Advanced
+
+advanced/continuation
+advanced/global_search
+advanced/custom_criteria
+advanced/autodiff
+advanced/performance
+advanced/limitations
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Validation and migration
+
+validation/pyqsc_parity
+validation/literature_cases
+validation/plasma_field
+validation/essos
+migration
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: API
+
 api/axis
+api/configurations
 api/first-order
+api/second-order
+api/third-order
+api/field-jet
+api/plasma
 api/continuation
 api/optimization
 api/axis-optimization
 api/criteria
-api/plasma
-api/second-order
-api/third-order
-api/field-jet
+api/plotting
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Derivation details
+
+theory/coordinates-and-conventions
+theory/first-order
+theory/second-order
+theory/third-order
+theory/field-jet
+theory/b20-optimization
+theory/criteria
+theory/global-search
+theory/inverse-solves
+theory/plasma-current
+theory/plasma-field
 ```
 
 ```{toctree}
@@ -40,6 +113,7 @@ api/field-jet
 
 development/refactor-baseline
 development/physics-traceability
+development/refactor_status
 adr/ADR-core-architecture
 adr/ADR-solver-stack
 ```
@@ -49,25 +123,28 @@ adr/ADR-solver-stack
 :caption: Project
 
 changelog
+release_checklist
 ```
 
-## Project status
+## Status
 
-The immutable first-order API, complete r2 coefficient solve, r3 flux
-constraint, magnetic shear, total-field Hessian, Mercier terms, and
-singular-radius diagnostics are validated, as are branch-local inverse solves.
-Pseudo-arclength branch continuation, exact affine \(B_{2c}\) optimization,
-the scalable Curvo et al. screening profile, and bounded multistart axis search
-are also validated. The surface-free plasma field, gradient, Hessian, and
-external 3+5+7 vacuum target are validated. The
-`pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without a
-runtime deprecation warning.
+The canonical API is immutable and JAX-transformable. The legacy
+`pyqsc_jax.near_axis.near_axis` import remains available as a thin ESSOS
+adapter. Each nonlinear and linear solve returns convergence and conditioning
+evidence; callers should never accept a result solely because an object was
+returned.
+
+The physics traceability table connects each equation block to its primary
+source, implementation symbol, and independent tests. The surface-free field
+split always requires a formal radius or equivalent current/flux
+normalization: surface-free does not mean radius-free.
 
 ## References
 
-The implementation is traced to primary sources, beginning with the
-near-axis theory of Garren and Boozer and the direct-construction formulation
-of Landreman and collaborators {cite}`garren1991existence,garren1991magnetic,landreman2018direct,landreman2019highorder`.
+The implementation begins with the near-axis construction of Garren and
+Boozer and the direct cylindrical-coordinate formulations of Landreman and
+collaborators
+{cite}`garren1991existence,garren1991magnetic,landreman2018direct,landreman2019highorder`.
 
 ```{bibliography}
 ```

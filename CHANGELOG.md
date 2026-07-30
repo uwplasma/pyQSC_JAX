@@ -78,6 +78,15 @@ first stable release.
   second-order shape potentials, including Frenet-connection derivatives,
   external vacuum subtraction, asymptotic metadata, and a reversible
   seven-component Cartesian STF representation.
+- Named immutable QA, QH, and finite-pressure/current configurations.
+- Lazy plotting helpers that return Matplotlib figure and axes objects.
+- Twelve direct tutorial scripts and five deterministic publication-figure
+  scripts with commit/parameter metadata and clean-directory CI execution.
+- Downstream ESSOS external-field-jet integration with normalized 3+5+7
+  objectives, finite-beta stage-two and single-stage examples, and
+  finite-difference gradient validation.
+- Complete documentation hierarchy, migration guide, validation reports, and
+  release checklist.
 
 ### Fixed
 

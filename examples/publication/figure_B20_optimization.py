@@ -13,6 +13,7 @@ CONFIGURATION = "qa"
 INITIAL_B2C = 0.0
 NPHI = 121
 OUTPUT_STEM = Path("examples/output/publication/B20_optimization")
+README_PNG = Path("docs/_static/B20_optimization.png")
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
 
@@ -82,6 +83,8 @@ if SAVE_OUTPUT:
     OUTPUT_STEM.parent.mkdir(parents=True, exist_ok=True)
     for suffix in ("png", "svg", "pdf"):
         figure.savefig(OUTPUT_STEM.with_suffix(f".{suffix}"), dpi=220, bbox_inches="tight")
+    README_PNG.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

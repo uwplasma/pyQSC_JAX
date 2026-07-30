@@ -14,6 +14,7 @@ FORMAL_RADIUS = 0.025
 NPHI = 121
 ANGULAR_RESOLUTION = 128
 OUTPUT_STEM = Path("examples/output/publication/plasma_external_jet")
+README_PNG = Path("docs/_static/plasma_external_jet.png")
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
 
@@ -59,6 +60,8 @@ if SAVE_OUTPUT:
     OUTPUT_STEM.parent.mkdir(parents=True, exist_ok=True)
     for suffix in ("png", "svg", "pdf"):
         figure.savefig(OUTPUT_STEM.with_suffix(f".{suffix}"), dpi=220, bbox_inches="tight")
+    README_PNG.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

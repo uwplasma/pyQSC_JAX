@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
     "sphinx_copybutton",
     "sphinxcontrib.bibtex",
 ]
@@ -25,6 +26,7 @@ source_suffix = {
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "furo"
 html_title = f"pyQSC_JAX {version}"
+html_static_path = ["_static"]
 intersphinx_mapping = {
     "jax": ("https://docs.jax.dev/en/latest/", None),
     "python": ("https://docs.python.org/3/", None),
