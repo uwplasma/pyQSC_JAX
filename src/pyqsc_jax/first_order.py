@@ -199,8 +199,10 @@ def first_order_solution(
 def _normalize_order(order: int | str) -> int:
     if order in (1, "r1"):
         return 1
-    if order in (2, "r2", 3, "r3"):
-        raise NotImplementedError("Second- and third-order solves are not implemented yet.")
+    if order in (2, "r2"):
+        return 2
+    if order in (3, "r3"):
+        raise NotImplementedError("Third-order solves are not implemented yet.")
     raise ValueError("order must be 1, 2, 3, 'r1', 'r2', or 'r3'.")
 
 
@@ -252,7 +254,12 @@ def solve(
         geometry,
         root_options=root_options,
     )
-    return first_order_solution(inputs, geometry, sigma, iota, root_report)
+    solution = first_order_solution(inputs, geometry, sigma, iota, root_report)
+    if normalized_order == 2:
+        from pyqsc_jax.second_order import solve_second_order
+
+        solution = solve_second_order(solution)
+    return solution
 
 
 def Qsc(

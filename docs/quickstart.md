@@ -58,3 +58,30 @@ field = near_axis(
 The adapter retains the legacy `(3, nphi)` field and `(3, 3, nphi)` gradient
 orientations plus mutable `x`/`dofs`; it delegates calculations to the same
 immutable core.
+
+## Finite-pressure/current second order
+
+Set `order="r2"` to solve the coupled periodic second-order coefficient system:
+
+```python
+solution = qsc.Qsc(
+    rc=[1.0, 0.09],
+    zs=[0.0, -0.09],
+    nfp=2,
+    etabar=0.95,
+    I2=0.9,
+    p2=-600000.0,
+    B2c=-0.7,
+    nphi=31,
+    order="r2",
+)
+
+print(solution.B20_mean)
+print(solution.B20_residual)
+print(solution.linear_report.matrix_condition_number)
+```
+
+The direct r2 outputs are available as attributes such as `X20`, `X2s`,
+`Y20`, `Z20`, `beta_1s`, `G2`, and `B20`. The immutable nested record is also
+available as `solution.second_order`. Check both the nonlinear
+`root_report` and r2 `linear_report` before accepting a result.

@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 import numpy as np
-import pytest
 
 from pyqsc_jax.near_axis import near_axis
 
@@ -60,12 +59,13 @@ def test_dofs_noop_preserves_derived_frame():
     np.testing.assert_array_equal(binormal_after, binormal_before)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The current order argument is inert; complete second order is not implemented.",
-)
 def test_r2_request_produces_second_order_solution():
     field = standard_field(order="r2", B2c=0.01, p2=-1.0e3)
 
     assert field.B20.shape == (field.nphi,)
     assert jnp.all(jnp.isfinite(field.B20))
+    assert bool(field.linear_report.converged)
+    R, Z, phi0 = field.Frenet_to_cylindrical(0.005, ntheta=3)
+    assert R.shape == Z.shape == phi0.shape == (3, field.nphi)
+    assert jnp.all(jnp.isfinite(R))
+    assert jnp.isfinite(field.B_mag(0.005, 0.2, 0.1))

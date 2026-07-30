@@ -3,9 +3,10 @@
 Differentiable near-axis stellarator construction and plasma–coil field jets in
 JAX.
 
-> **Development status:** the immutable first-order core and ESSOS adapter are
-> validated. Complete second order, third order, inverse solves, optimization,
-> and plasma/external field jets remain under development on the
+> **Development status:** the immutable first-order core, complete r2
+> coefficient solve, and ESSOS adapter are validated. Second-order field
+> Hessian/diagnostics, third order, inverse solves, optimization, and
+> plasma/external field jets remain under development on the
 > `refactor/pyqsc-jax-complete` branch.
 
 ## Install
@@ -64,6 +65,24 @@ The adapter preserves historical component-axis ordering and mutable
 `field.x`/`field.dofs` behavior for ESSOS, but delegates its physics to the
 immutable core.
 
+A finite-pressure/current second-order solution uses the same entry point:
+
+```python
+solution = qsc.Qsc(
+    rc=[1.0, 0.09],
+    zs=[0.0, -0.09],
+    nfp=2,
+    etabar=0.95,
+    I2=0.9,
+    p2=-600000.0,
+    B2c=-0.7,
+    order="r2",
+)
+
+print("B20 residual:", solution.B20_residual)
+print("linear condition:", solution.linear_report.matrix_condition_number)
+```
+
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
 
@@ -84,7 +103,7 @@ The completed package will provide:
 
 - general Fourier magnetic axes and QA/QH topology;
 - converged differentiable first-order sigma solves;
-- complete finite-pressure/current second order and pyQSC third-order parity;
+- second-order field Hessians/diagnostics and pyQSC third-order parity;
 - total, plasma, and external field/gradient/Hessian jets on the axis;
 - target-transform inverse solves with continuation and fold detection;
 - dense-grid `B20` diagnostics and multistart axis optimization;

@@ -6,9 +6,9 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
-from solvax import root_solve
+from solvax import linear_solve, root_solve
 
-from pyqsc_jax.models import RootSolveReport
+from pyqsc_jax.models import LinearSolveReport, RootSolveReport
 
 ArrayLike = Any
 
@@ -185,3 +185,64 @@ def implicit_dense_root(
         lambda _function, supplied_candidate: supplied_candidate,
     )
     return root, report
+
+
+def implicit_dense_linear_solve(
+    matrix: ArrayLike,
+    right_hand_side: ArrayLike,
+    *,
+    residual_tolerance: float = 1e-11,
+    condition_limit: float = 1e12,
+) -> tuple[jax.Array, LinearSolveReport]:
+    """Solve a dense system with implicit JVP/VJP rules and diagnostics."""
+
+    if residual_tolerance < 0:
+        raise ValueError("residual_tolerance must be nonnegative.")
+    if condition_limit <= 0:
+        raise ValueError("condition_limit must be positive.")
+
+    matrix = jnp.asarray(matrix)
+    right_hand_side = jnp.asarray(right_hand_side)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("matrix must be square.")
+    if right_hand_side.ndim != 1 or right_hand_side.shape[0] != matrix.shape[0]:
+        raise ValueError("right_hand_side must match the matrix dimension.")
+
+    matvec = lambda value: matrix @ value  # noqa: E731
+    transpose_matvec = lambda value: matrix.T @ value  # noqa: E731
+    primal_solver = lambda _operator, value: jnp.linalg.solve(matrix, value)  # noqa: E731
+    transpose_solver = lambda _operator, value: jnp.linalg.solve(  # noqa: E731
+        matrix.T,
+        value,
+    )
+    solution = linear_solve(
+        matvec,
+        right_hand_side,
+        primal_solver,
+        transpose_matvec=transpose_matvec,
+        transpose_solver=transpose_solver,
+    )
+    residual = matrix @ solution - right_hand_side
+    residual_norm = _infinity_norm(residual)
+    right_hand_side_norm = _infinity_norm(right_hand_side)
+    relative_residual_norm = residual_norm / jnp.maximum(
+        right_hand_side_norm,
+        jnp.finfo(right_hand_side.dtype).tiny,
+    )
+    condition_number = jnp.linalg.cond(matrix)
+    finite = (
+        jnp.all(jnp.isfinite(solution))
+        & jnp.isfinite(residual_norm)
+        & jnp.isfinite(condition_number)
+    )
+    converged = finite & (relative_residual_norm <= residual_tolerance)
+    well_conditioned = finite & (condition_number <= condition_limit)
+    report = LinearSolveReport(
+        residual_norm=residual_norm,
+        relative_residual_norm=relative_residual_norm,
+        matrix_condition_number=condition_number,
+        finite=finite,
+        converged=converged,
+        well_conditioned=well_conditioned,
+    )
+    return solution, report

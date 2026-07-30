@@ -24,6 +24,13 @@ first stable release.
 - Thin ESSOS compatibility adapter preserving legacy array orientations,
   coordinate conversion, boundary generation, and plotting without depending
   on ESSOS.
+- Complete finite-pressure/current r2 coefficient system, including
+  `X20`/`Y20`, second harmonics, `beta_1s`, `G2`, `B20`, derivatives,
+  untwisted boundary data, and direct `B20` diagnostics.
+- Implicit differentiation and residual/conditioning reports for the coupled
+  dense second-order solve.
+- Independent four-equation r2 residual checks and upstream regression cases
+  spanning vacuum QA, finite pressure/current, and QH topology.
 
 ### Fixed
 

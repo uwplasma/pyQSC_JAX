@@ -13,8 +13,10 @@ quickstart
 limitations
 theory/coordinates-and-conventions
 theory/first-order
+theory/second-order
 api/axis
 api/first-order
+api/second-order
 ```
 
 ```{toctree}
@@ -36,10 +38,11 @@ changelog
 
 ## Project status
 
-The immutable first-order API is validated. Complete second and third order,
-inverse solves, optimization, and plasma/external field jets are under active
-development. The `pyqsc_jax.near_axis.near_axis` import remains supported for
-ESSOS without a runtime deprecation warning.
+The immutable first-order API and complete r2 coefficient solve are validated.
+Second-order field Hessian/diagnostics, third order, inverse solves,
+optimization, and plasma/external field jets are under active development.
+The `pyqsc_jax.near_axis.near_axis` import remains supported for ESSOS without
+a runtime deprecation warning.
 
 ## References
 

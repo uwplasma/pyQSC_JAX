@@ -38,6 +38,7 @@ class near_axis:  # noqa: N801
         order: int | str = "r1",
         B2c: ArrayLike = 0.0,
         p2: ArrayLike = 0.0,
+        B2s: ArrayLike = 0.0,
     ) -> None:
         if not isinstance(nphi, int) or isinstance(nphi, bool) or nphi < 3 or nphi % 2 == 0:
             raise ValueError("The compatibility API requires odd integer nphi >= 3.")
@@ -52,6 +53,7 @@ class near_axis:  # noqa: N801
         self.I2 = jnp.asarray(I2)
         self.p2 = jnp.asarray(p2)
         self.B2c = jnp.asarray(B2c)
+        self.B2s = jnp.asarray(B2s)
         self.nphi = nphi
         self.spsi = spsi
         self.sG = sG
@@ -67,8 +69,7 @@ class near_axis:  # noqa: N801
         zs: ArrayLike,
         etabar: ArrayLike,
     ) -> NearAxisSolution:
-        # Until r2/r3 milestones land, preserve the legacy behavior in which
-        # those labels still returned the first-order subset.
+        canonical_order = "r1" if self.order in (1, "r1") else "r2"
         return solve(
             axis=Axis.stellarator_symmetric(rc=rc, zs=zs, nfp=self.nfp),
             etabar=etabar,
@@ -77,8 +78,9 @@ class near_axis:  # noqa: N801
             I2=self.I2,
             p2=self.p2,
             B2c=self.B2c,
+            B2s=self.B2s,
             nphi=self.nphi,
-            order="r1",
+            order=canonical_order,
             sG=self.sG,
             spsi=self.spsi,
         )
@@ -153,6 +155,9 @@ class near_axis:  # noqa: N801
             self.R0p,
             self.Z0p,
         ) = self._legacy_tuple(solution)
+        if solution.second_order is not None:
+            for name in solution._SECOND_ORDER_NAMES:
+                setattr(self, name, getattr(solution, name))
 
     @property
     def dofs(self) -> jax.Array:
@@ -191,6 +196,7 @@ class near_axis:  # noqa: N801
             self.I2,
             self.B2c,
             self.p2,
+            self.B2s,
         )
         auxiliary = {
             "nphi": self.nphi,
@@ -203,7 +209,7 @@ class near_axis:  # noqa: N801
 
     @classmethod
     def _tree_unflatten(cls, auxiliary, children):
-        rc, zs, etabar, B0, sigma0, I2, B2c, p2 = children
+        rc, zs, etabar, B0, sigma0, I2, B2c, p2, B2s = children
         return cls(
             rc=rc,
             zs=zs,
@@ -213,6 +219,7 @@ class near_axis:  # noqa: N801
             I2=I2,
             B2c=B2c,
             p2=p2,
+            B2s=B2s,
             **auxiliary,
         )
 
@@ -264,6 +271,7 @@ class near_axis:  # noqa: N801
         phi0: ArrayLike,
         X_at_this_theta: ArrayLike,
         Y_at_this_theta: ArrayLike,
+        Z_at_this_theta: ArrayLike | None = None,
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
         """Map one displaced Frenet point to cylindrical coordinates."""
 
@@ -273,20 +281,29 @@ class near_axis:  # noqa: N801
         Z0 = self.interpolated_array_at_point(self.Z0, phi0)
         X = self.interpolated_array_at_point(X_at_this_theta, phi0)
         Y = self.interpolated_array_at_point(Y_at_this_theta, phi0)
+        if Z_at_this_theta is None:
+            Z_at_this_theta = jnp.zeros_like(X_at_this_theta)
+        Z = self.interpolated_array_at_point(Z_at_this_theta, phi0)
         normal_R = self.interpolated_array_at_point(self.normal_R, phi0)
         normal_phi = self.interpolated_array_at_point(self.normal_phi, phi0)
         normal_z = self.interpolated_array_at_point(self.normal_z, phi0)
         binormal_R = self.interpolated_array_at_point(self.binormal_R, phi0)
         binormal_phi = self.interpolated_array_at_point(self.binormal_phi, phi0)
         binormal_z = self.interpolated_array_at_point(self.binormal_z, phi0)
+        tangent = self.solution.geometry.tangent_cylindrical
+        tangent_R = self.interpolated_array_at_point(tangent[:, 0], phi0)
+        tangent_phi = self.interpolated_array_at_point(tangent[:, 1], phi0)
+        tangent_z = self.interpolated_array_at_point(tangent[:, 2], phi0)
 
         normal_x = normal_R * cosine - normal_phi * sine
         normal_y = normal_R * sine + normal_phi * cosine
         binormal_x = binormal_R * cosine - binormal_phi * sine
         binormal_y = binormal_R * sine + binormal_phi * cosine
-        x = R0 * cosine + X * normal_x + Y * binormal_x
-        y = R0 * sine + X * normal_y + Y * binormal_y
-        z = Z0 + X * normal_z + Y * binormal_z
+        tangent_x = tangent_R * cosine - tangent_phi * sine
+        tangent_y = tangent_R * sine + tangent_phi * cosine
+        x = R0 * cosine + X * normal_x + Y * binormal_x + Z * tangent_x
+        y = R0 * sine + X * normal_y + Y * binormal_y + Z * tangent_y
+        z = Z0 + X * normal_z + Y * binormal_z + Z * tangent_z
         return jnp.hypot(x, y), z, jnp.arctan2(y, x)
 
     def Frenet_to_cylindrical_residual_func(
@@ -295,6 +312,7 @@ class near_axis:  # noqa: N801
         phi_target: ArrayLike,
         X_at_this_theta: ArrayLike,
         Y_at_this_theta: ArrayLike,
+        Z_at_this_theta: ArrayLike | None = None,
     ) -> jax.Array:
         """Wrapped cylindrical-angle residual for a Frenet point."""
 
@@ -302,6 +320,7 @@ class near_axis:  # noqa: N801
             phi0,
             X_at_this_theta,
             Y_at_this_theta,
+            Z_at_this_theta,
         )
         difference = phi - phi_target
         return jnp.arctan2(jnp.sin(difference), jnp.cos(difference))
@@ -315,9 +334,8 @@ class near_axis:  # noqa: N801
     ) -> jax.Array:
         """Residual for inversion at fixed Boozer toroidal angle."""
 
-        X = r * (self.X1c_untwisted * jnp.cos(theta) + self.X1s_untwisted * jnp.sin(theta))
-        Y = r * (self.Y1c_untwisted * jnp.cos(theta) + self.Y1s_untwisted * jnp.sin(theta))
-        _, _, phi = self.Frenet_to_cylindrical_1_point(phi0, X, Y)
+        X, Y, Z = self._frenet_displacements(r, theta)
+        _, _, phi = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
         nu0 = self.interpolated_array_at_point(self.varphi - self.phi, phi0)
         X1c = self.interpolated_array_at_point(self.X1c_untwisted, phi0)
         X1s = self.interpolated_array_at_point(self.X1s_untwisted, phi0)
@@ -335,6 +353,32 @@ class near_axis:  # noqa: N801
         nu = nu0 + r * (nu1c * jnp.cos(theta) + nu1s * jnp.sin(theta))
         return phi + nu - varphi
 
+    def _frenet_displacements(
+        self,
+        r: ArrayLike,
+        theta: ArrayLike,
+    ) -> tuple[jax.Array, jax.Array, jax.Array]:
+        """Assemble all available radial-order Frenet displacements."""
+
+        cosine = jnp.cos(theta)
+        sine = jnp.sin(theta)
+        X = r * (self.X1c_untwisted * cosine + self.X1s_untwisted * sine)
+        Y = r * (self.Y1c_untwisted * cosine + self.Y1s_untwisted * sine)
+        Z = jnp.zeros_like(X)
+        if self.solution.second_order is not None:
+            cosine2 = jnp.cos(2 * theta)
+            sine2 = jnp.sin(2 * theta)
+            X = X + r**2 * (
+                self.X20_untwisted + self.X2c_untwisted * cosine2 + self.X2s_untwisted * sine2
+            )
+            Y = Y + r**2 * (
+                self.Y20_untwisted + self.Y2c_untwisted * cosine2 + self.Y2s_untwisted * sine2
+            )
+            Z = Z + r**2 * (
+                self.Z20_untwisted + self.Z2c_untwisted * cosine2 + self.Z2s_untwisted * sine2
+            )
+        return X, Y, Z
+
     def phi_of_theta_varphi(
         self,
         r: ArrayLike,
@@ -350,9 +394,8 @@ class near_axis:  # noqa: N801
             varphi,
         )
         phi_on_axis, _ = implicit_dense_root(residual, jnp.asarray(varphi))
-        X = r * (self.X1c_untwisted * jnp.cos(theta) + self.X1s_untwisted * jnp.sin(theta))
-        Y = r * (self.Y1c_untwisted * jnp.cos(theta) + self.Y1s_untwisted * jnp.sin(theta))
-        _, _, phi = self.Frenet_to_cylindrical_1_point(phi_on_axis, X, Y)
+        X, Y, Z = self._frenet_displacements(r, theta)
+        _, _, phi = self.Frenet_to_cylindrical_1_point(phi_on_axis, X, Y, Z)
         return phi
 
     def Frenet_to_cylindrical(
@@ -361,20 +404,13 @@ class near_axis:  # noqa: N801
         ntheta: int = 20,
         phi_is_varphi: bool = False,
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
-        """Map a first-order surface over one field period."""
+        """Map the available-order surface over one field period."""
 
         theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)
         toroidal_grid = self.phi
 
         def for_theta(theta_value):
-            X = r * (
-                self.X1c_untwisted * jnp.cos(theta_value)
-                + self.X1s_untwisted * jnp.sin(theta_value)
-            )
-            Y = r * (
-                self.Y1c_untwisted * jnp.cos(theta_value)
-                + self.Y1s_untwisted * jnp.sin(theta_value)
-            )
+            X, Y, Z = self._frenet_displacements(r, theta_value)
 
             def for_toroidal_angle(target):
                 if phi_is_varphi:
@@ -390,10 +426,11 @@ class near_axis:  # noqa: N801
                         target,
                         X,
                         Y,
+                        Z,
                     )
                 phi0, _ = implicit_dense_root(residual, target)
-                R, Z, _ = self.Frenet_to_cylindrical_1_point(phi0, X, Y)
-                return R, Z, phi0
+                R, cylindrical_Z, _ = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
+                return R, cylindrical_Z, phi0
 
             return jax.vmap(for_toroidal_angle)(toroidal_grid)
 
@@ -440,7 +477,7 @@ class near_axis:  # noqa: N801
         phi_is_varphi: bool = False,
         phi_offset: ArrayLike = 0.0,
     ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
-        """Return a full-torus first-order surface in Cartesian coordinates."""
+        """Return a full-torus available-order surface in Cartesian coordinates."""
 
         R_period, Z_period, _ = self.Frenet_to_cylindrical(
             r,
@@ -474,9 +511,18 @@ class near_axis:  # noqa: N801
         return R * jnp.cos(phi2d), R * jnp.sin(phi2d), Z, R
 
     def B_mag(self, r: ArrayLike, theta: ArrayLike, phi: ArrayLike) -> jax.Array:
-        """First-order field strength using the legacy angle convention."""
+        """Available-order field strength using the legacy angle convention."""
 
-        return self.B0 * (1 + r * self.etabar * jnp.cos(theta - (self.iota - self.iotaN) * phi))
+        thetaN = theta - (self.iota - self.iotaN) * phi
+        field_strength = self.B0 * (1 + r * self.etabar * jnp.cos(thetaN))
+        if self.solution.second_order is not None:
+            B20 = self.interpolated_array_at_point(self.B20, phi)
+            field_strength = field_strength + r**2 * (
+                B20
+                + self.B2c * jnp.cos(2 * thetaN)
+                + self.solution.inputs.B2s * jnp.sin(2 * thetaN)
+            )
+        return field_strength
 
     def plot(
         self,
@@ -490,7 +536,7 @@ class near_axis:  # noqa: N801
         axis_equal: bool = True,
         **kwargs,
     ):
-        """Plot the first-order boundary without importing ESSOS."""
+        """Plot the available-order boundary without importing ESSOS."""
 
         import matplotlib.pyplot as plt
         import numpy as np

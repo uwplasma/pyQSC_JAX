@@ -1,12 +1,14 @@
 # Limitations
 
-The current computational core is first order only. Although the legacy
-constructor accepts `order`, `B2c`, and `p2` for compatibility, those arguments
-do not yet activate second-order physics.
+The current computational core includes first order and the complete
+finite-pressure/current r2 coefficient solve. The second-order on-axis field
+Hessian, Mercier terms, singular-radius diagnostics, and third-order
+coefficients are not yet exposed.
 
 Known limitations under active refactor include:
 
-- no complete second- or third-order solution;
+- no second-order Hessian/Mercier/singular-radius diagnostics or third-order
+  solution;
 - no plasma/external field-jet separation;
 - no branch-aware target-transform inverse solve.
 

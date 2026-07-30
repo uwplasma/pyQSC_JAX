@@ -65,9 +65,9 @@ def test_first_order_shapes_and_coefficients():
     )
 
 
-@pytest.mark.parametrize("order", [2, "r2", 3, "r3"])
-def test_higher_order_request_is_explicitly_rejected(order):
-    with pytest.raises(NotImplementedError, match="Second- and third-order"):
+@pytest.mark.parametrize("order", [3, "r3"])
+def test_third_order_request_is_explicitly_rejected(order):
+    with pytest.raises(NotImplementedError, match="Third-order"):
         standard_solution(order=order)
 
 

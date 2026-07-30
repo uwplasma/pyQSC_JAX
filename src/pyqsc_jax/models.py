@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import jax
 import jax.numpy as jnp
@@ -47,6 +47,19 @@ class RootSolveReport:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class LinearSolveReport:
+    """Residual and conditioning evidence for a dense linear solve."""
+
+    residual_norm: jax.Array
+    relative_residual_norm: jax.Array
+    matrix_condition_number: jax.Array
+    finite: jax.Array
+    converged: jax.Array
+    well_conditioned: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisInputs:
     """Normalized immutable inputs to a near-axis solve."""
 
@@ -84,6 +97,57 @@ class NearAxisInputs:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
+class SecondOrderData:
+    """Complete second-order coefficient solution and direct diagnostics."""
+
+    linear_report: LinearSolveReport
+    V1: jax.Array
+    V2: jax.Array
+    V3: jax.Array
+    X20: jax.Array
+    X2s: jax.Array
+    X2c: jax.Array
+    Y20: jax.Array
+    Y2s: jax.Array
+    Y2c: jax.Array
+    Z20: jax.Array
+    Z2s: jax.Array
+    Z2c: jax.Array
+    beta_1s: jax.Array
+    B20: jax.Array
+    B20_mean: jax.Array
+    B20_anomaly: jax.Array
+    B20_residual: jax.Array
+    B20_variation: jax.Array
+    G2: jax.Array
+    N_helicity: jax.Array
+    d_curvature_d_varphi: jax.Array
+    d_torsion_d_varphi: jax.Array
+    d_X20_d_varphi: jax.Array
+    d_X2s_d_varphi: jax.Array
+    d_X2c_d_varphi: jax.Array
+    d_Y20_d_varphi: jax.Array
+    d_Y2s_d_varphi: jax.Array
+    d_Y2c_d_varphi: jax.Array
+    d_Z20_d_varphi: jax.Array
+    d_Z2s_d_varphi: jax.Array
+    d_Z2c_d_varphi: jax.Array
+    d2_X1c_d_varphi2: jax.Array
+    d2_Y1c_d_varphi2: jax.Array
+    d2_Y1s_d_varphi2: jax.Array
+    X20_untwisted: jax.Array
+    X2s_untwisted: jax.Array
+    X2c_untwisted: jax.Array
+    Y20_untwisted: jax.Array
+    Y2s_untwisted: jax.Array
+    Y2c_untwisted: jax.Array
+    Z20_untwisted: jax.Array
+    Z2s_untwisted: jax.Array
+    Z2c_untwisted: jax.Array
+
+
+@jax.tree_util.register_dataclass
+@dataclass(frozen=True)
 class NearAxisSolution:
     """Canonical immutable near-axis solution.
 
@@ -114,6 +178,19 @@ class NearAxisSolution:
     grad_B_axis_cylindrical: jax.Array
     grad_B_axis: jax.Array
     L_grad_B: jax.Array
+    second_order: SecondOrderData | None = None
+
+    _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
+        field.name for field in SecondOrderData.__dataclass_fields__.values()
+    )
+
+    def __getattr__(self, name: str):
+        if name in self._SECOND_ORDER_NAMES:
+            second_order = object.__getattribute__(self, "second_order")
+            if second_order is None:
+                raise AttributeError(f"First-order solution has no {name!r} quantity.")
+            return getattr(second_order, name)
+        raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}.")
 
     @property
     def axis(self) -> Axis:
