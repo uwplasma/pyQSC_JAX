@@ -114,6 +114,7 @@ theory/plasma-field
 development/refactor-baseline
 development/physics-traceability
 development/refactor_status
+development/final_review
 adr/ADR-core-architecture
 adr/ADR-solver-stack
 ```

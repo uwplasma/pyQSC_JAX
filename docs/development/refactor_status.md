@@ -142,7 +142,7 @@ was made for that phase.
 
 ## Phase 11 — release hardening
 
-- Commit: in progress.
+- Commit: `686be1e`.
 - Files: synchronized benchmark and raw report, CI coverage/Codecov, docs
   example smoke, ESSOS compatibility job, TestPyPI/production OIDC workflow,
   clean wheel/sdist verification.
@@ -162,6 +162,8 @@ was made for that phase.
 ## Phase 12 — final review
 
 - Commit: in progress.
-- Required evidence: convention/API/dependency/link audits, mutation spot
-  checks, exact limitations, clean repository state, remote CI results, and
-  final PR summary.
+- Evidence: convention/API/dependency audits complete; two representative
+  physics mutations are killed by targeted tests; exact limitations and
+  external release gates are recorded in `final_review.md`.
+- Verification: final local lint/docs/clean-state checks and remote CI are
+  required before closing this phase.
