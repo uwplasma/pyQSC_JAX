@@ -19,6 +19,7 @@ theory/inverse-solves
 theory/b20-optimization
 theory/criteria
 theory/global-search
+theory/plasma-current
 theory/field-jet
 api/axis
 api/first-order
@@ -26,6 +27,7 @@ api/continuation
 api/optimization
 api/axis-optimization
 api/criteria
+api/plasma
 api/second-order
 api/third-order
 api/field-jet

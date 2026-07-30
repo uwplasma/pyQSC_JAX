@@ -64,6 +64,9 @@ first stable release.
   verification, and explicit global-certificate status semantics.
 - Nonzero \(B_{20}\) Fourier-\(L^1\) certificates in dense and
   resolution-verification diagnostics.
+- Exact positive-volume plasma-current source through quadratic radial order,
+  including independent pressure/current pathways, regular evaluation through
+  \(I_2=0\), and covariant-current/enclosed-ampere conversions.
 
 ### Fixed
 

@@ -118,6 +118,11 @@ verification. It returns `verified_zero` only for a verified zero of the
 nonnegative primary residual; every nonzero candidate is `best_found` without
 a global claim.
 
+`qsc.plasma_current_source(solution, formal_radius=a)` constructs the regular
+positive-volume current measure used by the surface-free Biot–Savart
+calculation and reports both \(I_2\) and enclosed amperes. A positive formal
+radius is mandatory even though no finite-radius surface is created.
+
 The lower-level immutable axis API supports general, not necessarily
 stellarator-symmetric Fourier axes:
 
