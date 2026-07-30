@@ -22,10 +22,10 @@ surface conversion and pressure/current normalization.
 
 The live compatibility test covers:
 
-| Case | Pressure | Current | Checked quantities |
-| --- | ---: | ---: | --- |
-| vacuum QA | zero | zero | \(\iota(s)\), QS profile, well, implicit boundary gradient |
-| `plasma_stellarator` | finite | finite | \(\iota(s)\), QS profile, well, nonzero thermal energy |
+| Case | Pressure | Current | Axis | Checked quantities |
+| --- | ---: | ---: | --- | --- |
+| vacuum QA | zero | zero | nonplanar QA | \(\iota(s)\), QS profile, well, implicit boundary gradient |
+| `plasma_stellarator` (database ID 52521) | finite | exactly zero | nonplanar, RMS torsion \(0.979\ \mathrm{m}^{-1}\) | \(\iota(s)\), QS profile, well, nonzero thermal energy, implicit pressure/boundary gradients |
 
 At the deliberately small `ns=7`, `mpol=4`, `ntor=2` smoke resolution, the
 vacuum VMEX axis value in the pyQSC_JAX sign convention is `-0.421520`,
@@ -33,13 +33,19 @@ compared with the near-axis value `-0.420473`. This is a 0.249% difference;
 the test gate is 0.8%. The purpose of this low-resolution job is cross-package
 AD compatibility, not a production equilibrium accuracy claim.
 
+The strongly shaped finite-beta adjoint uses an explicit
+`adjoint_tol=1e-8`; the public API retains VMEX's stricter \(10^{-11}\)
+default unless the caller makes that tradeoff explicitly. VMEX enforces the
+selected residual tolerance and raises rather than returning an unconverged
+adjoint.
+
 The publication example records finite-beta values of:
 
 | Quantity | Value |
 | --- | ---: |
-| magnetic well | \(-7.70343\times10^{-5}\) |
-| \(\partial W/\partial p_\mathrm{scale}\) | \(+6.55641\times10^{-7}\) |
-| \(\|\partial W/\partial RBC\|_2\) | \(1.85853\) |
+| magnetic well | \(1.84561\times10^{-2}\) |
+| \(\partial W/\partial p_\mathrm{scale}\) | \(+6.22590\times10^{-5}\) |
+| \(\|\partial W/\partial RBC\|_2\) | \(9.78080\times10^1\) |
 
 These values are finite, nonzero regression evidence that the pressure and
 boundary adjoint paths are active.

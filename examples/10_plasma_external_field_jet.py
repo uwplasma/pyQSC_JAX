@@ -9,15 +9,18 @@ import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_field_split_components
 
 CONFIGURATION = "plasma_stellarator"
-FORMAL_RADIUS = 0.45
+FORMAL_RADIUS = 0.15
 NPHI = 61
 ANGULAR_RESOLUTION = 96
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
 OUTPUT = Path("examples/output/10_plasma_external_field_jet.png")
 
-print("Solving the finite-current total field...")
+print("Solving the finite-pressure, zero-current stellarator...")
 solution = qsc.solve_configuration(CONFIGURATION, nphi=NPHI)
+assert float(solution.inputs.I2) == 0.0
+assert float(solution.inputs.p2) != 0.0
+print("torsion RMS [1/m]:", float((solution.torsion**2).mean() ** 0.5))
 print("Separating the surface-free plasma and external jets...")
 result = qsc.plasma_hessian_on_axis(
     solution,

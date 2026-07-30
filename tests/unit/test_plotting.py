@@ -68,7 +68,8 @@ def test_surface_and_angle_dependent_field_split_plotters():
     components = field_split_frenet_components(result, solution)
     component_figure, axes = plot_field_split_components(result, solution)
 
-    assert x.shape == y.shape == z.shape == (12, 63)
+    expected_toroidal_points = solution.inputs.axis.nfp * solution.inputs.nphi + 1
+    assert x.shape == y.shape == z.shape == (12, expected_toroidal_points)
     assert axis.figure is figure
     assert reused_figure is figure
     assert reused_axis is axis

@@ -138,6 +138,7 @@ def test_problem_builds_without_disk_and_exposes_quantities(fake_vmex):
 
     assert problem.vmex_version == "test"
     assert problem.validated_commit == qsc.VMEX_VALIDATED_COMMIT
+    assert problem.adjoint_tol == 1.0e-11
     assert problem.input.mpol == 4
     assert problem.boundary.RBC.shape == (5, 4)
     assert not problem.finite_beta
@@ -189,6 +190,7 @@ def test_empty_qs_surface_list_supports_asymmetric_equilibrium(fake_vmex):
         ({"ftol": 0.0}, "positive"),
         ({"ftol_array": (1.0e-7, 1.0e-8)}, "one positive"),
         ({"max_iterations": 0}, "positive integer"),
+        ({"adjoint_tol": 0.0}, "positive and finite"),
         ({"helicity_m": 1.5}, "integer"),
         ({"helicity_n": 1.5}, "integer"),
     ],

@@ -18,7 +18,12 @@ CASES = (
         0.15,
         "plasma",
     ),
-    ("plasma_stellarator", "finite-current 33% plasma case", 0.18, "magma"),
+    (
+        "plasma_stellarator",
+        r"database ID 52521: finite $p_2$, $I_2=0$",
+        0.12,
+        "magma",
+    ),
 )
 NPHI = 121
 OUTPUT_STEM = Path("examples/output/publication/stellarator_gallery")
@@ -47,7 +52,8 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
     if name == "b20_optimized_good":
         diagnostic = rf"$\|P B_{{20}}\|_2={float(solution.B20_residual):.2e}$"
     elif name == "plasma_stellarator":
-        diagnostic = r"$\min |B_p|/|B|=33.0\%$ at $a=0.45$ m"
+        torsion_rms = float((solution.torsion**2).mean() ** 0.5)
+        diagnostic = rf"$\tau_\mathrm{{rms}}={torsion_rms:.3f}\ \mathrm{{m}}^{{-1}}$"
     else:
         diagnostic = rf"$|\iota|={abs(float(solution.iota)):.3f}$"
     axis.set_title(
@@ -67,6 +73,9 @@ for panel, (name, title, radius, cmap) in enumerate(CASES, start=1):
         "curvo_profile_passed": True,
         "source_database_id": qsc.get_configuration(name).source_database_id,
         "source_url": qsc.get_configuration(name).source_url,
+        "I2": float(solution.inputs.I2),
+        "p2": float(solution.inputs.p2),
+        "torsion_rms": float((solution.torsion**2).mean() ** 0.5),
     }
 figure.tight_layout()
 

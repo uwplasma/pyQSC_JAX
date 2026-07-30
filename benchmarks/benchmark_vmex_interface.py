@@ -34,6 +34,7 @@ problem = qsc.to_vmex_problem(
     ns_array=(7,),
     ftol=1.0e-7,
     max_iterations=1200,
+    adjoint_tol=1.0e-8,
     multigrid=False,
 )
 
@@ -81,6 +82,7 @@ report = {
         "mpol_maximum": problem.mpol,
         "ntor": problem.ntor,
         "ns_array": np.asarray(problem.input.ns_array).tolist(),
+        "adjoint_tolerance": problem.adjoint_tol,
     },
     "forward_seconds": forward_seconds,
     "value_and_gradient_seconds": value_and_gradient_seconds,

@@ -19,8 +19,9 @@ plasma–coil field jets in JAX.
 Four runnable, independently re-evaluated designs: [database ID 3](https://stellarator.physics.wisc.edu/app/plot/3),
 an eight-mode refinement of [database ID 57409](https://stellarator.physics.wisc.edu/app/plot/57409),
 the large-clearance [database ID 107579](https://stellarator.physics.wisc.edu/app/plot/107579),
-and an angle-dependent finite-current case. Every displayed design passes the
-configurable Curvo/Table-3 profile with the stricter
+and the finite-pressure, zero-current [database ID 52521](https://stellarator.physics.wisc.edu/app/plot/52521).
+Every displayed design is a nonplanar stellarator and passes the configurable
+Curvo/Table-3 profile with the stricter
 \(\lvert\iota\rvert\geq0.4\); each panel reports transform, singular radius,
 and its defining diagnostic. Plotting radii and database provenance are in
 the adjacent JSON metadata.
@@ -116,8 +117,9 @@ resolution, timing, and radius-convergence tables are in the
 | \(B_{20}\)-optimized singular radius | 0.249 m | displayed \(r=0.075\) m gives 3.3× clearance |
 | Largest showcased singular radius, database ID 107579 | 0.432 m | \(>0.4\) m |
 | Four-case showcase design screen | all pass | Curvo profile with \(\lvert\iota\rvert\ge0.4\) |
-| Angle-dependent minimum \(\lvert B_\mathrm{plasma}\rvert/\lvert B_\mathrm{total}\rvert\) | 32.99% at \(a=0.45\) m | \(>30\%\) |
-| Plasma-field norm peak-to-peak / mean | 4.43% | \(>3\%\) |
+| Pressure-only \(I_2=0\) plasma fraction, min/mean/max at \(a=0.15\) m | 0.1761% / 0.1890% / 0.2026% | nonzero and resolved |
+| Pressure-driven plasma-field norm peak-to-peak / mean | 14.04% | \(>10\%\) |
+| Finite-beta showcase axis torsion, RMS | \(0.979\ \mathrm{m}^{-1}\) | \(>0.5\ \mathrm{m}^{-1}\) |
 | VMEC/near-axis on-axis \(\iota\), \(r=0.0025\) | 0.418543 / 0.418307 | relative error \(<0.1\%\) |
 | VMEC force residuals | \(2.4\)–\(7.6\times10^{-11}\) | maximum \(<10^{-9}\) |
 | `to_vmec`, Apple M4 CPU, compile+execute / warm | 0.476 s / 5.20 ms | warm unit gate \(<0.5\) s |
@@ -128,7 +130,8 @@ diagnostics = qsc.b20_diagnostics(optimized)
 print(diagnostics.weighted_l2, diagnostics.grid_maximum)
 
 plasma_case = qsc.solve_configuration("plasma_stellarator", nphi=61)
-plasma = qsc.plasma_field_on_axis(plasma_case, formal_radius=0.45)
+assert plasma_case.inputs.I2 == 0
+plasma = qsc.plasma_field_on_axis(plasma_case, formal_radius=0.15)
 ```
 
 ## Target rotational transform
@@ -191,7 +194,9 @@ distinction between `best_found` and a certified zero are in the
 
 ```python
 solution = qsc.solve_configuration("plasma_stellarator", nphi=61)
-target = qsc.plasma_hessian_on_axis(solution, formal_radius=0.45)
+assert solution.inputs.I2 == 0
+assert solution.inputs.p2 != 0
+target = qsc.plasma_hessian_on_axis(solution, formal_radius=0.15)
 
 print(target.field.external_field.shape)                 # (nphi, 3)
 print(target.field.external_gradient_independent.shape) # (nphi, 5)
@@ -202,13 +207,21 @@ ESSOS consumes these external vacuum targets for normalized field, gradient,
 and Hessian coil objectives. The dependency remains one-way:
 `ESSOS -> pyQSC_JAX`.
 
-This case independently passes the Curvo profile with
-\(\lvert\iota\rvert=0.730\) and \(r_\mathrm{sing}=0.992\) m. The stated
-formal radius \(a=0.45\) m is mandatory model metadata and remains inside that
-singular-radius estimate. The public plot uses Frenet components rather than
-only \(|B|\), making the angle dependence and exact cancellation of plasma
-and external transverse components visible;
+This is public stellarator-database configuration 52521, with exactly
+\(I_2=0\), finite \(p_2=-2.8248\times10^4\ \mathrm{Pa/m^2}\),
+\(\lvert\iota\rvert=2.809\), \(r_\mathrm{sing}=0.392\) m, and RMS axis
+torsion \(0.979\ \mathrm{m}^{-1}\). It independently passes the Curvo profile.
+The stated formal radius \(a=0.15\) m is mandatory model metadata and remains
+inside the singular-radius estimate. The public plot uses Frenet components
+and a percent scale, making the pressure-driven angle dependence and exact
+cancellation of plasma and external transverse components visible;
 \(|B_\mathrm{total}|=B_0\) is constant on axis by construction.
+
+The pressure-only contribution is approximately \(0.19\%\), not 30%. The
+larger fraction previously shown came from finite \(I_2\) and produced an
+essentially tokamak-like example; it is intentionally excluded from the
+showcase. Current-driven cases remain supported and validated by the library,
+but all user-facing finite-beta examples use \(I_2=0\).
 
 ## Differentiable radial equilibria with VMEX
 
@@ -216,10 +229,12 @@ and external transverse components visible;
 import jax
 
 near_axis = qsc.solve_configuration("plasma_stellarator", nphi=61)
+assert near_axis.inputs.I2 == 0
 problem = qsc.to_vmex_problem(
     near_axis,
     r=0.02,
     qs_surfaces=(0.25, 0.5, 0.75, 1.0),
+    adjoint_tol=1e-8,
 )
 equilibrium = problem.solve()
 

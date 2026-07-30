@@ -219,9 +219,11 @@ was made for that phase.
 - Numerical checks: the derived ID-57409 case has
   \(\lvert\iota\rvert=2.964\), \(r_\mathrm{sing}=0.249\) m, and weighted
   \(B_{20}\) residual \(1.2743\times10^{-10}\) at `nphi=121`, stable through
-  `nphi=481`. The finite-current showcase has a 32.99% minimum plasma
-  fraction and 4.43% angular variation while passing the same screen.
-- Limitation: the current-visible split uses formal radius 0.45 m and carries
-  a 0.2286 T estimated field remainder. It is explicitly a field-jet
-  demonstration; smaller-radius production studies require radius
-  convergence and current/geometry re-optimization.
+  `nphi=481`. The finite-beta showcase is database ID 52521 with exactly
+  \(I_2=0\), finite \(p_2\), RMS axis torsion \(0.979\ \mathrm{m}^{-1}\),
+  and 14.04% relative angular variation of the pressure-driven plasma-field
+  norm while passing the same screen.
+- Limitation: at formal radius 0.15 m the pressure-only plasma contribution is
+  approximately 0.19% of the total field. The former 30% showcase relied on
+  finite \(I_2\) and was removed because its nearly planar geometry presented
+  as a tokamak rather than a representative stellarator.

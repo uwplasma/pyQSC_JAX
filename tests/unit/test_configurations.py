@@ -50,6 +50,7 @@ def test_database_showcase_configurations_are_traceable_and_screened():
         "database_low_b20_57409": 57409,
         "b20_optimized_good": 57409,
         "database_large_singularity_107579": 107579,
+        "plasma_stellarator": 52521,
     }
 
     for name, database_id in expected_sources.items():
@@ -62,6 +63,10 @@ def test_database_showcase_configurations_are_traceable_and_screened():
         )
         assert criteria.evaluate(solution).passed
         assert abs(float(solution.iota)) >= 0.4
+        if name == "plasma_stellarator":
+            assert float(solution.inputs.I2) == 0.0
+            assert float(solution.inputs.p2) != 0.0
+            assert float(np.sqrt(np.mean(np.asarray(solution.torsion) ** 2))) > 0.5
 
 
 def test_unknown_configuration_is_rejected():

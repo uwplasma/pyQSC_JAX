@@ -216,16 +216,20 @@ REFERENCE_CONFIGURATIONS = (
     ReferenceConfiguration(
         name="plasma_stellarator",
         description=(
-            "Curvo-screened two-field-period finite-pressure/current "
-            "stellarator with an angle-dependent plasma/external split and "
-            "more than 30 percent plasma field at formal radius 0.45."
+            "Curvo stellarator-database configuration 52521: a strongly "
+            "nonplanar finite-pressure, zero-current stellarator used for "
+            "the plasma/external and VMEX showcases."
         ),
-        rc=(1.0, 0.008),
-        zs=(0.0, -0.008),
-        nfp=2,
-        etabar=0.5,
-        I2=1.55,
-        p2=-1000.0,
+        rc=(1.0, -0.5415884, 0.029195854, 0.0048646266),
+        zs=(0.0, -0.57113713, 0.029922731, 0.0041398546),
+        nfp=4,
+        etabar=1.1396117,
+        B2c=-0.050057083,
+        I2=0.0,
+        p2=-28248.188,
+        order="r3",
+        source_database_id=52521,
+        source_url="https://stellarator.physics.wisc.edu/app/plot/52521",
     ),
 )
 

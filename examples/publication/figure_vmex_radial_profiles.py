@@ -13,7 +13,7 @@ from pyqsc_jax.plotting import plot_surface_3d
 
 CASES = (
     ("qa", "vacuum QA"),
-    ("plasma_stellarator", "finite beta/current"),
+    ("plasma_stellarator", r"finite $p_2$, $I_2=0$"),
 )
 RADIUS = 0.02
 QS_SURFACES = (0.2, 0.4, 0.6, 0.8, 1.0)
@@ -37,6 +37,7 @@ try:
             ns_array=(7,),
             ftol=1.0e-7,
             max_iterations=1200,
+            adjoint_tol=1.0e-8,
             multigrid=False,
         )
         equilibrium = problem.solve()
@@ -68,7 +69,7 @@ plot_surface_3d(
     cmap="magma",
 )
 surface_axis.view_init(elev=25, azim=35)
-surface_axis.set_title("VMEX source boundary\nfinite pressure and current")
+surface_axis.set_title(r"VMEX source boundary" "\n" r"finite $p_2$, exactly $I_2=0$")
 
 iota_axis = figure.add_subplot(2, 2, 2)
 qs_axis = figure.add_subplot(2, 2, 3)
@@ -130,6 +131,7 @@ metadata = {
     "vmex_version": finite_problem.vmex_version,
     "vmex_validated_commit": finite_problem.validated_commit,
     "radius": RADIUS,
+    "adjoint_tolerance": finite_problem.adjoint_tol,
     "cases": {
         label: {
             "iota": np.asarray(quantities.iota).tolist(),

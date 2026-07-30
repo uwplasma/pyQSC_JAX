@@ -65,6 +65,7 @@ class VmexProblem:
     newton_iterations: int
     ftol: float
     max_iterations: int
+    adjoint_tol: float
     multigrid: bool
     device: Any
     vmex_version: str
@@ -237,6 +238,7 @@ def to_vmex_problem(
     ftol_array: Any | None = None,
     ftol: float = 1.0e-10,
     max_iterations: int = 5000,
+    adjoint_tol: float = 1.0e-11,
     multigrid: bool = True,
     device: Any = None,
 ) -> VmexProblem:
@@ -265,6 +267,8 @@ def to_vmex_problem(
         helicity_n = -int(np.asarray(solution.helicity))
     if not isinstance(helicity_n, int) or isinstance(helicity_n, bool):
         raise ValueError("helicity_n must be an integer.")
+    if not np.isfinite(adjoint_tol) or adjoint_tol <= 0:
+        raise ValueError("adjoint_tol must be positive and finite.")
 
     boundary = vmec_boundary(
         solution,
@@ -335,6 +339,7 @@ def to_vmex_problem(
         newton_iterations=newton_iterations,
         ftol=float(ftol),
         max_iterations=max_iterations,
+        adjoint_tol=float(adjoint_tol),
         multigrid=bool(multigrid),
         device=device,
         vmex_version=str(vmex.__version__),
@@ -386,6 +391,7 @@ def solve_vmex(problem: VmexProblem, parameters: Any | None = None) -> VmexEquil
         selected_parameters,
         ftol=problem.ftol,
         max_iterations=problem.max_iterations,
+        adjoint_tol=problem.adjoint_tol,
         multigrid=problem.multigrid,
         device=problem.device,
     )
