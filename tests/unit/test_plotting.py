@@ -22,11 +22,17 @@ def test_axis_and_b20_plotters_return_objects():
     solution = qsc.solve_configuration("qa", nphi=31)
     figure_axis, axis = plot_axis(solution, samples=31, label="QA")
     figure_b20, b20_axis = plot_b20(solution, label="QA")
+    reused_axis_figure, reused_axis = plot_axis(solution, ax=axis, samples=31)
+    reused_b20_figure, reused_b20_axis = plot_b20(solution, ax=b20_axis)
 
     assert axis.figure is figure_axis
     assert b20_axis.figure is figure_b20
-    assert len(axis.lines) == 1
-    assert len(b20_axis.lines) == 1
+    assert reused_axis_figure is figure_axis
+    assert reused_axis is axis
+    assert reused_b20_figure is figure_b20
+    assert reused_b20_axis is b20_axis
+    assert len(axis.lines) == 2
+    assert len(b20_axis.lines) == 2
 
 
 def test_field_jet_norm_plotter_and_axes_guard():
@@ -51,13 +57,22 @@ def test_surface_and_angle_dependent_field_split_plotters():
     solution = qsc.solve_configuration("plasma_stellarator", nphi=31)
     x, y, z = surface_coordinates(solution, radius=0.05, ntheta=12)
     figure, axis = plot_surface_3d(solution, radius=0.05, ntheta=12)
+    reused_figure, reused_axis = plot_surface_3d(
+        solution,
+        radius=0.05,
+        ntheta=12,
+        ax=axis,
+        plot_axis_line=False,
+    )
     result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.1)
     components = field_split_frenet_components(result, solution)
     component_figure, axes = plot_field_split_components(result, solution)
 
     assert x.shape == y.shape == z.shape == (12, 63)
     assert axis.figure is figure
-    assert len(axis.collections) == 1
+    assert reused_figure is figure
+    assert reused_axis is axis
+    assert len(axis.collections) == 2
     assert components.shape == (3, 3, 31)
     assert axes.shape == (3,)
     assert component_figure is axes[0].figure
