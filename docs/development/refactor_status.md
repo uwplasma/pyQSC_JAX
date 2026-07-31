@@ -241,6 +241,7 @@ was made for that phase.
 
 ## Phase 16 — final VMEC, VMEX, and ESSOS integration
 
+- Commits: pyQSC_JAX `060aef3`; ESSOS `da66774`.
 - Files: convergence-safe VMEC/VMEX boundary conversion, a live
   finite-pressure and exactly zero-current VMEC regression, explicit opt-in
   VMEX examples, and pressure-only stage-two and single-stage ESSOS examples.
@@ -258,6 +259,10 @@ was made for that phase.
   optimization examples. Both use the nonplanar, finite-pressure database
   stellarator ID 52521 with exactly \(I_2=0\), and every field/gradient/Hessian
   residual block decreases in both stage-two and single-stage runs.
+- Publication verification: all ten scripts were regenerated from
+  `060aef3`. Physics figures record that exact source commit; performance
+  figures retain the exact commit of their synchronized raw benchmark report.
+  The committed README PNGs were byte-stable and visually re-inspected.
 - Complete pyQSC_JAX evidence: the branch-coverage run completed 294 tests
   before two VMEX subprocesses reached their former 180 s instrumentation
   timeout; after making the documented VMEX opt-in explicit, those exact two
