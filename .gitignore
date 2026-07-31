@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.audit/
+docs/_build/
+build/
+dist/
+*.egg-info/
+examples/output/
+benchmarks/results/

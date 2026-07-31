@@ -1,0 +1,142 @@
+"""Publication gallery of independently screened stellarator designs."""
+
+import json
+import subprocess
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+import pyqsc_jax as qsc
+from pyqsc_jax.plotting import plot_surface_3d
+
+CASES = (
+    (
+        "database_qa_139524",
+        r"QA • database ID 139524 • 1 field period",
+        0.03,
+        "viridis",
+        32,
+        55,
+        0.3,
+    ),
+    (
+        "database_example_3",
+        r"QH • database ID 3 • 4 field periods",
+        0.075,
+        "magma",
+        23,
+        35,
+        0.4,
+    ),
+    (
+        "b20_optimized_good",
+        r"optimization • nearly constant $B_{20}$",
+        0.075,
+        "cividis",
+        28,
+        28,
+        0.4,
+    ),
+    (
+        "database_large_singularity_107579",
+        r"robust surface • large $r_\mathrm{sing}$",
+        0.15,
+        "plasma",
+        25,
+        40,
+        0.4,
+    ),
+)
+NPHI = 121
+OUTPUT_STEM = Path("examples/output/publication/stellarator_gallery")
+README_PNG = Path("docs/_static/stellarator_gallery.png")
+SAVE_OUTPUT = True
+SHOW_FIGURE = False
+
+plt.style.use("seaborn-v0_8-whitegrid")
+figure = plt.figure(figsize=(12.0, 9.2))
+metadata = {"nphi": NPHI, "configurations": {}}
+
+print("Rendering the bundled stellarator gallery...")
+for panel, (
+    name,
+    title,
+    radius,
+    cmap,
+    elevation,
+    azimuth,
+    minimum_abs_iota,
+) in enumerate(CASES, start=1):
+    solution = qsc.solve_configuration(name, nphi=NPHI)
+    criteria = qsc.Criteria.from_curvo_2025(
+        minimum_abs_iota=minimum_abs_iota,
+    )
+    assert criteria.evaluate(solution).passed
+    axis = figure.add_subplot(2, 2, panel, projection="3d")
+    plot_surface_3d(
+        solution,
+        radius=radius,
+        ntheta=36,
+        ax=axis,
+        cmap=cmap,
+    )
+    axis.view_init(elev=elevation, azim=azimuth)
+    if name == "b20_optimized_good":
+        diagnostic = rf"$\|P B_{{20}}\|_2={float(solution.B20_residual):.2e}$"
+    elif name == "database_large_singularity_107579":
+        diagnostic = rf"$r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+    elif name == "database_qa_139524":
+        diagnostic = rf"helicity $=0$, $|\iota|={abs(float(solution.iota)):.3f}$"
+    else:
+        diagnostic = rf"$|\iota|={abs(float(solution.iota)):.3f}$"
+    axis.set_title(
+        title
+        + "\n"
+        + diagnostic
+        + (
+            ""
+            if name == "database_large_singularity_107579"
+            else rf", $r_\mathrm{{sing}}={float(solution.r_singularity):.3f}$ m"
+        )
+        + "\nCurvo profile: pass"
+    )
+    metadata["configurations"][name] = {
+        "surface_radius": radius,
+        "iota": float(solution.iota),
+        "B20_residual": float(solution.B20_residual),
+        "singular_radius": float(solution.r_singularity),
+        "surface_to_singular_radius": radius / float(solution.r_singularity),
+        "curvo_profile_minimum_abs_iota": minimum_abs_iota,
+        "curvo_profile_passed": True,
+        "source_database_id": qsc.get_configuration(name).source_database_id,
+        "source_url": qsc.get_configuration(name).source_url,
+        "I2": float(solution.inputs.I2),
+        "p2": float(solution.inputs.p2),
+        "torsion_rms": float((solution.torsion**2).mean() ** 0.5),
+    }
+figure.tight_layout()
+
+try:
+    repository = Path(__file__).resolve().parents[2]
+    commit = subprocess.check_output(
+        ("git", "-C", str(repository), "rev-parse", "HEAD"),
+        text=True,
+    ).strip()
+except (OSError, subprocess.CalledProcessError):
+    commit = "unavailable"
+metadata["git_commit"] = commit
+if SAVE_OUTPUT:
+    OUTPUT_STEM.parent.mkdir(parents=True, exist_ok=True)
+    for suffix in ("png", "svg", "pdf"):
+        figure.savefig(OUTPUT_STEM.with_suffix(f".{suffix}"), dpi=220, bbox_inches="tight")
+    README_PNG.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(README_PNG, dpi=130, bbox_inches="tight")
+    OUTPUT_STEM.with_suffix(".json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print("saved:", OUTPUT_STEM)
+if SHOW_FIGURE:
+    plt.show()
+else:
+    plt.close(figure)

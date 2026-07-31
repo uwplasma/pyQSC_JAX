@@ -1,0 +1,30 @@
+name: benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "29 8 * * 0"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JAX_ENABLE_X64: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -m numerics
+      - run: python benchmarks/benchmark_core.py
+        env:
+          PYQSC_BENCHMARK_OUTPUT: benchmarks/results/ci.json
+      - name: Record environment
+        run: python -m pip freeze
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmarks/results/ci.json

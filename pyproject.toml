@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyqsc-jax"
+description = "Differentiable near-axis stellarator construction and plasma-coil field jets in JAX"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "UW Plasma", email = "rogerio.jorge@wisc.edu" }]
+requires-python = ">=3.12"
+dynamic = ["version"]
+dependencies = ["jax", "solvax"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/uwplasma/pyQSC_JAX"
+Documentation = "https://pyqsc-jax.readthedocs.io"
+Issues = "https://github.com/uwplasma/pyQSC_JAX/issues"
+Source = "https://github.com/uwplasma/pyQSC_JAX"
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+vmex = ["vmex"]
+docs = [
+  "furo",
+  "myst-parser",
+  "sphinx",
+  "sphinx-copybutton",
+  "sphinxcontrib-bibtex",
+]
+dev = [
+  "build",
+  "numpy",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "scipy",
+  "twine",
+]
+
+[tool.hatch.version]
+path = "src/pyqsc_jax/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyqsc_jax"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "integration: cross-package or optional-runtime integration tests",
+  "literature: regression tests tied to published configurations",
+  "numerics: numerical convergence and conditioning tests",
+  "physics: independent physical identity tests",
+  "slow: tests excluded from the default quick developer loop",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["pyqsc_jax"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true

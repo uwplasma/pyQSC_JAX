@@ -1,0 +1,40 @@
+{
+  "case": "qa_r0025",
+  "description": "Small-radius fixed-boundary VMEC validation of the pyQSC_JAX exporter.",
+  "generator": {
+    "executable": "/Users/rogerio/base_env/bin/xvmec",
+    "vmec_version": "9.0",
+    "platform": "macOS arm64"
+  },
+  "near_axis": {
+    "B0": 1.0,
+    "etabar": -0.9,
+    "iota": 0.41830691021517735,
+    "nfp": 3,
+    "nphi": 121,
+    "order": "r2",
+    "radius": 0.0025,
+    "rc": [1.0, 0.045],
+    "zs": [0.0, -0.045]
+  },
+  "export": {
+    "maximum_R_reconstruction_error": 1.460998e-06,
+    "maximum_Z_reconstruction_error": 1.080278e-06,
+    "maximum_toroidal_angle_residual": 1.387779e-17,
+    "mpol": 6,
+    "ntheta": 32,
+    "ntor": 6
+  },
+  "files": {
+    "input.qa_r0025": "5444b159de7562681363f65426e814fb46c11437cf3d1b31e5c20ba7c1fbedc1",
+    "wout_qa_r0025.nc": "0bbbb1e7681462aec1c6b726edc8d20dc1c18ce00116174159ae330d7ee73835"
+  },
+  "vmec_result": {
+    "aspect": 398.2269295920157,
+    "fsql": 2.402075927993851e-11,
+    "fsqr": 7.589358862704765e-11,
+    "fsqz": 4.213307210656955e-11,
+    "iota_axis": 0.418543069691998,
+    "relative_iota_error": 0.0005645603050142573
+  }
+}

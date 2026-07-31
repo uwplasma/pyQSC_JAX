@@ -1,0 +1,52 @@
+{
+  "git_commit": "8fb457deeb8b71dca0bc3d06d2da5fd9cbc99c4f",
+  "jax": "0.11.0",
+  "jax_backend": "cpu",
+  "jax_enable_x64": true,
+  "modes": [
+    1,
+    2,
+    3
+  ],
+  "nphi": 121,
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.7",
+  "results": [
+    {
+      "function_evaluations": 1,
+      "method": "exact B2c only",
+      "seconds": 0.0,
+      "weighted_l2": 0.030992772869247103
+    },
+    {
+      "function_evaluations": 70,
+      "method": "SciPy L-BFGS-B",
+      "seconds": 0.1407689999905415,
+      "weighted_l2": 0.00020139241185160374
+    },
+    {
+      "function_evaluations": 28,
+      "method": "SciPy least_squares",
+      "seconds": 1.3488249160000123,
+      "weighted_l2": 0.00010250101789370511
+    },
+    {
+      "function_evaluations": 120,
+      "method": "SciPy differential_evolution, low budget",
+      "seconds": 0.10409141599666327,
+      "weighted_l2": 0.2657663516222627
+    },
+    {
+      "distinct_basins": 3,
+      "function_evaluations": 130,
+      "method": "pyQSC_JAX multistart Levenberg-Marquardt",
+      "seconds": 21.77209062501788,
+      "status": "best_found",
+      "weighted_l2": 0.00010827903169153683
+    }
+  ],
+  "selected_configuration": "b20_optimized_good",
+  "source_database_id": 57409,
+  "source_url": "https://stellarator.physics.wisc.edu/app/plot/57409",
+  "timing_note": "SciPy timings exclude shared residual/Jacobian compilation; the pyQSC_JAX multistart timing includes compilation of its independent closure."
+}
