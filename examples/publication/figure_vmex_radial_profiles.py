@@ -1,6 +1,7 @@
 """Publication figure for the differentiable pyQSC_JAX-to-VMEX bridge."""
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -21,6 +22,10 @@ OUTPUT_STEM = Path("examples/output/publication/vmex_radial_profiles")
 README_PNG = Path("docs/_static/vmex_radial_profiles.png")
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
+
+if os.environ.get("PYQSC_RUN_VMEX") != "1":
+    print("Set PYQSC_RUN_VMEX=1 to regenerate the optional VMEX publication figure.")
+    raise SystemExit(0)
 
 print("Solving vacuum and finite-beta radial equilibria with VMEX...")
 records = []

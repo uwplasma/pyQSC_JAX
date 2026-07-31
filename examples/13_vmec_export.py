@@ -37,7 +37,9 @@ export = qsc.to_vmec(
 boundary = export.boundary
 print("input:", export.path)
 print("conversion seconds (compile + first execution):", export.conversion_seconds)
+print("toroidal-angle inversion converged:", bool(boundary.toroidal_angle_converged))
 print("maximum toroidal-angle residual:", float(boundary.maximum_toroidal_angle_residual))
+print("toroidal-angle tolerance:", float(boundary.toroidal_angle_tolerance))
 print("maximum R reconstruction error [m]:", float(boundary.maximum_R_reconstruction_error))
 print("maximum Z reconstruction error [m]:", float(boundary.maximum_Z_reconstruction_error))
 print("run with: xvmec", export.path.name)

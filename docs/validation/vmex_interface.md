@@ -19,6 +19,10 @@ The fixed-boundary solve and derived quantities remain inside the JAX
 transformation. Unit tests also differentiate through
 `problem.parameters_for(candidate_solution)`, which includes pyQSC_JAX's
 surface conversion and pressure/current normalization.
+The same diagnosed cylindrical-angle conversion used by `to_vmec` is used
+in-memory. Concrete nonconvergence raises, while a traced optimization that
+leaves the valid conversion domain receives nonfinite boundary leaves instead
+of a silently incorrect equilibrium.
 
 The live compatibility test covers:
 
@@ -26,6 +30,11 @@ The live compatibility test covers:
 | --- | ---: | ---: | --- | --- |
 | vacuum QA | zero | zero | nonplanar QA | \(\iota(s)\), QS profile, well, implicit boundary gradient |
 | `plasma_stellarator` (database ID 52521) | finite | exactly zero | nonplanar, RMS torsion \(0.979\ \mathrm{m}^{-1}\) | \(\iota(s)\), QS profile, well, nonzero thermal energy, implicit pressure/boundary gradients |
+
+Both live cases, including their implicit gradients, passed locally against
+the exact current VMEX `main` commit above on 2026-07-30. The same source
+checkout is installed by the compatibility CI job rather than relying on a
+stale wheel.
 
 At the deliberately small `ns=7`, `mpol=4`, `ntor=2` smoke resolution, the
 vacuum VMEX axis value in the pyQSC_JAX sign convention is `-0.421520`,

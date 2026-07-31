@@ -24,8 +24,8 @@ first stable release.
   optimizer screening followed by staged eight-mode refinement.
 - Vectorized, JIT-compiled VMEC boundary export with all four coefficient
   families, deterministic INDATA output, conversion diagnostics,
-  legacy-adapter support, a frozen VMEC 9.0 `wout` regression, and an opt-in
-  local-VMEC rerun.
+  legacy-adapter support, a frozen VMEC 9.0 `wout` regression, and opt-in
+  vacuum and finite-pressure, zero-current local-VMEC reruns.
 - Dense-grid `b20_optimized_qa` reference with a verified
   \(1.59\times10^{-6}\) weighted residual and reproducible comparisons across
   L-BFGS-B, least-squares, differential-evolution, and multistart
@@ -116,6 +116,18 @@ first stable release.
 
 ### Fixed
 
+- VMEC export now records the cylindrical-angle inversion tolerance and
+  convergence state, rejects nonfinite or nonpositive radii, and refuses to
+  write an invalid boundary when the inversion has not converged. The VMEX
+  bridge applies the same guard, while traced invalid candidates map to
+  nonfinite coefficients instead of silently solving a different surface.
+- VMEX tutorial and publication scripts now require the explicit
+  `PYQSC_RUN_VMEX=1` opt-in used by live integration CI, so installing VMEX
+  does not unexpectedly turn the ordinary example matrix into a multi-minute
+  equilibrium run.
+- ESSOS finite-beta demonstrations now use a nonplanar database stellarator
+  with finite pressure and exactly zero toroidal current; the single-stage
+  design vector can no longer vary \(I_2\).
 - A no-op assignment to legacy `dofs` no longer exchanges normal and binormal
   cylindrical components.
 - The legacy sigma calculation no longer assumes exactly five Newton updates.

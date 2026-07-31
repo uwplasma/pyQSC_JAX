@@ -10,6 +10,18 @@ Install the optional dependency:
 python -m pip install 'pyqsc-jax[vmex,plot]'
 ```
 
+The equilibrium and implicit-adjoint compile are intentionally opt-in for the
+direct script:
+
+```bash
+PYQSC_RUN_VMEX=1 python examples/14_vmex_radial_profiles.py
+```
+
+Without that environment variable the script exits successfully after
+printing the activation command. This keeps the all-examples gate bounded
+when VMEX happens to be installed; the compatibility workflow separately runs
+the real vacuum and finite-beta solves.
+
 The complete executable example is:
 
 ```{literalinclude} ../../examples/14_vmex_radial_profiles.py

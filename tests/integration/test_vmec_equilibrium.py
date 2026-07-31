@@ -23,6 +23,7 @@ def _read_vmec_result(path: Path) -> dict[str, float | int]:
             "fsqr": float(dataset.variables["fsqr"].data),
             "fsqz": float(dataset.variables["fsqz"].data),
             "fsql": float(dataset.variables["fsql"].data),
+            "pressure_axis": float(dataset.variables["presf"].data[0]),
         }
 
 
@@ -97,3 +98,46 @@ def test_local_vmec_rerun_when_executable_is_requested(tmp_path):
     assert result["ier_flag"] == 0
     assert max(result["fsqr"], result["fsqz"], result["fsql"]) < 1.0e-9
     np.testing.assert_allclose(result["iota_axis"], solution.iota, rtol=1.0e-3)
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+def test_local_vmec_finite_pressure_zero_current_database_case(tmp_path):
+    executable = os.environ.get("PYQSC_VMEC_EXECUTABLE")
+    if not executable:
+        pytest.skip("Set PYQSC_VMEC_EXECUTABLE to rerun the finite-beta VMEC case.")
+    solution = qsc.solve_configuration("database_qa_139524", nphi=241, order="r3")
+    export = qsc.to_vmec(
+        solution,
+        tmp_path / "input.qa139524_beta_r0015",
+        r=0.0015,
+        ntheta=40,
+        mpol=8,
+        ntor=8,
+        parameters={
+            "ns_array": (31, 61),
+            "ftol_array": (1.0e-9, 1.0e-11),
+            "niter_array": (3000, 5000),
+        },
+    )
+    subprocess.run(
+        [executable, "input.qa139524_beta_r0015"],
+        cwd=tmp_path,
+        check=True,
+        timeout=120,
+    )
+    result = _read_vmec_result(tmp_path / "wout_qa139524_beta_r0015.nc")
+    torsion_rms = np.sqrt(
+        np.sum(np.asarray(solution.torsion**2 * solution.geometry.d_l_d_phi))
+        / np.sum(np.asarray(solution.geometry.d_l_d_phi))
+    )
+
+    assert solution.inputs.I2 == 0
+    assert solution.inputs.p2 != 0
+    assert export.curtor == 0
+    assert export.pressure_axis > 0
+    assert result["pressure_axis"] == pytest.approx(export.pressure_axis)
+    assert torsion_rms > 1.0
+    assert result["ier_flag"] == 0
+    assert max(result["fsqr"], result["fsqz"], result["fsql"]) < 1.0e-9
+    np.testing.assert_allclose(result["iota_axis"], solution.iota, rtol=5.0e-4)

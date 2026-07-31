@@ -17,14 +17,16 @@ Zenodo archive/DOI.
 | Gate | Result |
 | --- | --- |
 | Ruff lint and format | clean over `src`, `tests`, `examples`, `benchmarks` |
-| Full test/coverage run | 287 passed, 3 integration skips; 98.79% combined line/branch coverage |
+| Full test/coverage matrix | 296 passed, 4 opt-in integration skips; coverage run measured 98.75% lines and 95.898% branches |
 | Documentation | HTML and doctest builders pass with warnings as errors |
 | Examples | 14 tutorials + 10 publication scripts pass from clean cwd |
 | Package metadata | wheel and sdist pass `twine check` |
 | Clean artifacts | wheel and independently rebuilt sdist pass physics smokes |
 | Dependencies | both environments pass `pip check`; no known advisories |
 | High-resolution parity | QA/finite/QH r2 max array delta \(1.11\times10^{-11}\) at `nphi=121` |
-| ESSOS clean integration | 12 field-jet/objective/example tests pass |
+| VMEC live integration | vacuum and finite-pressure, exactly zero-current equilibria pass; the latter has 0.02143% on-axis-iota error and \(9.97\times10^{-12}\) force residual |
+| VMEX live integration | 2 vacuum/finite-beta current-main solves pass, including implicit pressure and boundary gradients |
+| ESSOS clean integration | 13 field-jet/objective/example tests pass with pressure-only, exactly zero-current targets |
 | Mutation: sigma sign | upstream-reference test fails with 200% relative transform error |
 | Mutation: external Hessian `-`→`+` | STF symmetry test fails with order-unity error |
 
@@ -63,6 +65,9 @@ JAX/SOLVAX dependency tree.
   solver iteration histories.
 - Nonconverged candidates retain structured reports and are never silently
   certified.
+- VMEC and concrete VMEX boundary conversion refuse nonfinite, nonpositive,
+  or cylindrically unconverged surfaces; traced invalid VMEX candidates become
+  nonfinite instead of silently changing the requested boundary.
 - JIT, VMAP, JVP, VJP, and finite-difference tests cover first order, r2,
   inverse branches, optimization, and plasma jets.
 - Discrete basin selection is not advertised as differentiable; smooth
@@ -110,8 +115,9 @@ JAX/SOLVAX dependency tree.
 - Magnetic shear supports only the documented standard-MHS sign
   specialization.
 - A finite multistart budget cannot certify a nonzero global minimum.
-- Fast-particle confinement, finite-radius equilibrium, and coil engineering
-  are external validations.
+- VMEX supplies differentiable fixed-boundary finite-radius equilibrium
+  quantities, but fast-particle confinement, free-boundary equilibrium, and
+  detailed coil engineering remain external validations.
 - The ESSOS base branch retains unrelated collection and documentation
   failures described in ESSOS PR #46; the new field-jet slice is independently
   green.

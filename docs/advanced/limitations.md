@@ -17,6 +17,11 @@
 - Traceable VMEX quasisymmetry profiles currently require stellarator
   symmetry; use `qs_surfaces=()` for an asymmetric equilibrium without QS.
 - VMEX magnetic well is an endpoint scalar, not a radial profile.
+- VMEC/VMEX boundary conversion requires the near-axis surface to admit the
+  cylindrical-toroidal angle inversion at the requested radius. The
+  conversion reports this condition and disk-writing APIs reject failures;
+  a singular-radius estimate alone does not guarantee cylindrical
+  star-shapedness.
 - “Surface-free” plasma/coil separation still requires a positive formal
   radius or equivalent current/flux normalization.
 - Coil feasibility and fast-particle confinement remain ESSOS or external

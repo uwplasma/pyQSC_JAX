@@ -191,6 +191,9 @@ def test_empty_qs_surface_list_supports_asymmetric_equilibrium(fake_vmex):
         ({"ftol_array": (1.0e-7, 1.0e-8)}, "one positive"),
         ({"max_iterations": 0}, "positive integer"),
         ({"adjoint_tol": 0.0}, "positive and finite"),
+        ({"toroidal_angle_tolerance": -1.0}, "nonnegative and finite"),
+        ({"newton_iterations": 0}, "positive"),
+        ({"ntheta": 7}, "ntheta"),
         ({"helicity_m": 1.5}, "integer"),
         ({"helicity_n": 1.5}, "integer"),
     ],
@@ -203,6 +206,11 @@ def test_problem_validation(fake_vmex, kwargs, message):
 def test_asymmetric_quasisymmetry_guard(fake_vmex):
     with pytest.raises(NotImplementedError, match="stellarator-symmetric"):
         make_problem(fake_vmex, solution=qa_solution(asymmetric=True))
+
+
+def test_unconverged_vmex_boundary_is_rejected(fake_vmex):
+    with pytest.raises(RuntimeError, match="angle inversion did not converge"):
+        make_problem(fake_vmex, newton_iterations=1)
 
 
 def test_parameter_remap_rejects_changed_field_period(fake_vmex):

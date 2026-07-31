@@ -61,6 +61,8 @@ def test_vmec_boundary_is_accurate_and_fast_after_compilation(tmp_path):
     total_warm_seconds = perf_counter() - start
 
     assert float(boundary.maximum_toroidal_angle_residual) < 2.0e-15
+    assert bool(boundary.toroidal_angle_converged)
+    assert float(boundary.toroidal_angle_tolerance) > 0
     assert float(boundary.maximum_R_reconstruction_error) < 5.0e-6
     assert float(boundary.maximum_Z_reconstruction_error) < 5.0e-6
     assert warm_seconds < 0.5
@@ -245,8 +247,12 @@ def test_vmec_input_parameter_guards(kwargs, message):
     "kwargs, message",
     [
         ({"r": 0.0}, "r must be positive"),
+        ({"r": float("nan")}, "r must be positive"),
         ({"ntor_max": -1}, "ntor_max"),
         ({"coefficient_tolerance": -1.0}, "coefficient_tolerance"),
+        ({"coefficient_tolerance": float("nan")}, "coefficient_tolerance"),
+        ({"toroidal_angle_tolerance": -1.0}, "toroidal_angle_tolerance"),
+        ({"toroidal_angle_tolerance": float("nan")}, "toroidal_angle_tolerance"),
         ({"ntheta": 7, "mpol": 3}, "ntheta"),
         ({"mpol": 0}, "positive"),
         ({"ntor": -1}, "nonnegative"),
@@ -269,6 +275,21 @@ def test_to_vmec_resolution_and_scalar_guards(tmp_path, kwargs, message):
             tmp_path / "input.invalid",
             **options,
         )
+
+
+def test_to_vmec_rejects_unconverged_angle_inversion_without_writing(tmp_path):
+    output = tmp_path / "input.unconverged"
+    with pytest.raises(RuntimeError, match="no VMEC input was written"):
+        qsc.to_vmec(
+            qa_solution(),
+            output,
+            r=0.03,
+            ntheta=40,
+            mpol=12,
+            ntor=14,
+            newton_iterations=1,
+        )
+    assert not output.exists()
 
 
 def test_to_vmec_rejects_unknown_control(tmp_path):

@@ -3,11 +3,18 @@
 ## Conversion algorithm
 
 `uniform_cylindrical_surface` solves the cylindrical-toroidal angle inversion
-for the entire poloidal/toroidal grid with six JAX Newton steps. Its derivative
-is obtained by JVP, so no finite-difference step is selected. `vmec_boundary`
-then computes `RBC`, `RBS`, `ZBC`, and `ZBS` simultaneously with a
-two-dimensional FFT. This replaces the legacy scalar dense-root solve at every
-surface point and the direct Fourier quadrature over every retained mode.
+for the entire poloidal/toroidal grid with six vectorized JAX Newton
+steps. Its derivative is obtained by JVP, so no finite-difference step is
+selected. `vmec_boundary` reports the maximum residual, a dtype-aware default
+tolerance of 100 machine epsilons, and a convergence flag. `to_vmec` raises
+before writing if that flag is false; this prevents a large, non-star-shaped
+or otherwise failed surface inversion from looking like a valid VMEC input.
+The tolerance can be tightened explicitly.
+
+After the angle solve, `vmec_boundary` computes `RBC`, `RBS`, `ZBC`, and
+`ZBS` simultaneously with a two-dimensional FFT. This replaces the legacy
+scalar dense-root solve at every surface point and the direct Fourier
+quadrature over every retained mode.
 
 At `nphi=61`, `ntheta=40`, `mpol=12`, and `ntor=14`, the new surface agrees
 with the independent legacy root-based conversion to \(1.6\times10^{-14}\) m.
@@ -40,6 +47,29 @@ test run. The test checks the checksum, normal termination, force residuals,
 and on-axis transform. Set
 `PYQSC_VMEC_EXECUTABLE=/path/to/xvmec` to enable the second integration test,
 which regenerates the input and reruns VMEC in a temporary directory.
+
+## Finite-pressure, zero-current database check
+
+A second opt-in local test exercises the user-facing finite-beta regime rather
+than a finite-current channel. It uses Wisconsin stellarator-database QA
+[ID 139524](https://stellarator.physics.wisc.edu/app/plot/139524), which has
+finite \(p_2=-2.32744\times10^5\ \mathrm{Pa/m^2}\), exactly \(I_2=0\),
+\(|\iota|=0.354802\), and RMS axis torsion
+\(1.189\ \mathrm{m}^{-1}\). The export uses \(r=0.0015\) m,
+`nphi=241`, `ntheta=40`, `mpol=8`, `ntor=8`, and radial stages
+`ns=(31, 61)`.
+
+| Quantity | Near axis | VMEC |
+| --- | ---: | ---: |
+| on-axis \(\iota\) | \(-0.35480218\) | \(-0.35472615\) |
+| relative difference | — | 0.02143% |
+| on-axis pressure | 0.523673 Pa | 0.523673 Pa |
+| enclosed current | exactly 0 A | exactly 0 A input |
+| maximum force residual | — | \(9.97\times10^{-12}\) |
+
+This small radius is intentional: the transform comparison is an asymptotic
+on-axis validation, while finite-beta radial behavior at practical boundary
+radii is exercised by the VMEX integration.
 
 ## Radius convergence
 

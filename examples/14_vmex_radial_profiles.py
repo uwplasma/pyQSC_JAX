@@ -1,5 +1,6 @@
 """Solve differentiable radial equilibrium quantities with optional VMEX."""
 
+import os
 from pathlib import Path
 
 import jax
@@ -14,6 +15,10 @@ QS_SURFACES = (0.25, 0.5, 0.75, 1.0)
 OUTPUT = Path("examples/output/14_vmex_radial_profiles.png")
 SAVE_FIGURE = True
 SHOW_FIGURE = False
+
+if os.environ.get("PYQSC_RUN_VMEX") != "1":
+    print("Set PYQSC_RUN_VMEX=1 to run the optional VMEX equilibrium example.")
+    raise SystemExit(0)
 
 print("Constructing the near-axis boundary...")
 solution = qsc.solve_configuration(CONFIGURATION, nphi=31)

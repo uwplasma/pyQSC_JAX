@@ -10,9 +10,10 @@ plasma–coil field jets in JAX.
 [![DOI pending](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](docs/release_checklist.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Status:** development branch for the 0.2 refactor. The physics,
-> compatibility, and external 3+5+7 field-jet paths are validated; release
-> hardening is still in progress.
+> **Status:** development branch for the 0.2 refactor. The local physics,
+> compatibility, VMEC/VMEX, packaging, and external 3+5+7 field-jet gates are
+> validated. Maintainer review, trusted publishing, and archival release
+> metadata remain external release gates.
 
 ![A visually diverse gallery of screened QA, QH, optimized, and large-clearance stellarators](docs/_static/stellarator_gallery.png)
 
@@ -136,6 +137,8 @@ resolution, timing, and radius-convergence tables are in the
 | Finite-beta showcase axis torsion, RMS | \(0.979\ \mathrm{m}^{-1}\) | \(>0.5\ \mathrm{m}^{-1}\) |
 | VMEC/near-axis on-axis \(\iota\), \(r=0.0025\) | 0.418543 / 0.418307 | relative error \(<0.1\%\) |
 | VMEC force residuals | \(2.4\)–\(7.6\times10^{-11}\) | maximum \(<10^{-9}\) |
+| Finite-pressure, \(I_2=0\) database QA VMEC/near-axis \(\iota\), \(r=0.0015\) | \(-0.354726\) / \(-0.354802\) | relative error \(0.0214\%\) |
+| Finite-pressure database QA VMEC force residuals | \(2.2\)–\(10.0\times10^{-12}\) | maximum \(<10^{-9}\) |
 | `to_vmec`, Apple M4 CPU, compile+execute / warm | 0.476 s / 5.20 ms | warm unit gate \(<0.5\) s |
 | First-order solve, `nphi=61`, Apple CPU, compile+execute / warm | 198.2 ms / 0.144 ms | synchronized median; 1,373× amortized speedup |
 
@@ -286,6 +289,7 @@ solution = qsc.Qsc(
 )
 export = qsc.to_vmec(solution, "input.qa", r=0.005)
 print(export.conversion_seconds)
+print(export.boundary.toroidal_angle_converged)
 print(export.boundary.maximum_R_reconstruction_error)
 ```
 
@@ -293,9 +297,10 @@ This small-radius QA input is a conversion-validation reference, not one of
 the screened finite-beta showcase devices above. The exporter uses a
 vectorized Newton inversion and a two-dimensional FFT,
 supports all four VMEC boundary coefficient families, and returns conversion
-diagnostics. The committed `wout` regression checks the resulting equilibrium,
-including the on-axis transform; an opt-in test can rerun a local VMEC
-executable.
+diagnostics. An unconverged toroidal-angle inversion raises before any file is
+written. The committed `wout` regression checks the resulting equilibrium,
+including the on-axis transform; opt-in tests rerun local VMEC for both the
+vacuum reference and the finite-pressure, zero-current database QA case.
 
 ## Learn and validate
 

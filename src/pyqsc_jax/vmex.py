@@ -13,7 +13,7 @@ import numpy as np
 
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.second_order import MU0
-from pyqsc_jax.vmec import VmecBoundary, vmec_boundary
+from pyqsc_jax.vmec import VmecBoundary, _validated_resolution, vmec_boundary
 
 VMEX_VALIDATED_COMMIT = "2a40d7566be083070ea3ea534fa5d1fc44ad733a"
 
@@ -63,6 +63,7 @@ class VmexProblem:
     mpol: int
     ntor: int
     newton_iterations: int
+    toroidal_angle_tolerance: float
     ftol: float
     max_iterations: int
     adjoint_tol: float
@@ -170,6 +171,20 @@ def _is_asymmetric(boundary: VmecBoundary, tolerance: float = 1.0e-13) -> bool:
     )
 
 
+def _require_converged_boundary(boundary: VmecBoundary) -> None:
+    """Reject concrete failures while remaining usable inside JAX tracing."""
+
+    try:
+        converged = bool(boundary.toroidal_angle_converged)
+    except jax.errors.TracerBoolConversionError:
+        return
+    if not converged:
+        raise RuntimeError(
+            "The VMEX boundary angle inversion did not converge. Reduce r or "
+            "increase newton_iterations before solving the radial equilibrium."
+        )
+
+
 def _profile_arrays(parameters: Any, solution: NearAxisSolution, radius: Any):
     radius = jnp.asarray(radius)
     pressure_axis = -solution.inputs.p2 * radius**2
@@ -207,14 +222,21 @@ def vmex_parameters_from_solution(
         mpol=problem.mpol,
         ntor=problem.ntor,
         newton_iterations=problem.newton_iterations,
+        toroidal_angle_tolerance=problem.toroidal_angle_tolerance,
     )
+    _require_converged_boundary(boundary)
+    boundary_mask = boundary.toroidal_angle_converged
+    rbc = jnp.where(boundary_mask, boundary.RBC, jnp.nan)
+    rbs = jnp.where(boundary_mask, boundary.RBS, jnp.nan)
+    zbc = jnp.where(boundary_mask, boundary.ZBC, jnp.nan)
+    zbs = jnp.where(boundary_mask, boundary.ZBS, jnp.nan)
     am, ac, phiedge, curtor = _profile_arrays(problem.parameters, solution, selected_radius)
     return dataclasses.replace(
         problem.parameters,
-        rbc=boundary.RBC,
-        rbs=boundary.RBS,
-        zbc=boundary.ZBC,
-        zbs=boundary.ZBS,
+        rbc=rbc,
+        rbs=rbs,
+        zbc=zbc,
+        zbs=zbs,
         phiedge=phiedge,
         curtor=curtor,
         pres_scale=jnp.asarray(1.0, dtype=phiedge.dtype),
@@ -234,6 +256,7 @@ def to_vmex_problem(
     mpol: int = 6,
     ntor: int = 6,
     newton_iterations: int = 6,
+    toroidal_angle_tolerance: float = 0.0,
     ns_array: Any = (15, 31),
     ftol_array: Any | None = None,
     ftol: float = 1.0e-10,
@@ -269,6 +292,15 @@ def to_vmex_problem(
         raise ValueError("helicity_n must be an integer.")
     if not np.isfinite(adjoint_tol) or adjoint_tol <= 0:
         raise ValueError("adjoint_tol must be positive and finite.")
+    if not np.isfinite(toroidal_angle_tolerance) or toroidal_angle_tolerance < 0:
+        raise ValueError("toroidal_angle_tolerance must be nonnegative and finite.")
+    _validated_resolution(
+        solution,
+        ntheta=ntheta,
+        mpol=mpol,
+        ntor=ntor,
+        newton_iterations=newton_iterations,
+    )
 
     boundary = vmec_boundary(
         solution,
@@ -277,7 +309,9 @@ def to_vmex_problem(
         mpol=mpol,
         ntor=ntor,
         newton_iterations=newton_iterations,
+        toroidal_angle_tolerance=toroidal_angle_tolerance,
     )
+    _require_converged_boundary(boundary)
     lasym = _is_asymmetric(boundary)
     if lasym and surfaces:
         raise NotImplementedError(
@@ -337,6 +371,7 @@ def to_vmex_problem(
         mpol=mpol,
         ntor=ntor,
         newton_iterations=newton_iterations,
+        toroidal_angle_tolerance=float(toroidal_angle_tolerance),
         ftol=float(ftol),
         max_iterations=max_iterations,
         adjoint_tol=float(adjoint_tol),

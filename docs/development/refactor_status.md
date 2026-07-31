@@ -238,3 +238,31 @@ was made for that phase.
   approximately 0.19% of the total field. The former 30% showcase relied on
   finite \(I_2\) and was removed because its nearly planar geometry presented
   as a tokamak rather than a representative stellarator.
+
+## Phase 16 — final VMEC, VMEX, and ESSOS integration
+
+- Files: convergence-safe VMEC/VMEX boundary conversion, a live
+  finite-pressure and exactly zero-current VMEC regression, explicit opt-in
+  VMEX examples, and pressure-only stage-two and single-stage ESSOS examples.
+- VMEC verification: the database QA ID 139524 case uses finite pressure,
+  \(I_2=0\), and RMS axis torsion \(1.189\ {\rm m}^{-1}\). At export radius
+  0.0015 m, VMEC converges to force residual \(9.97\times10^{-12}\) and its
+  signed on-axis transform differs from pyQSC_JAX by 0.02143%. Boundary
+  export now refuses to write when the cylindrical-angle inversion is
+  nonfinite or unconverged.
+- VMEX verification: two live current-main tests pass against VMEX 0.3.0
+  commit `2a40d756`, covering vacuum and finite-beta/zero-current radial
+  transform, quasisymmetry, magnetic well, and implicit pressure/boundary
+  gradients. Both opt-in example scripts also complete against that commit.
+- ESSOS verification: 13 focused tests pass, including the two clean-process
+  optimization examples. Both use the nonplanar, finite-pressure database
+  stellarator ID 52521 with exactly \(I_2=0\), and every field/gradient/Hessian
+  residual block decreases in both stage-two and single-stage runs.
+- Complete pyQSC_JAX evidence: the branch-coverage run completed 294 tests
+  before two VMEX subprocesses reached their former 180 s instrumentation
+  timeout; after making the documented VMEX opt-in explicit, those exact two
+  cases pass. The combined complete matrix is therefore 296 passes and four
+  intentional live-integration skips, with 98.75% line and 95.898% branch
+  coverage in the coverage run.
+- Risk/next: TestPyPI/PyPI trusted publishing, Zenodo creation, maintainer
+  review, and merge remain external release gates.

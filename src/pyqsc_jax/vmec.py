@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from functools import partial
+from math import isfinite
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -35,6 +36,8 @@ class VmecBoundary:
     ZBC: jax.Array
     ZBS: jax.Array
     maximum_toroidal_angle_residual: jax.Array
+    toroidal_angle_tolerance: jax.Array
+    toroidal_angle_converged: jax.Array
     maximum_R_reconstruction_error: jax.Array
     maximum_Z_reconstruction_error: jax.Array
     ntheta: int = field(metadata={"static": True})
@@ -301,8 +304,15 @@ def vmec_boundary(
     mpol: int = 12,
     ntor: int = 14,
     newton_iterations: int = 6,
+    toroidal_angle_tolerance: float = 0.0,
 ) -> VmecBoundary:
-    """Return a uniformly sampled, FFT-projected VMEC boundary."""
+    """Return a uniformly sampled, FFT-projected VMEC boundary.
+
+    A zero ``toroidal_angle_tolerance`` selects 100 machine epsilons
+    for the active JAX dtype. The returned convergence flag is data, so this
+    function remains JIT-compatible; :func:`to_vmec` turns a false flag into
+    a hard failure before writing an input file.
+    """
 
     R, Z, phi0, angle_residual = uniform_cylindrical_surface(
         solution,
@@ -330,6 +340,13 @@ def vmec_boundary(
         mpol=mpol,
         ntor=ntor,
     )
+    requested_tolerance = jnp.asarray(toroidal_angle_tolerance, dtype=R.dtype)
+    automatic_tolerance = 100 * jnp.finfo(R.dtype).eps
+    angle_tolerance = jnp.where(
+        requested_tolerance == 0,
+        automatic_tolerance,
+        requested_tolerance,
+    )
     return VmecBoundary(
         R=R,
         Z=Z,
@@ -339,6 +356,8 @@ def vmec_boundary(
         ZBC=ZBC,
         ZBS=ZBS,
         maximum_toroidal_angle_residual=angle_residual,
+        toroidal_angle_tolerance=angle_tolerance,
+        toroidal_angle_converged=angle_residual <= angle_tolerance,
         maximum_R_reconstruction_error=jnp.max(jnp.abs(reconstructed_R - R)),
         maximum_Z_reconstruction_error=jnp.max(jnp.abs(reconstructed_Z - Z)),
         ntheta=ntheta,
@@ -445,17 +464,20 @@ def to_vmec(
     ntor: int = 14,
     ntor_max: int = 14,
     newton_iterations: int = 6,
+    toroidal_angle_tolerance: float = 0.0,
     coefficient_tolerance: float = 1.0e-14,
 ) -> VmecExport:
     """Write a VMEC fixed-boundary input and return conversion diagnostics."""
 
     radius = float(r)
-    if radius <= 0:
-        raise ValueError("r must be positive.")
+    if not isfinite(radius) or radius <= 0:
+        raise ValueError("r must be positive and finite.")
     if not isinstance(ntor_max, int) or isinstance(ntor_max, bool) or ntor_max < 0:
         raise ValueError("ntor_max must be a nonnegative integer.")
-    if coefficient_tolerance < 0:
-        raise ValueError("coefficient_tolerance must be nonnegative.")
+    if not isfinite(toroidal_angle_tolerance) or toroidal_angle_tolerance < 0:
+        raise ValueError("toroidal_angle_tolerance must be nonnegative and finite.")
+    if not isfinite(coefficient_tolerance) or coefficient_tolerance < 0:
+        raise ValueError("coefficient_tolerance must be nonnegative and finite.")
     effective_ntor = min(ntor, ntor_max)
     _validated_resolution(
         solution,
@@ -474,9 +496,19 @@ def to_vmec(
         mpol=mpol,
         ntor=effective_ntor,
         newton_iterations=newton_iterations,
+        toroidal_angle_tolerance=toroidal_angle_tolerance,
     )
     jax.tree.map(lambda value: value.block_until_ready(), boundary)
     conversion_seconds = perf_counter() - start
+    if not bool(boundary.toroidal_angle_converged):
+        residual = float(boundary.maximum_toroidal_angle_residual)
+        tolerance = float(boundary.toroidal_angle_tolerance)
+        raise RuntimeError(
+            "The near-axis surface could not be represented on a uniform "
+            "cylindrical-toroidal grid: the maximum angle residual "
+            f"{residual:.6e} exceeds {tolerance:.6e}. Reduce r or increase "
+            "newton_iterations; no VMEC input was written."
+        )
 
     asymmetric_amplitude = max(
         float(jnp.max(jnp.abs(boundary.RBS))),
@@ -498,6 +530,8 @@ def to_vmec(
         (
             "! Conversion diagnostics:"
             f" max_phi_residual = {float(boundary.maximum_toroidal_angle_residual):.6e};"
+            f" phi_tolerance = {float(boundary.toroidal_angle_tolerance):.6e};"
+            " phi_converged = true;"
             f" max_R_error = {float(boundary.maximum_R_reconstruction_error):.6e};"
             f" max_Z_error = {float(boundary.maximum_Z_reconstruction_error):.6e}."
         ),
