@@ -4,24 +4,24 @@ from jax import jit, jacfwd, grad, vmap, tree_util, lax
 from functools import partial
 
 class near_axis():
-    def __init__(self, rc=jnp.array([1.0, 0.1]), zs=jnp.array([0.0, 0.1]), etabar=1.0,
-                 B0=1.0, sigma0=0.0, I2=0.0, nphi=31, spsi=1.0, sG=1.0, nfp=2, order='r1', B2c=0.0, p2=0.0):
+    def __init__(self, rc=jnp.array([1, 0.1]), zs=jnp.array([0, 0.1]), etabar=1.0,
+                 B0=1, sigma0=0, I2=0, nphi=31, spsi=1, sG=1, nfp=2, order='r1', B2c=0, p2=0):
         assert nphi % 2 == 1, 'nphi must be odd'
-        self.rc = jnp.array(rc, dtype=float)
-        self.zs = jnp.array(zs, dtype=float)
-        self.etabar = jnp.array(etabar, dtype=float)
+        self.rc = jnp.array(rc)
+        self.zs = jnp.array(zs)
+        self.etabar = etabar
         self.nphi = nphi
-        self.sigma0 = jnp.array(sigma0, dtype=float)
-        self.I2 = jnp.array(I2, dtype=float)
-        self.spsi = float(spsi)
-        self.sG = float(sG)
-        self.B0 = jnp.array(B0, dtype=float)
+        self.sigma0 = sigma0
+        self.I2 = I2
+        self.spsi = spsi
+        self.sG = sG
+        self.B0 = B0
         self.nfp = nfp
         self.order = order 
-        self.B2c = float(B2c)
-        self.p2 = float(p2)
+        self.B2c = B2c 
+        self.p2 = p2 
         
-        self._dofs = jnp.concatenate((jnp.ravel(self.rc), jnp.ravel(self.zs), jnp.atleast_1d(self.etabar)))
+        self._dofs = jnp.concatenate((jnp.ravel(self.rc), jnp.ravel(self.zs), jnp.array([etabar])))
         
         self.phi = jnp.linspace(0, 2 * jnp.pi / self.nfp, self.nphi, endpoint=False)
         self.nfourier = max(len(self.rc), len(self.zs))
@@ -38,7 +38,7 @@ class near_axis():
     
     @dofs.setter
     def dofs(self, new_dofs):
-        self._dofs = jnp.array(new_dofs, dtype=float)
+        self._dofs = jnp.array(new_dofs)
         self.rc = self._dofs[:self.nfourier]
         self.zs = self._dofs[self.nfourier:2*self.nfourier]
         self.etabar = self._dofs[-1]
@@ -498,79 +498,6 @@ class near_axis():
     @partial(jit, static_argnames=['self'])
     def B_mag(self, r, theta, phi):
         return self.B0*(1 + r * self.etabar * jnp.cos(theta - (self.iota - self.iotaN) * phi))
-
-    def plot(self, r=0.1, ntheta=40, nphi=120, ntheta_fourier=20, ax=None, show=True, close=False, axis_equal=True, **kwargs):
-        kwargs.setdefault('alpha', 1)
-        import matplotlib.pyplot as plt
-        from matplotlib import cm
-        import matplotlib.colors as clr
-        from matplotlib.colors import LightSource
-        from essos.plot import fix_matplotlib_3d
-        import numpy as np
-
-        created_ax = ax is None or ax.name != "3d"
-        if created_ax:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-
-        x_2D_plot, y_2D_plot, z_2D_plot, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
-        theta1D = jnp.linspace(0, 2 * jnp.pi, ntheta)
-        phi1D = jnp.linspace(0, 2 * jnp.pi, nphi)
-        phi2D, theta2D = jnp.meshgrid(phi1D, theta1D)
-        Bmag = np.array(self.B_mag(r, theta2D, phi2D))
-        norm = clr.Normalize(vmin=Bmag.min(), vmax=Bmag.max())
-        cmap = cm.viridis
-        ls = LightSource(azdeg=0, altdeg=10)
-        cmap_plot = ls.shade(Bmag, cmap, norm=norm)
-
-        ax.plot_surface(
-            x_2D_plot, y_2D_plot, z_2D_plot, facecolors=cmap_plot,
-            rstride=1, cstride=1, antialiased=False,
-            linewidth=0, shade=False, **kwargs
-        )
-
-        if created_ax:
-            ax.dist = 7
-            ax.elev = 5
-            ax.azim = 45
-            cbar_ax = fig.add_axes([0.85, 0.2, 0.03, 0.6])
-            m = cm.ScalarMappable(cmap=cmap, norm=norm)
-            m.set_array([])
-            cbar = plt.colorbar(m, cax=cbar_ax)
-            cbar.ax.set_title(r'$|B| [T]$')
-            ax.grid(False)
-        if axis_equal:
-            fix_matplotlib_3d(ax)
-        if show:
-            plt.show()
-
-    def to_vtk(self, filename, r=0.1, ntheta=40, nphi=120, ntheta_fourier=20, extra_data=None, field=None):
-        try:
-            import numpy as np
-        except ImportError:
-            raise ImportError("The 'numpy' library is required. Please install it using 'pip install numpy'.")
-        try:
-            from pyevtk.hl import gridToVTK
-        except ImportError:
-            raise ImportError("The 'pyevtk' library is required. Please install it using 'pip install pyevtk'.")
-
-        x, y, z, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
-        x = np.array(x.T.reshape((1, nphi, ntheta)).copy())
-        y = np.array(y.T.reshape((1, nphi, ntheta)).copy())
-        z = np.array(z.T.reshape((1, nphi, ntheta)).copy())
-        pointData = {}
-        if field is not None:
-            boundary = np.array([x, y, z]).transpose(1, 2, 3, 0)[0]
-            B_BiotSavart = np.array(vmap(lambda surf: vmap(lambda point: field.AbsB(point))(surf))(boundary)).reshape((1, nphi, ntheta)).copy()
-            pointData["B_BiotSavart"] = B_BiotSavart
-        theta1D = jnp.linspace(0, 2 * jnp.pi, ntheta)
-        phi1D = jnp.linspace(0, 2 * jnp.pi, nphi)
-        phi2D, theta2D = jnp.meshgrid(phi1D, theta1D)
-        Bmag = np.array(self.B_mag(r, theta2D, phi2D)).T.reshape((1, nphi, ntheta)).copy()
-        pointData["B_NearAxis"] = Bmag
-        if extra_data is not None:
-            pointData = {**pointData, **extra_data}
-        gridToVTK(str(filename), x, y, z, pointData=pointData)
 
             
 tree_util.register_pytree_node(near_axis,
