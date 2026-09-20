@@ -52,7 +52,7 @@ except ImportError as error:
 finite_label, finite_axis, finite_problem, finite_quantities = records[-1]
 print("Differentiating the finite-beta magnetic well...")
 well, gradient = jax.value_and_grad(
-    lambda parameters: (qsc.vmex_radial_quantities(finite_problem, parameters).magnetic_well)
+    lambda parameters: qsc.vmex_radial_quantities(finite_problem, parameters).magnetic_well
 )(finite_problem.parameters)
 
 plt.style.use("seaborn-v0_8-whitegrid")

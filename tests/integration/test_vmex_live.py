@@ -51,7 +51,7 @@ def test_vmex_vacuum_profiles_and_implicit_gradient():
     assert float(quantities.thermal_energy) == pytest.approx(0.0, abs=1.0e-14)
 
     value, gradient = jax.value_and_grad(
-        lambda parameters: (qsc.vmex_radial_quantities(problem, parameters).magnetic_well)
+        lambda parameters: qsc.vmex_radial_quantities(problem, parameters).magnetic_well
     )(problem.parameters)
     assert np.isfinite(float(value))
     assert np.all(np.isfinite(np.asarray(gradient.rbc)))
@@ -69,7 +69,7 @@ def test_vmex_finite_beta_profiles():
     assert np.all(np.isfinite(np.asarray(quantities.quasisymmetry)))
 
     value, gradient = jax.value_and_grad(
-        lambda parameters: (qsc.vmex_radial_quantities(problem, parameters).magnetic_well)
+        lambda parameters: qsc.vmex_radial_quantities(problem, parameters).magnetic_well
     )(problem.parameters)
     assert np.isfinite(float(value))
     assert np.isfinite(float(gradient.pres_scale))

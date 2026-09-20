@@ -66,6 +66,10 @@ src = ["src", "tests"]
 # One argument per line only when a call does not fit; keeps tensors and short calls readable.
 skip-magic-trailing-comma = true
 
+[tool.ruff.lint.isort]
+# Ruff warns that the two must agree; imports follow the same rule as every other call.
+split-on-trailing-comma = false
+
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]
 
