@@ -46,6 +46,18 @@ class AxisGeometry:
     abs_G0_over_B0: jax.Array
     diagnostics: GeometryDiagnostics
 
+    @property
+    def frenet_frame(self) -> jax.Array:
+        """Rows ``(t, n, b)`` in Cartesian components, shaped ``(sample, 3, 3)``.
+
+        Contracting its first index projects a Cartesian vector onto the frame; its
+        second index converts frame components back to Cartesian.
+        """
+
+        return jnp.stack(
+            (self.tangent_cartesian, self.normal_cartesian, self.binormal_cartesian), axis=-2
+        )
+
 
 def cylindrical_vector_to_cartesian(vector: ArrayLike, phi: ArrayLike) -> jax.Array:
     """Convert vectors from cylindrical ``(R, phi, Z)`` to Cartesian basis."""
@@ -76,11 +88,7 @@ def _frame_helicity(normal_cylindrical: jax.Array) -> jax.Array:
     increment = jnp.where(
         (quadrant == 4) & (next_quadrant == 1),
         1,
-        jnp.where(
-            (quadrant == 1) & (next_quadrant == 4),
-            -1,
-            next_quadrant - quadrant,
-        ),
+        jnp.where((quadrant == 1) & (next_quadrant == 4), -1, next_quadrant - quadrant),
     )
     return jnp.rint(jnp.sum(increment) / 4).astype(jnp.int32)
 
@@ -107,12 +115,7 @@ def compute_axis_geometry(
 
     d_r = jnp.stack((samples.d_R_d_phi, samples.R, samples.d_Z_d_phi), axis=-1)
     d2_r = jnp.stack(
-        (
-            samples.d2_R_d_phi2 - samples.R,
-            2 * samples.d_R_d_phi,
-            samples.d2_Z_d_phi2,
-        ),
-        axis=-1,
+        (samples.d2_R_d_phi2 - samples.R, 2 * samples.d_R_d_phi, samples.d2_Z_d_phi2), axis=-1
     )
     d3_r = jnp.stack(
         (
@@ -131,11 +134,7 @@ def compute_axis_geometry(
     ] ** 2
     curvature = jnp.linalg.norm(d_tangent_d_l, axis=-1)
     pointwise_frenet_valid = (d_l_d_phi > speed_tolerance) & (curvature > curvature_tolerance)
-    normal = jnp.where(
-        pointwise_frenet_valid[:, None],
-        d_tangent_d_l / curvature[:, None],
-        jnp.nan,
-    )
+    normal = jnp.where(pointwise_frenet_valid[:, None], d_tangent_d_l / curvature[:, None], jnp.nan)
     binormal = jnp.cross(tangent, normal)
 
     cross_first_second = jnp.cross(d_r, d2_r)

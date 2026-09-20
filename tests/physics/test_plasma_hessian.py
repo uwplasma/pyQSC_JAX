@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
-from pyqsc_jax.plasma import _principal_transverse_plasma_hessian
+from pyqsc_jax.plasma import _transverse_plasma_hessian
 
 
 def finite_pressure_current_solution(*, nphi=61, I2=0.9):
@@ -48,15 +48,9 @@ def test_stf_rank_three_pack_unpack_and_projection():
 
     for permutation in permutations((1, 2, 3)):
         np.testing.assert_allclose(
-            projected,
-            jnp.transpose(projected, (0, *permutation)),
-            atol=1.0e-14,
+            projected, jnp.transpose(projected, (0, *permutation)), atol=1.0e-14
         )
-    np.testing.assert_allclose(
-        jnp.einsum("...iik->...k", projected),
-        0.0,
-        atol=3.0e-14,
-    )
+    np.testing.assert_allclose(jnp.einsum("...iik->...k", projected), 0.0, atol=3.0e-14)
     np.testing.assert_allclose(unpacked, projected, atol=2.0e-14)
     assert packed.shape == (2, 7)
 
@@ -77,19 +71,12 @@ def test_stf_rank_three_helpers_are_jittable():
 def test_external_hessian_is_fully_symmetric_and_trace_free():
     solution = finite_pressure_current_solution(nphi=121)
     formal_radius = 0.05
-    result = qsc.plasma_hessian_on_axis(
-        solution,
-        formal_radius=0.05,
-    )
+    result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.05)
 
     assert result.maximum_derivative_asymmetry < 2.0e-15
     assert result.maximum_external_symmetry_error < 8.0e-11
     assert result.maximum_external_trace < 2.0e-10
-    np.testing.assert_allclose(
-        result.external_hessian,
-        result.external_hessian_stf,
-        atol=2.0e-10,
-    )
+    np.testing.assert_allclose(result.external_hessian, result.external_hessian_stf, atol=2.0e-10)
     np.testing.assert_allclose(
         qsc.unpack_symmetric_trace_free_rank3(result.external_hessian_independent),
         result.external_hessian_stf,
@@ -116,10 +103,7 @@ def test_qh_external_hessian_preserves_oriented_ellipse_topology():
         nphi=121,
         order="r2",
     )
-    result = qsc.plasma_hessian_on_axis(
-        solution,
-        formal_radius=0.04,
-    )
+    result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.04)
 
     assert int(solution.helicity) == 1
     assert result.maximum_derivative_asymmetry < 2.0e-15
@@ -130,15 +114,7 @@ def test_qh_external_hessian_preserves_oriented_ellipse_topology():
 def test_circular_curved_channel_recovers_finite_conductor_limit():
     """Equation (215), with affine and second-order shape terms suppressed."""
 
-    solution = qsc.Qsc(
-        rc=[1.0],
-        zs=[0.0],
-        nfp=1,
-        etabar=1.0,
-        I2=0.1,
-        nphi=31,
-        order="r2",
-    )
+    solution = qsc.Qsc(rc=[1.0], zs=[0.0], nfp=1, etabar=1.0, I2=0.1, nphi=31, order="r2")
     zeros = jnp.zeros_like(solution.X20)
     circular_second_order = replace(
         solution.second_order,
@@ -152,25 +128,12 @@ def test_circular_curved_channel_recovers_finite_conductor_limit():
         Z2c=zeros,
         Z2s=zeros,
     )
-    curvature_only_solution = replace(
-        solution,
-        second_order=circular_second_order,
-    )
-    source = qsc.plasma_current_source(
-        solution,
-        formal_radius=0.1,
-    )
+    curvature_only_solution = replace(solution, second_order=circular_second_order)
+    source = qsc.plasma_current_source(solution, formal_radius=0.1)
     zero_vector = jnp.zeros_like(source.wstar2_cosine)
-    curvature_only_source = replace(
-        source,
-        wstar2_cosine=zero_vector,
-        wstar2_sine=zero_vector,
-    )
+    curvature_only_source = replace(source, wstar2_cosine=zero_vector, wstar2_sine=zero_vector)
 
-    transverse, _ = _principal_transverse_plasma_hessian(
-        curvature_only_solution,
-        curvature_only_source,
-    )
+    transverse = _transverse_plasma_hessian(curvature_only_solution, curvature_only_source)
     coefficient = source.parallel_current_mu0 * solution.geometry.curvature / 8
     expected = jnp.zeros_like(transverse)
     expected = expected.at[:, 0, 0, 2].set(-coefficient)
@@ -183,35 +146,24 @@ def test_circular_curved_channel_recovers_finite_conductor_limit():
 
 def test_vacuum_reduction_leaves_total_hessian_unchanged():
     solution = vacuum_qa_solution()
-    result = qsc.plasma_hessian_on_axis(
-        solution,
-        formal_radius=0.05,
-    )
+    result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.05)
 
     np.testing.assert_allclose(result.field.field.field, 0.0, atol=1.0e-14)
     np.testing.assert_allclose(result.field.gradient, 0.0)
     np.testing.assert_allclose(result.hessian, 0.0)
-    np.testing.assert_allclose(
-        result.external_hessian,
-        solution.grad_grad_B_axis,
-    )
+    np.testing.assert_allclose(result.external_hessian, solution.grad_grad_B_axis)
 
 
 def test_plasma_hessian_converges_spectrally():
     medium = qsc.plasma_hessian_on_axis(
-        finite_pressure_current_solution(nphi=61),
-        formal_radius=0.05,
+        finite_pressure_current_solution(nphi=61), formal_radius=0.05
     )
     fine = qsc.plasma_hessian_on_axis(
-        finite_pressure_current_solution(nphi=121),
-        formal_radius=0.05,
+        finite_pressure_current_solution(nphi=121), formal_radius=0.05
     )
 
     np.testing.assert_allclose(
-        medium.hessian_frenet[0],
-        fine.hessian_frenet[0],
-        atol=1.0e-8,
-        rtol=1.0e-8,
+        medium.hessian_frenet[0], fine.hessian_frenet[0], atol=1.0e-8, rtol=1.0e-8
     )
     assert fine.maximum_external_symmetry_error < 1.0e-4 * (medium.maximum_external_symmetry_error)
     assert fine.maximum_external_trace < 1.0e-4 * medium.maximum_external_trace

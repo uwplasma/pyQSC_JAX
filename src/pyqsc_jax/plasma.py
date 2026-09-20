@@ -27,10 +27,7 @@ def _positive_scalar(value: ArrayLike, *, name: str) -> jax.Array:
 
 
 def enclosed_current_from_covariant(
-    I2: ArrayLike,
-    *,
-    formal_radius: ArrayLike,
-    chi: int,
+    I2: ArrayLike, *, formal_radius: ArrayLike, chi: int
 ) -> jax.Array:
     """Convert covariant ``I2`` to enclosed toroidal current in amperes."""
 
@@ -41,10 +38,7 @@ def enclosed_current_from_covariant(
 
 
 def covariant_current_from_enclosed(
-    enclosed_current: ArrayLike,
-    *,
-    formal_radius: ArrayLike,
-    chi: int,
+    enclosed_current: ArrayLike, *, formal_radius: ArrayLike, chi: int
 ) -> jax.Array:
     """Convert enclosed toroidal current in amperes to covariant ``I2``."""
 
@@ -133,9 +127,7 @@ class PlasmaHessianData:
 
 
 def plasma_current_source(
-    solution: NearAxisSolution,
-    *,
-    formal_radius: ArrayLike,
+    solution: NearAxisSolution, *, formal_radius: ArrayLike
 ) -> PlasmaCurrentSource:
     """Construct the exact positive-volume weighted source through ``O(r²)``."""
 
@@ -185,9 +177,7 @@ def plasma_current_source(
         formal_radius=radius,
         parallel_current_mu0=current_density_mu0,
         enclosed_toroidal_current=enclosed_current_from_covariant(
-            inputs.I2,
-            formal_radius=radius,
-            chi=chi,
+            inputs.I2, formal_radius=radius, chi=chi
         ),
         C2=C2,
         beta_1s=solution.beta_1s,
@@ -202,15 +192,12 @@ def plasma_current_source(
 
 
 def evaluate_weighted_current(
-    source: PlasmaCurrentSource,
-    radial_coordinate: ArrayLike,
-    theta: ArrayLike,
+    source: PlasmaCurrentSource, radial_coordinate: ArrayLike, theta: ArrayLike
 ) -> jax.Array:
     """Evaluate ``W = chi * mu0 * J_r * J`` at all toroidal samples."""
 
     radial_coordinate, theta = jnp.broadcast_arrays(
-        jnp.asarray(radial_coordinate),
-        jnp.asarray(theta),
+        jnp.asarray(radial_coordinate), jnp.asarray(theta)
     )
     radial = radial_coordinate[..., None, None]
     cosine = jnp.cos(theta)[..., None, None]
@@ -234,18 +221,8 @@ def _full_torus_axis_samples(
     full_varphi = (geometry.varphi[None, :] + period_index[:, None] * boozer_period).reshape(-1)
     radius = jnp.tile(geometry.samples.R, nfp)
     height = jnp.tile(geometry.samples.Z, nfp)
-    position = jnp.stack(
-        (
-            radius * jnp.cos(full_phi),
-            radius * jnp.sin(full_phi),
-            height,
-        ),
-        axis=-1,
-    )
-    tangent_cylindrical = jnp.tile(
-        geometry.tangent_cylindrical,
-        (nfp, 1),
-    )
+    position = jnp.stack((radius * jnp.cos(full_phi), radius * jnp.sin(full_phi), height), axis=-1)
+    tangent_cylindrical = jnp.tile(geometry.tangent_cylindrical, (nfp, 1))
     tangent = jnp.stack(
         (
             tangent_cylindrical[:, 0] * jnp.cos(full_phi)
@@ -276,10 +253,7 @@ def regularized_axis_integral(solution: NearAxisSolution) -> jax.Array:
     safe_sine = jnp.where(coincident, 1.0, jnp.abs(sine_half))
     filament = (
         solution.geometry.abs_G0_over_B0
-        * jnp.cross(
-            source_tangent[None, :, :],
-            displacement,
-        )
+        * jnp.cross(source_tangent[None, :, :], displacement)
         / safe_distance_squared[..., None] ** 1.5
     )
     singular_model = (
@@ -287,19 +261,12 @@ def regularized_axis_integral(solution: NearAxisSolution) -> jax.Array:
         * solution.geometry.binormal_cartesian[:, None, :]
         / (4 * safe_sine[..., None])
     )
-    integrand = jnp.where(
-        coincident[..., None],
-        0.0,
-        filament - singular_model,
-    )
+    integrand = jnp.where(coincident[..., None], 0.0, filament - singular_model)
     return jnp.sum(weights[None, :, None] * integrand, axis=1)
 
 
 def _second_order_shape_correction(
-    solution: NearAxisSolution,
-    source: PlasmaCurrentSource,
-    *,
-    angular_resolution: int,
+    solution: NearAxisSolution, source: PlasmaCurrentSource, *, angular_resolution: int
 ) -> jax.Array:
     if (
         not isinstance(angular_resolution, int)
@@ -354,14 +321,11 @@ def matched_plasma_field_kernel(
 ) -> jax.Array:
     """Combine finite-part and local-core terms at an arbitrary matching length."""
 
-    reference_length = _positive_scalar(
-        reference_length,
-        name="reference_length",
-    )
+    reference_length = _positive_scalar(reference_length, name="reference_length")
     geometry = solution.geometry
     axis_scale = geometry.abs_G0_over_B0
     x = solution.X1c
-    sigma = solution.Y1c / solution.Y1s
+    sigma = solution.sigma
     trace_Q = x**2 + (1 + sigma**2) / x**2
     core_binormal = -0.5 - 0.5 * jnp.log((trace_Q + 2) / 4) + (x**2 + 1) / (trace_Q + 2)
     core_normal = -source.chi * sigma / (trace_Q + 2)
@@ -378,40 +342,26 @@ def matched_plasma_field_kernel(
 
 
 def plasma_field_on_axis(
-    solution: NearAxisSolution,
-    *,
-    formal_radius: ArrayLike,
-    angular_resolution: int = 128,
+    solution: NearAxisSolution, *, formal_radius: ArrayLike, angular_resolution: int = 128
 ) -> PlasmaFieldData:
     """Evaluate the matched leading on-axis free-space plasma field."""
 
-    source = plasma_current_source(
-        solution,
-        formal_radius=formal_radius,
-    )
+    source = plasma_current_source(solution, formal_radius=formal_radius)
     regularized_integral = regularized_axis_integral(solution)
     axis_scale = solution.geometry.abs_G0_over_B0
     matched = matched_plasma_field_kernel(
-        solution,
-        source,
-        regularized_integral,
-        reference_length=4 * axis_scale,
+        solution, source, regularized_integral, reference_length=4 * axis_scale
     )
     independent_matching_scale = matched_plasma_field_kernel(
-        solution,
-        source,
-        regularized_integral,
-        reference_length=7 * axis_scale,
+        solution, source, regularized_integral, reference_length=7 * axis_scale
     )
     shape_correction = _second_order_shape_correction(
-        solution,
-        source,
-        angular_resolution=angular_resolution,
+        solution, source, angular_resolution=angular_resolution
     )
     current_prefactor = source.parallel_current_mu0 * source.formal_radius**2 / 4
     field_value = current_prefactor * matched + shape_correction
     x = solution.X1c
-    sigma = solution.Y1c / solution.Y1s
+    sigma = solution.sigma
     trace_Q = x**2 + (1 + sigma**2) / x**2
     core_binormal = -0.5 - 0.5 * jnp.log((trace_Q + 2) / 4) + (x**2 + 1) / (trace_Q + 2)
     core_normal = -source.chi * sigma / (trace_Q + 2)
@@ -446,15 +396,7 @@ def project_symmetric_trace_free_rank2(tensor: ArrayLike) -> jax.Array:
         raise ValueError("A rank-two Cartesian tensor must end in shape (3, 3).")
     symmetric = 0.5 * (tensor + jnp.swapaxes(tensor, -1, -2))
     trace = jnp.trace(symmetric, axis1=-2, axis2=-1)
-    return (
-        symmetric
-        - trace[..., None, None]
-        * jnp.eye(
-            3,
-            dtype=tensor.dtype,
-        )
-        / 3
-    )
+    return symmetric - trace[..., None, None] * jnp.eye(3, dtype=tensor.dtype) / 3
 
 
 def pack_symmetric_trace_free_rank2(tensor: ArrayLike) -> jax.Array:
@@ -511,30 +453,9 @@ def elliptical_channel_gradient(
         / (trace_Q + 2)[..., None, None]
         * jnp.stack(
             (
-                jnp.stack(
-                    (
-                        jnp.zeros_like(x),
-                        jnp.zeros_like(x),
-                        jnp.zeros_like(x),
-                    ),
-                    axis=-1,
-                ),
-                jnp.stack(
-                    (
-                        jnp.zeros_like(x),
-                        chi * sigma,
-                        1 + (1 + sigma**2) / x**2,
-                    ),
-                    axis=-1,
-                ),
-                jnp.stack(
-                    (
-                        jnp.zeros_like(x),
-                        -(1 + x**2),
-                        -chi * sigma,
-                    ),
-                    axis=-1,
-                ),
+                jnp.stack((jnp.zeros_like(x), jnp.zeros_like(x), jnp.zeros_like(x)), axis=-1),
+                jnp.stack((jnp.zeros_like(x), chi * sigma, 1 + (1 + sigma**2) / x**2), axis=-1),
+                jnp.stack((jnp.zeros_like(x), -(1 + x**2), -chi * sigma), axis=-1),
             ),
             axis=-2,
         )
@@ -545,77 +466,126 @@ def elliptical_channel_gradient(
     frame = jnp.asarray(frame)
     if frame.shape[-2:] != (3, 3):
         raise ValueError("frame must end in shape (3, 3).")
-    return jnp.einsum(
-        "...ai,...ab,...bj->...ij",
-        frame,
-        field_first_frenet,
-        frame,
+    return jnp.einsum("...ai,...ab,...bj->...ij", frame, field_first_frenet, frame)
+
+
+def zero_current_gradient(
+    solution: NearAxisSolution, plasma_field_frenet: ArrayLike, *, formal_radius: ArrayLike
+) -> jax.Array:
+    """Return the first nonzero, order-``a**2`` plasma gradient of the ``I2 = 0`` branch.
+
+    The uniform-channel gradient is proportional to the on-axis current and vanishes
+    here. Pressure-driven current away from the axis still produces a symmetric,
+    trace-free gradient, fixed by the second-order shaping and the quadratic current
+    harmonic. The result is field-component-first in the ``(t, n, b)`` frame and is
+    only valid for a stellarator-symmetric solution with ``I2 = 0``.
+
+    ``plasma_field_frenet`` holds the ``(t, n, b)`` components of the matched on-axis
+    field, whose derivative along the axis is the tangential row.
+    """
+
+    if solution.second_order is None:
+        raise ValueError("The zero-current gradient requires a second-order solution.")
+    inputs, geometry, second = solution.inputs, solution.geometry, solution.second_order
+    radius = _positive_scalar(formal_radius, name="formal_radius")
+    sG, spsi = inputs.sG, inputs.spsi
+    chi = sG * spsi
+    axis_scale = geometry.abs_G0_over_B0
+    pressure = MU0 * inputs.p2 / inputs.B0
+    curvature, torsion = geometry.curvature, geometry.torsion
+    x = solution.X1c
+    sigma = solution.sigma
+    d_ds = geometry.d_d_varphi / axis_scale
+    x_s, sigma_s = d_ds @ x, d_ds @ sigma
+    w = 1 + x**2 + 1j * chi * sigma
+    w_s = 2 * x * x_s + 1j * chi * sigma_s
+
+    f_t = 4 * spsi * pressure * axis_scale * inputs.etabar * x / (solution.iotaN * w)
+    f_n = 2j * sG * pressure * x**2 / w
+    f_b = 2 * sG * pressure * (1 + 1j * chi * sigma) / w
+    f_n_s = 2j * sG * pressure * (2 * x * x_s * w - x**2 * w_s) / w**2
+    f_b_s = 2 * sG * pressure * (1j * chi * sigma_s * w - (1 + 1j * chi * sigma) * w_s) / w**2
+    shape = second.X2c + chi * second.Y2s + 1j * (second.Y2c - chi * second.X2s)
+    current_harmonic = 10 * inputs.etabar**2 - 8 * inputs.B2c / inputs.B0
+    q_t = (
+        x**2
+        / (2 * w**2)
+        * (
+            spsi * pressure * (8 * second.Z2s - axis_scale / solution.iotaN * current_harmonic)
+            + 8j * sG * pressure * second.Z2c
+            - 4 * f_t * shape
+        )
+    )
+    curved = curvature * x**2 * f_t / (4 * w)
+    g_nn = radius**2 * (
+        -(q_t + curvature * f_t / 4 + curved).imag
+        - f_b_s.real / 2
+        - torsion * (f_n.real + f_b.imag) / 2
+    )
+    g_nb = radius**2 * (
+        f_n_s.real / 2 - torsion * f_b.real / 2 + torsion * f_n.imag / 2 - (q_t + curved).real
+    )
+
+    b_t, b_n, b_b = jnp.moveaxis(jnp.asarray(plasma_field_frenet), -1, 0)
+    g_tt = d_ds @ b_t - curvature * b_n
+    g_tn = d_ds @ b_n + curvature * b_t - torsion * b_b
+    g_tb = d_ds @ b_b + torsion * b_n
+    return jnp.stack(
+        (
+            jnp.stack((g_tt, g_tn, g_tb), axis=-1),
+            jnp.stack((g_tn, g_nn, g_nb), axis=-1),
+            jnp.stack((g_tb, g_nb, -g_tt - g_nn), axis=-1),
+        ),
+        axis=-2,
     )
 
 
 def plasma_gradient_on_axis(
-    solution: NearAxisSolution,
-    *,
-    formal_radius: ArrayLike,
-    angular_resolution: int = 128,
+    solution: NearAxisSolution, *, formal_radius: ArrayLike, angular_resolution: int = 128
 ) -> PlasmaGradientData:
-    """Evaluate the local plasma gradient and subtract it from the total jet."""
+    """Evaluate the local plasma gradient and subtract it from the total jet.
+
+    For ``I2 != 0`` this is the leading uniform-channel gradient. For ``I2 == 0`` that
+    term vanishes and the first nonzero, order-``a**2`` gradient is returned instead.
+    """
 
     plasma_field = plasma_field_on_axis(
-        solution,
-        formal_radius=formal_radius,
-        angular_resolution=angular_resolution,
+        solution, formal_radius=formal_radius, angular_resolution=angular_resolution
     )
     x = solution.X1c
-    sigma = solution.Y1c / solution.Y1s
-    frame = jnp.stack(
-        (
-            solution.geometry.tangent_cartesian,
-            solution.geometry.normal_cartesian,
-            solution.geometry.binormal_cartesian,
-        ),
-        axis=-2,
-    )
+    sigma = solution.sigma
+    frame = solution.geometry.frenet_frame
     gradient_frenet = elliptical_channel_gradient(
         x,
         sigma,
         parallel_current_mu0=plasma_field.current_source.parallel_current_mu0,
         chi=plasma_field.current_source.chi,
     )
-    gradient = elliptical_channel_gradient(
-        x,
-        sigma,
-        parallel_current_mu0=plasma_field.current_source.parallel_current_mu0,
-        chi=plasma_field.current_source.chi,
-        frame=frame,
+    # The two branches have different asymptotic orders, so they are selected, not summed.
+    gradient_frenet = jnp.where(
+        solution.inputs.I2 == 0,
+        zero_current_gradient(
+            solution,
+            jnp.einsum("...ai,...i->...a", frame, plasma_field.field),
+            formal_radius=formal_radius,
+        ),
+        gradient_frenet,
     )
+    gradient = jnp.einsum("...ai,...ab,...bj->...ij", frame, gradient_frenet, frame)
     external_field = solution.B_axis - plasma_field.field
     external_gradient = solution.grad_B_axis - gradient
     external_gradient_frenet = jnp.einsum(
-        "...ai,...ij,...bj->...ab",
-        frame,
-        external_gradient,
-        frame,
+        "...ai,...ij,...bj->...ab", frame, external_gradient, frame
     )
-    external_gradient_stf = project_symmetric_trace_free_rank2(
-        external_gradient,
-    )
+    external_gradient_stf = project_symmetric_trace_free_rank2(external_gradient)
     plasma_divergence = jnp.trace(gradient, axis1=-2, axis2=-1)
     ampere = (
         gradient_frenet[:, 2, 1]
         - gradient_frenet[:, 1, 2]
         - plasma_field.current_source.parallel_current_mu0
     )
-    external_asymmetry = external_gradient - jnp.swapaxes(
-        external_gradient,
-        -1,
-        -2,
-    )
-    external_trace = jnp.trace(
-        external_gradient,
-        axis1=-2,
-        axis2=-1,
-    )
+    external_asymmetry = external_gradient - jnp.swapaxes(external_gradient, -1, -2)
+    external_trace = jnp.trace(external_gradient, axis1=-2, axis2=-1)
     return PlasmaGradientData(
         field=plasma_field,
         gradient=gradient,
@@ -624,9 +594,7 @@ def plasma_gradient_on_axis(
         external_gradient=external_gradient,
         external_gradient_frenet=external_gradient_frenet,
         external_gradient_stf=external_gradient_stf,
-        external_gradient_independent=pack_symmetric_trace_free_rank2(
-            external_gradient,
-        ),
+        external_gradient_independent=pack_symmetric_trace_free_rank2(external_gradient),
         maximum_divergence=jnp.max(jnp.abs(plasma_divergence)),
         maximum_ampere_error=jnp.max(jnp.abs(ampere)),
         maximum_external_asymmetry=jnp.max(jnp.abs(external_asymmetry)),
@@ -690,12 +658,7 @@ def _rank3_stf_basis(dtype: jnp.dtype) -> jax.Array:
         from itertools import permutations
 
         for permutation in set(permutations(indices)):
-            array = array.at[
-                basis_index,
-                permutation[0],
-                permutation[1],
-                permutation[2],
-            ].set(value)
+            array = array.at[basis_index, permutation[0], permutation[1], permutation[2]].set(value)
         return array
 
     basis = set_symmetric(basis, 0, (0, 0, 0), 1)
@@ -720,329 +683,129 @@ def unpack_symmetric_trace_free_rank3(components: ArrayLike) -> jax.Array:
     components = jnp.asarray(components)
     if components.shape[-1:] != (7,):
         raise ValueError("STF rank-three components must end in length 7.")
-    return jnp.einsum(
-        "...a,aijk->...ijk",
-        components,
-        _rank3_stf_basis(components.dtype),
-    )
+    return jnp.einsum("...a,aijk->...ijk", components, _rank3_stf_basis(components.dtype))
 
 
-def _affine_potential_third_derivative(
-    coefficients: jax.Array,
-    elongation: jax.Array,
-) -> jax.Array:
-    """Equation (204)-(205) for scalar or vector affine coefficients."""
+def _cubic_potential(alpha_n: ArrayLike, alpha_b: ArrayLike, h_c: jax.Array, h_s: jax.Array):
+    """Cubic interior logarithmic potential of the affine density ``alpha_n*u + alpha_b*v``.
 
-    inverse = 1 / elongation
-    denominator = (elongation + inverse) ** 2
-    alpha_plus = coefficients[..., 0]
-    alpha_minus = coefficients[..., 1]
-    prefix_shape = coefficients.shape[:-1]
-    result = jnp.zeros(
-        (*prefix_shape, 2, 2, 2),
-        dtype=coefficients.dtype,
-    )
-    broadcast_shape = (elongation.shape[0],) + (1,) * (alpha_plus.ndim - 1)
-    elongation = elongation.reshape(broadcast_shape)
-    inverse = inverse.reshape(broadcast_shape)
-    denominator = denominator.reshape(broadcast_shape)
-    plus_plus_plus = 2 * jnp.pi / denominator * (2 + inverse**2) * alpha_plus
-    plus_plus_minus = 2 * jnp.pi / denominator * inverse**2 * alpha_minus
-    plus_minus_minus = 2 * jnp.pi / denominator * elongation**2 * alpha_plus
-    minus_minus_minus = 2 * jnp.pi / denominator * (elongation**2 + 2) * alpha_minus
-    result = result.at[..., 0, 0, 0].set(plus_plus_plus)
-    result = result.at[..., 1, 1, 1].set(minus_minus_minus)
-    for indices in ((0, 0, 1), (0, 1, 0), (1, 0, 0)):
-        result = result.at[..., indices[0], indices[1], indices[2]].set(plus_plus_minus)
-    for indices in ((0, 1, 1), (1, 0, 1), (1, 1, 0)):
-        result = result.at[..., indices[0], indices[1], indices[2]].set(plus_minus_minus)
-    return result
+    Returns the coefficients of ``(u**3, u**2*v, u*v**2, v**3)`` on the last axis, where
+    ``u`` and ``v`` are physical normal and binormal distances. Poisson's equation fixes
+    two combinations and matching to the decaying exterior potential of the filled
+    ellipse fixes the harmonic remainder. ``h_c`` and ``h_s`` are the two components of
+    the second angular anisotropy of the ellipse, so nothing is diagonalized and the
+    result stays differentiable through a circular section.
+    """
 
-
-def _oriented_ellipse_svd(
-    solution: NearAxisSolution,
-) -> tuple[jax.Array, jax.Array, jax.Array]:
-    x = solution.X1c
-    y = solution.Y1s
-    sigma = solution.Y1c / y
-    ellipse = jnp.stack(
-        (
-            jnp.stack((x, jnp.zeros_like(x)), axis=-1),
-            jnp.stack((y * sigma, y), axis=-1),
-        ),
-        axis=-2,
-    )
-    physical_rotation, singular_values, parameter_rotation_transpose = jnp.linalg.svd(
-        ellipse, full_matrices=False
-    )
-    orientation = jnp.linalg.det(physical_rotation)
-    column_correction = jnp.stack(
-        (jnp.ones_like(orientation), orientation),
-        axis=-1,
-    )
-    physical_rotation = physical_rotation * column_correction[:, None, :]
-    parameter_rotation_transpose = parameter_rotation_transpose * column_correction[:, :, None]
     return (
-        physical_rotation,
-        singular_values[:, 0],
-        jnp.swapaxes(parameter_rotation_transpose, -1, -2),
-    )
-
-
-def _principal_transverse_plasma_hessian(
-    solution: NearAxisSolution,
-    source: PlasmaCurrentSource,
-) -> tuple[jax.Array, jax.Array]:
-    """Equations (161)-(214) in the oriented ellipse principal frame."""
-
-    physical_rotation, elongation, parameter_rotation = _oriented_ellipse_svd(solution)
-    inverse = 1 / elongation
-    d_lambda = elongation + inverse
-    tangent = solution.geometry.tangent_cartesian
-    normal = solution.geometry.normal_cartesian
-    binormal = solution.geometry.binormal_cartesian
-    e_plus = physical_rotation[:, 0, 0, None] * normal + physical_rotation[:, 1, 0, None] * binormal
-    e_minus = (
-        physical_rotation[:, 0, 1, None] * normal + physical_rotation[:, 1, 1, None] * binormal
-    )
-    principal_frame = jnp.stack((tangent, e_plus, e_minus), axis=-2)
-    current_coefficients = jnp.stack(
-        (source.wstar2_cosine, source.wstar2_sine),
-        axis=-1,
-    )
-    current_principal = jnp.einsum(
-        "...gi,...ij->...gj",
-        jnp.einsum(
-            "...gi,...ij->...gj",
-            principal_frame,
-            current_coefficients,
-        ),
-        parameter_rotation,
-    )
-    c_star = jnp.stack(
-        (
-            current_principal[..., 0] / elongation[:, None],
-            current_principal[..., 1] * elongation[:, None],
-        ),
-        axis=-1,
-    )
-
-    H_normal = jnp.stack(
-        (
-            jnp.stack(
-                (solution.X20 + solution.X2c, solution.X2s),
-                axis=-1,
+        jnp.stack(
+            (
+                ((3 - 2 * h_c - h_c**2 + h_s**2) * alpha_n - 2 * h_s * (1 - h_c) * alpha_b) / 12,
+                (2 * h_s * (1 + h_c) * alpha_n + (1 - 2 * h_c + h_c**2 - h_s**2) * alpha_b) / 4,
+                ((1 + 2 * h_c + h_c**2 - h_s**2) * alpha_n + 2 * h_s * (1 - h_c) * alpha_b) / 4,
+                (-2 * h_s * (1 + h_c) * alpha_n + (3 + 2 * h_c - h_c**2 + h_s**2) * alpha_b) / 12,
             ),
-            jnp.stack(
-                (solution.X2s, solution.X20 - solution.X2c),
-                axis=-1,
-            ),
-        ),
-        axis=-2,
-    )
-    H_binormal = jnp.stack(
-        (
-            jnp.stack(
-                (solution.Y20 + solution.Y2c, solution.Y2s),
-                axis=-1,
-            ),
-            jnp.stack(
-                (solution.Y2s, solution.Y20 - solution.Y2c),
-                axis=-1,
-            ),
-        ),
-        axis=-2,
-    )
-    transformed_normal = jnp.einsum(
-        "...ia,...ij,...jb->...ab",
-        parameter_rotation,
-        H_normal,
-        parameter_rotation,
-    )
-    transformed_binormal = jnp.einsum(
-        "...ia,...ij,...jb->...ab",
-        parameter_rotation,
-        H_binormal,
-        parameter_rotation,
-    )
-    G_plus = (
-        physical_rotation[:, 0, 0, None, None] * transformed_normal
-        + physical_rotation[:, 1, 0, None, None] * transformed_binormal
-    )
-    G_minus = (
-        physical_rotation[:, 0, 1, None, None] * transformed_normal
-        + physical_rotation[:, 1, 1, None, None] * transformed_binormal
-    )
-    d1 = 2 * G_plus[:, 0, 0] / elongation + 2 * elongation * G_minus[:, 0, 1]
-    d2 = 2 * G_plus[:, 0, 1] / elongation + 2 * elongation * G_minus[:, 1, 1]
-    delta = jnp.stack((d1 / elongation, elongation * d2), axis=-1)
-    p3_cosine = (G_plus[:, 0, 0] - G_plus[:, 1, 1]) / (4 * elongation) - elongation * G_minus[
-        :, 0, 1
-    ] / 2
-    p3_sine = (
-        G_plus[:, 0, 1] / (2 * elongation) + elongation * (G_minus[:, 0, 0] - G_minus[:, 1, 1]) / 4
-    )
-    ellipse_parameter = (elongation - inverse) / d_lambda
-    ell_cosine = (
-        -4
-        * jnp.pi
-        * (1 + ellipse_parameter**3)
-        * p3_cosine
-        / (3 * elongation * (elongation**2 + 3 * inverse**2))
-    )
-    ell_sine = (
-        -4
-        * jnp.pi
-        * (1 - ellipse_parameter**3)
-        * p3_sine
-        / (3 * inverse * (3 * elongation**2 + inverse**2))
-    )
-    boundary_third = jnp.zeros(
-        (solution.inputs.nphi, 2, 2, 2),
-        dtype=elongation.dtype,
-    )
-    boundary_third = boundary_third.at[:, 0, 0, 0].set(6 * ell_cosine)
-    boundary_third = boundary_third.at[:, 1, 1, 1].set(-6 * ell_sine)
-    for indices in ((0, 0, 1), (0, 1, 0), (1, 0, 0)):
-        boundary_third = boundary_third.at[
-            :,
-            indices[0],
-            indices[1],
-            indices[2],
-        ].set(6 * ell_sine)
-    for indices in ((0, 1, 1), (1, 0, 1), (1, 1, 0)):
-        boundary_third = boundary_third.at[
-            :,
-            indices[0],
-            indices[1],
-            indices[2],
-        ].set(-6 * ell_cosine)
-
-    n_components = physical_rotation[:, 0, :]
-    K = jnp.zeros((solution.inputs.nphi, 2, 2), dtype=elongation.dtype)
-    K = K.at[:, 0, 0].set(2 * jnp.pi * inverse / d_lambda)
-    K = K.at[:, 1, 1].set(2 * jnp.pi * elongation / d_lambda)
-    M = -source.parallel_current_mu0 * K / (2 * jnp.pi)
-    product_rule = (
-        jnp.einsum("...a,...bc->...abc", n_components, K)
-        + jnp.einsum("...b,...ac->...abc", n_components, K)
-        + jnp.einsum("...c,...ab->...abc", n_components, K)
-    )
-    potential_third = -_affine_potential_third_derivative(c_star, elongation) / (2 * jnp.pi)
-    tangent_contribution = (
-        source.parallel_current_mu0 * solution.geometry.curvature / (4 * jnp.pi)
-    )[:, None, None, None] * (
-        _affine_potential_third_derivative(
-            n_components,
-            elongation,
+            axis=-1,
         )
-        - product_rule
-    ) + source.parallel_current_mu0 / (2 * jnp.pi) * (
-        _affine_potential_third_derivative(delta, elongation) - boundary_third
+        * jnp.pi
     )
-    potential_third = potential_third.at[:, 0, :, :, :].add(tangent_contribution)
 
-    transverse = jnp.zeros(
-        (solution.inputs.nphi, 2, 2, 3),
-        dtype=elongation.dtype,
+
+def _transverse_plasma_hessian(
+    solution: NearAxisSolution, source: PlasmaCurrentSource
+) -> jax.Array:
+    """Leading transverse plasma Hessian ``H[sample, alpha, beta, gamma]``.
+
+    ``alpha`` and ``beta`` are normal/binormal displacement directions and ``gamma`` is
+    the ``(t, n, b)`` field component. The cubic vector potential has three sources: the
+    affine weighted current, the quadratic deformation of the section, and curvature.
+    The last two are proportional to the on-axis current.
+    """
+
+    second, geometry = solution.second_order, solution.geometry
+    chi, current, curvature = source.chi, source.parallel_current_mu0, geometry.curvature
+    x = solution.X1c
+    sigma = solution.sigma
+    denominator = (1 + x**2) ** 2 + sigma**2
+    h_c = (x**4 - 1 - sigma**2) / denominator
+    h_s = -2 * chi * sigma * x**2 / denominator
+
+    # Affine current c*cos + s*sin in physical distances, using q1 = u/x, q2 = v/y - sigma*u/x.
+    frame = geometry.frenet_frame
+    cosine = jnp.einsum("...ai,...i->...a", frame, source.wstar2_cosine)
+    sine = jnp.einsum("...ai,...i->...a", frame, source.wstar2_sine)
+    alpha_n = (cosine - sigma[:, None] * sine) / x[:, None]
+    alpha_b = chi * x[:, None] * sine
+    potential = -_cubic_potential(alpha_n, alpha_b, h_c[:, None], h_s[:, None]) / (2 * jnp.pi)
+
+    shape_n = 2 / x**2 * (
+        (1 + sigma**2) * second.X20 + (1 - sigma**2) * second.X2c - 2 * sigma * second.X2s
+    ) + 2 * chi * (second.Y2s - sigma * second.Y20 + sigma * second.Y2c)
+    shape_b = 2 * chi * (second.X2s - sigma * second.X20 + sigma * second.X2c) + 2 * x**2 * (
+        second.Y20 - second.Y2c
     )
-    transverse = transverse.at[:, :, :, 0].set(
-        potential_third[:, 2, :, :, 0] - potential_third[:, 1, :, :, 1]
+    first = second.X2c + sigma * second.X2s - chi * x**2 * second.Y2s
+    other = chi * second.X2s - chi * sigma * second.X2c + x**2 * second.Y2c
+    cubic_cosine = (1 + x**2) ** 3 - 3 * (1 + x**2) * sigma**2
+    cubic_sine = 3 * (1 + x**2) ** 2 * sigma - sigma**3
+    boundary = -4 * jnp.pi * x**2 / (3 * denominator**3)
+    boundary_c = boundary * (first * cubic_cosine - chi * other * cubic_sine)
+    boundary_s = boundary * (chi * first * cubic_sine + other * cubic_cosine)
+    boundary_cubic = jnp.stack((boundary_c, 3 * boundary_s, -3 * boundary_c, -boundary_s), axis=-1)
+
+    quadratic = (
+        jnp.stack((1 + x**2 + sigma**2, -2 * chi * sigma * x**2, x**2 * (1 + x**2)), axis=-1)
+        / denominator[:, None]
     )
-    transverse = transverse.at[:, :, :, 1].set(
-        potential_third[:, 0, :, :, 1]
-        - (solution.geometry.curvature * n_components[:, 1])[:, None, None] * M
+    observation_cubic = jnp.pi * jnp.concatenate((quadratic, jnp.zeros_like(x)[:, None]), axis=-1)
+    ones, zeros = jnp.ones_like(x), jnp.zeros_like(x)
+    tangent_correction = (current * curvature / (4 * jnp.pi))[:, None] * (
+        _cubic_potential(ones, zeros, h_c, h_s) - observation_cubic
+    ) + current / (2 * jnp.pi) * (_cubic_potential(shape_n, shape_b, h_c, h_s) - boundary_cubic)
+    a_t = potential[:, 0] + tangent_correction
+    a_n, a_b = potential[:, 1], potential[:, 2]
+    m = -current / 2 * quadratic  # Quadratic potential of the uniform current.
+
+    # B_t = d_u A_b - d_v A_n,  B_n = d_v A_t,  B_b = kappa*A_t - d_u A_t, differentiated twice.
+    nn = jnp.stack(
+        (6 * a_b[:, 0] - 2 * a_n[:, 1], 2 * a_t[:, 1], 2 * curvature * m[:, 0] - 6 * a_t[:, 0]),
+        axis=-1,
     )
-    transverse = transverse.at[:, :, :, 2].set(
-        (solution.geometry.curvature * n_components[:, 0])[:, None, None] * M
-        - potential_third[:, 0, :, :, 0]
+    nb = jnp.stack(
+        (2 * a_b[:, 1] - 2 * a_n[:, 2], 2 * a_t[:, 2], curvature * m[:, 1] - 2 * a_t[:, 1]), axis=-1
     )
-    return transverse, principal_frame
+    bb = jnp.stack(
+        (2 * a_b[:, 2] - 6 * a_n[:, 3], 6 * a_t[:, 3], 2 * curvature * m[:, 2] - 2 * a_t[:, 2]),
+        axis=-1,
+    )
+    return jnp.stack((jnp.stack((nn, nb), axis=1), jnp.stack((nb, bb), axis=1)), axis=1)
 
 
 def _plasma_hessian_frenet(
-    solution: NearAxisSolution,
-    gradient_frenet: jax.Array,
-    source: PlasmaCurrentSource,
+    solution: NearAxisSolution, gradient_frenet: jax.Array, source: PlasmaCurrentSource
 ) -> jax.Array:
-    transverse, principal_frame = _principal_transverse_plasma_hessian(
-        solution,
-        source,
-    )
-    frenet_frame = jnp.stack(
-        (
-            solution.geometry.tangent_cartesian,
-            solution.geometry.normal_cartesian,
-            solution.geometry.binormal_cartesian,
-        ),
-        axis=-2,
-    )
-    principal_from_frenet = jnp.einsum(
-        "...ai,...bi->...ab",
-        principal_frame,
-        frenet_frame,
-    )
-    principal_derivative_first = jnp.zeros(
-        (solution.inputs.nphi, 3, 3, 3),
-        dtype=transverse.dtype,
-    )
-    principal_derivative_first = principal_derivative_first.at[
-        :,
-        1:,
-        1:,
-        :,
-    ].set(transverse)
-    frenet_derivative_first = jnp.einsum(
-        "...pa,...qb,...rg,...pqr->...abg",
-        principal_from_frenet,
-        principal_from_frenet,
-        principal_from_frenet,
-        principal_derivative_first,
-    )
+    transverse = _transverse_plasma_hessian(solution, source)
+    frenet_derivative_first = jnp.zeros((solution.inputs.nphi, 3, 3, 3), dtype=transverse.dtype)
+    frenet_derivative_first = frenet_derivative_first.at[:, 1:, 1:, :].set(transverse)
 
     derivative_first_gradient = jnp.swapaxes(gradient_frenet, -1, -2)
     derivative_along_axis = (
-        jnp.einsum(
-            "nm,mab->nab",
-            solution.geometry.d_d_varphi,
-            derivative_first_gradient,
-        )
+        jnp.einsum("nm,mab->nab", solution.geometry.d_d_varphi, derivative_first_gradient)
         / solution.geometry.abs_G0_over_B0
     )
     zeros = jnp.zeros_like(solution.geometry.curvature)
     connection = jnp.stack(
         (
-            jnp.stack(
-                (zeros, solution.geometry.curvature, zeros),
-                axis=-1,
-            ),
-            jnp.stack(
-                (
-                    -solution.geometry.curvature,
-                    zeros,
-                    solution.geometry.torsion,
-                ),
-                axis=-1,
-            ),
-            jnp.stack(
-                (zeros, -solution.geometry.torsion, zeros),
-                axis=-1,
-            ),
+            jnp.stack((zeros, solution.geometry.curvature, zeros), axis=-1),
+            jnp.stack((-solution.geometry.curvature, zeros, solution.geometry.torsion), axis=-1),
+            jnp.stack((zeros, -solution.geometry.torsion, zeros), axis=-1),
         ),
         axis=-2,
     )
     tangential = (
         derivative_along_axis
-        - jnp.einsum(
-            "...ad,...dg->...ag",
-            connection,
-            derivative_first_gradient,
-        )
-        - jnp.einsum(
-            "...ad,...gd->...ag",
-            derivative_first_gradient,
-            connection,
-        )
+        - jnp.einsum("...ad,...dg->...ag", connection, derivative_first_gradient)
+        - jnp.einsum("...ad,...gd->...ag", derivative_first_gradient, connection)
     )
     frenet_derivative_first = frenet_derivative_first.at[:, 0, :, :].set(tangential)
     frenet_derivative_first = frenet_derivative_first.at[:, :, 0, :].set(tangential)
@@ -1050,38 +813,26 @@ def _plasma_hessian_frenet(
 
 
 def plasma_hessian_on_axis(
-    solution: NearAxisSolution,
-    *,
-    formal_radius: ArrayLike,
-    angular_resolution: int = 128,
+    solution: NearAxisSolution, *, formal_radius: ArrayLike, angular_resolution: int = 128
 ) -> PlasmaHessianData:
     """Evaluate the complete local plasma Hessian and external vacuum jet."""
 
     gradient = plasma_gradient_on_axis(
-        solution,
-        formal_radius=formal_radius,
-        angular_resolution=angular_resolution,
+        solution, formal_radius=formal_radius, angular_resolution=angular_resolution
     )
-    hessian_frenet = _plasma_hessian_frenet(
-        solution,
-        gradient.gradient_frenet,
-        gradient.field.current_source,
+    # The tangential rows differentiate the LEADING gradient. Using the order-a**2
+    # zero-current gradient here would mix asymptotic orders within one tensor and
+    # break the symmetry of the external Hessian at that order.
+    source = gradient.field.current_source
+    leading_gradient_frenet = elliptical_channel_gradient(
+        solution.X1c,
+        solution.sigma,
+        parallel_current_mu0=source.parallel_current_mu0,
+        chi=source.chi,
     )
-    frame = jnp.stack(
-        (
-            solution.geometry.tangent_cartesian,
-            solution.geometry.normal_cartesian,
-            solution.geometry.binormal_cartesian,
-        ),
-        axis=-2,
-    )
-    hessian = jnp.einsum(
-        "...gi,...gab,...aj,...bk->...ijk",
-        frame,
-        hessian_frenet,
-        frame,
-        frame,
-    )
+    hessian_frenet = _plasma_hessian_frenet(solution, leading_gradient_frenet, source)
+    frame = solution.geometry.frenet_frame
+    hessian = jnp.einsum("...gi,...gab,...aj,...bk->...ijk", frame, hessian_frenet, frame, frame)
     external_hessian = solution.grad_grad_B_axis - hessian
     external_symmetric = _symmetrize_rank3(external_hessian)
     external_stf = project_symmetric_trace_free_rank3(external_hessian)
