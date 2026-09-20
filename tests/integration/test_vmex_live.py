@@ -17,12 +17,16 @@ pytestmark = [
 
 
 def _problem(solution):
+    # The boundary truncation, not the radial grid, sets the error against the near-axis
+    # transform here: at mpol=3, ntor=2 the fitted boundary is a measurably different plasma
+    # and its iota is off by 1.5%, and refining ns alone converges to that wrong value.
+    # mpol=5, ntor=4 brings it to 7e-4 at the same cost, so the radial grid stays coarse.
     return qsc.to_vmex_problem(
         solution,
         r=0.02,
-        ntheta=8,
-        mpol=3,
-        ntor=2,
+        ntheta=16,
+        mpol=5,
+        ntor=4,
         ns_array=(7,),
         ftol=1.0e-7,
         max_iterations=1200,
@@ -47,12 +51,7 @@ def test_vmex_vacuum_profiles_and_implicit_gradient():
     assert float(quantities.thermal_energy) == pytest.approx(0.0, abs=1.0e-14)
 
     value, gradient = jax.value_and_grad(
-        lambda parameters: (
-            qsc.vmex_radial_quantities(
-                problem,
-                parameters,
-            ).magnetic_well
-        )
+        lambda parameters: (qsc.vmex_radial_quantities(problem, parameters).magnetic_well)
     )(problem.parameters)
     assert np.isfinite(float(value))
     assert np.all(np.isfinite(np.asarray(gradient.rbc)))
@@ -70,12 +69,7 @@ def test_vmex_finite_beta_profiles():
     assert np.all(np.isfinite(np.asarray(quantities.quasisymmetry)))
 
     value, gradient = jax.value_and_grad(
-        lambda parameters: (
-            qsc.vmex_radial_quantities(
-                problem,
-                parameters,
-            ).magnetic_well
-        )
+        lambda parameters: (qsc.vmex_radial_quantities(problem, parameters).magnetic_well)
     )(problem.parameters)
     assert np.isfinite(float(value))
     assert np.isfinite(float(gradient.pres_scale))
