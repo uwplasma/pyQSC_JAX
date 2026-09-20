@@ -9,7 +9,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "UW Plasma", email = "rogerio.jorge@wisc.edu" }]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = ["jax", "solvax"]
 classifiers = [
@@ -18,6 +18,7 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
