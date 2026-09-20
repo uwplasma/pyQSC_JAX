@@ -1,13 +1,11 @@
 """Construct and plot a first-order quasi-axisymmetric configuration."""
 
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
+import requests
 
 import pyqsc_jax as qscX
-from pyqsc_jax.plotting import plot_surface_3d, plot_b20, plot_axis, surface_coordinates
-import requests
+from pyqsc_jax.plotting import plot_axis, surface_coordinates
 
 ID_CONFIG = 139379
 # ID_CONFIG = 139391

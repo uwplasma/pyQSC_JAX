@@ -125,6 +125,17 @@ def test_elliptical_gradient_is_jittable_and_differentiable():
     np.testing.assert_allclose(tangent, finite_difference, rtol=2.0e-10)
 
 
+def test_zero_current_gradient_requires_second_order():
+    from dataclasses import replace
+
+    from pyqsc_jax.plasma import zero_current_gradient
+
+    solution = finite_current_solution(I2=0.0)
+    field = jnp.zeros((solution.inputs.nphi, 3))
+    with pytest.raises(ValueError, match="second-order solution"):
+        zero_current_gradient(replace(solution, second_order=None), field, formal_radius=0.05)
+
+
 def test_gradient_and_stf_guards():
     with pytest.raises(ValueError, match="chi"):
         qsc.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=0)
