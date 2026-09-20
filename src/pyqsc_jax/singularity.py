@@ -5,11 +5,7 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.field import (
-    _differentiate_cylindrical_vector,
-    _regular_map_vectors,
-    _to_cartesian,
-)
+from pyqsc_jax.field import _differentiate_cylindrical_vector, _regular_map_vectors, _to_cartesian
 from pyqsc_jax.models import NearAxisSolution, SingularityDiagnostics
 
 
@@ -92,9 +88,7 @@ def _determinant_coefficients(
 
 
 def _positive_quadratic_root(
-    constant: jax.Array,
-    linear: jax.Array,
-    quadratic: jax.Array,
+    constant: jax.Array, linear: jax.Array, quadratic: jax.Array
 ) -> jax.Array:
     tolerance = 100 * jnp.finfo(quadratic.dtype).eps
     discriminant = linear**2 - 4 * quadratic * constant
@@ -112,10 +106,7 @@ def _positive_quadratic_root(
 
 
 def singularity_diagnostics(
-    solution: NearAxisSolution,
-    *,
-    angular_resolution: int = 256,
-    newton_iterations: int = 8,
+    solution: NearAxisSolution, *, angular_resolution: int = 256, newton_iterations: int = 8
 ) -> SingularityDiagnostics:
     """Locate the first singularity of the quadratic near-axis map.
 
@@ -167,9 +158,7 @@ def singularity_diagnostics(
         jacobian_11 = radius * linear_second + radius**2 * quadratic_second
         determinant = jacobian_00 * jacobian_11 - jacobian_01 * jacobian_10
         safe_determinant = jnp.where(
-            jnp.abs(determinant) > jnp.finfo(radius.dtype).eps,
-            determinant,
-            jnp.inf,
+            jnp.abs(determinant) > jnp.finfo(radius.dtype).eps, determinant, jnp.inf
         )
         delta_radius = (-residual_0 * jacobian_11 + jacobian_01 * residual_1) / safe_determinant
         delta_theta = (-jacobian_00 * residual_1 + residual_0 * jacobian_10) / safe_determinant
@@ -177,12 +166,7 @@ def singularity_diagnostics(
         radius = jnp.where(candidate_radius > 0, candidate_radius, radius / 2)
         return radius, theta + delta_theta
 
-    radius, theta = jax.lax.fori_loop(
-        0,
-        newton_iterations,
-        newton_step,
-        (radius, theta),
-    )
+    radius, theta = jax.lax.fori_loop(0, newton_iterations, newton_step, (radius, theta))
     sine = jnp.sin(theta)
     cosine = jnp.cos(theta)
     sine_2 = jnp.sin(2 * theta)

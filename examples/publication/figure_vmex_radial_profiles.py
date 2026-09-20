@@ -12,10 +12,7 @@ import numpy as np
 import pyqsc_jax as qsc
 from pyqsc_jax.plotting import plot_surface_3d
 
-CASES = (
-    ("qa", "vacuum QA"),
-    ("plasma_stellarator", r"finite $p_2$, $I_2=0$"),
-)
+CASES = (("qa", "vacuum QA"), ("plasma_stellarator", r"finite $p_2$, $I_2=0$"))
 RADIUS = 0.02
 QS_SURFACES = (0.2, 0.4, 0.6, 0.8, 1.0)
 OUTPUT_STEM = Path("examples/output/publication/vmex_radial_profiles")
@@ -55,24 +52,13 @@ except ImportError as error:
 finite_label, finite_axis, finite_problem, finite_quantities = records[-1]
 print("Differentiating the finite-beta magnetic well...")
 well, gradient = jax.value_and_grad(
-    lambda parameters: (
-        qsc.vmex_radial_quantities(
-            finite_problem,
-            parameters,
-        ).magnetic_well
-    )
+    lambda parameters: (qsc.vmex_radial_quantities(finite_problem, parameters).magnetic_well)
 )(finite_problem.parameters)
 
 plt.style.use("seaborn-v0_8-whitegrid")
 figure = plt.figure(figsize=(12.8, 8.0))
 surface_axis = figure.add_subplot(2, 2, 1, projection="3d")
-plot_surface_3d(
-    finite_axis,
-    radius=0.08,
-    ntheta=32,
-    ax=surface_axis,
-    cmap="magma",
-)
+plot_surface_3d(finite_axis, radius=0.08, ntheta=32, ax=surface_axis, cmap="magma")
 surface_axis.view_init(elev=25, azim=35)
 surface_axis.set_title(r"VMEX source boundary" "\n" r"finite $p_2$, exactly $I_2=0$")
 
@@ -80,23 +66,10 @@ iota_axis = figure.add_subplot(2, 2, 2)
 qs_axis = figure.add_subplot(2, 2, 3)
 well_axis = figure.add_subplot(2, 2, 4)
 for label, near_axis, _problem, quantities in records:
-    iota_axis.plot(
-        np.asarray(quantities.s),
-        np.asarray(quantities.iota),
-        "-o",
-        label=label,
-    )
-    iota_axis.scatter(
-        [0],
-        [float(near_axis.iota)],
-        marker="x",
-        s=55,
-    )
+    iota_axis.plot(np.asarray(quantities.s), np.asarray(quantities.iota), "-o", label=label)
+    iota_axis.scatter([0], [float(near_axis.iota)], marker="x", s=55)
     qs_axis.semilogy(
-        np.asarray(quantities.qs_surfaces),
-        np.asarray(quantities.quasisymmetry),
-        "-o",
-        label=label,
+        np.asarray(quantities.qs_surfaces), np.asarray(quantities.quasisymmetry), "-o", label=label
     )
 iota_axis.set_xlabel(r"normalized toroidal flux $s$")
 iota_axis.set_ylabel(r"$\iota(s)$ in pyQSC convention")
@@ -126,8 +99,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -157,8 +129,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

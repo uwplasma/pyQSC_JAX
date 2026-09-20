@@ -2,13 +2,7 @@ from pyqsc_jax.near_axis import near_axis
 
 
 def test_legacy_import_and_essos_on_axis_contract():
-    field = near_axis(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        etabar=-0.9,
-        nfp=3,
-        nphi=31,
-    )
+    field = near_axis(rc=[1.0, 0.045], zs=[0.0, -0.045], etabar=-0.9, nfp=3, nphi=31)
 
     attributes = {
         "B0",

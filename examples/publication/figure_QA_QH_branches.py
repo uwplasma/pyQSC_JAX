@@ -69,8 +69,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -82,8 +81,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=130, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

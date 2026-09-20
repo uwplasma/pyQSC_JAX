@@ -21,18 +21,8 @@ MODES = (1, 2, 3)
 OUTPUT = Path(
     os.environ.get("PYQSC_B20_BENCHMARK_OUTPUT", "benchmarks/results/b20_optimizers.json")
 )
-RC = (
-    1.0,
-    -0.51677144,
-    -0.009499784,
-    -0.005914526,
-)
-ZS = (
-    0.0,
-    -0.5420635,
-    -0.012225689,
-    -0.0059485724,
-)
+RC = (1.0, -0.51677144, -0.009499784, -0.005914526)
+ZS = (0.0, -0.5420635, -0.012225689, -0.0059485724)
 AXIS = qsc.Axis(rc=RC, zs=ZS, nfp=4)
 VARIABLE_INDICES = qsc.stellarator_symmetric_variable_indices(AXIS, modes=MODES)
 INITIAL = AXIS.dofs[jnp.asarray(VARIABLE_INDICES)]
@@ -46,15 +36,7 @@ SOURCE_DATABASE_ID = 57409
 
 def projected_residual(variables):
     axis = AXIS.with_dofs(AXIS.dofs.at[jnp.asarray(VARIABLE_INDICES)].set(variables))
-    solution = qsc.solve(
-        axis=axis,
-        etabar=ETABAR,
-        B0=1.0,
-        B2c=0.0,
-        p2=P2,
-        nphi=NPHI,
-        order="r2",
-    )
+    solution = qsc.solve(axis=axis, etabar=ETABAR, B0=1.0, B2c=0.0, p2=P2, nphi=NPHI, order="r2")
     optimized = qsc.optimize_B2c(solution)
     weights = optimized.solution.geometry.d_l_d_phi
     return (
@@ -193,8 +175,7 @@ rows.append(
 repository = Path(__file__).resolve().parents[1]
 try:
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"

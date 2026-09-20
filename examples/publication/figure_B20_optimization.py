@@ -31,13 +31,7 @@ optimized_angle = np.asarray(optimized.varphi * optimized.inputs.axis.nfp / (2 *
 
 figure = plt.figure(figsize=(13.2, 8.2))
 surface_axis = figure.add_subplot(2, 2, 1, projection="3d")
-plot_surface_3d(
-    optimized,
-    radius=SURFACE_RADIUS,
-    ntheta=36,
-    ax=surface_axis,
-    cmap="viridis",
-)
+plot_surface_3d(optimized, radius=SURFACE_RADIUS, ntheta=36, ax=surface_axis, cmap="viridis")
 surface_axis.view_init(elev=24, azim=38)
 surface_axis.set_title(
     "database-seeded optimized QH surface\n"
@@ -53,10 +47,7 @@ stock_axis.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
 
 optimized_axis = figure.add_subplot(2, 2, 3)
 optimized_axis.plot(
-    optimized_angle,
-    np.asarray(optimized_diagnostics.anomaly),
-    linewidth=2.2,
-    color="tab:green",
+    optimized_angle, np.asarray(optimized_diagnostics.anomaly), linewidth=2.2, color="tab:green"
 )
 optimized_axis.set_title("optimized Fourier axis")
 optimized_axis.set_xlabel("Boozer angle / field period")
@@ -73,18 +64,9 @@ optimized_values = (
     float(optimized_diagnostics.peak_to_peak),
 )
 summary_axis = figure.add_subplot(2, 2, 4)
+summary_axis.bar(np.arange(3) - 0.18, stock_values, width=0.36, label=r"exact $B_{2c}$ only")
 summary_axis.bar(
-    np.arange(3) - 0.18,
-    stock_values,
-    width=0.36,
-    label=r"exact $B_{2c}$ only",
-)
-summary_axis.bar(
-    np.arange(3) + 0.18,
-    optimized_values,
-    width=0.36,
-    label="axis + $B_{2c}$",
-    color="tab:green",
+    np.arange(3) + 0.18, optimized_values, width=0.36, label="axis + $B_{2c}$", color="tab:green"
 )
 summary_axis.set_xticks(np.arange(3), diagnostic_names, rotation=12)
 summary_axis.set_yscale("log")
@@ -107,8 +89,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -144,8 +125,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

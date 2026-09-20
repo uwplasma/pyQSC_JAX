@@ -21,30 +21,18 @@ def sigma_from_state(state: ArrayLike, sigma0: ArrayLike) -> jax.Array:
 
 
 def sigma_residual(
-    state: ArrayLike,
-    *,
-    inputs: NearAxisInputs,
-    geometry: AxisGeometry,
+    state: ArrayLike, *, inputs: NearAxisInputs, geometry: AxisGeometry
 ) -> jax.Array:
     """Periodic first-order sigma-equation residual."""
 
     state = jnp.asarray(state)
     sigma = sigma_from_state(state, inputs.sigma0)
     iota = state[0]
-    return sigma_equation(
-        sigma,
-        iota,
-        inputs=inputs,
-        geometry=geometry,
-    )
+    return sigma_equation(sigma, iota, inputs=inputs, geometry=geometry)
 
 
 def sigma_equation(
-    sigma: ArrayLike,
-    iota: ArrayLike,
-    *,
-    inputs: NearAxisInputs,
-    geometry: AxisGeometry,
+    sigma: ArrayLike, iota: ArrayLike, *, inputs: NearAxisInputs, geometry: AxisGeometry
 ) -> jax.Array:
     """Periodic sigma equation for explicit sigma, iota, and inputs."""
 
@@ -75,15 +63,9 @@ def solve_sigma(
     initial_state = jnp.full((inputs.nphi,), inputs.sigma0)
     initial_state = initial_state.at[0].set(0.0)
     residual_function = lambda state: sigma_residual(  # noqa: E731
-        state,
-        inputs=inputs,
-        geometry=geometry,
+        state, inputs=inputs, geometry=geometry
     )
-    state, report = implicit_dense_root(
-        residual_function,
-        initial_state,
-        options=root_options,
-    )
+    state, report = implicit_dense_root(residual_function, initial_state, options=root_options)
     return sigma_from_state(state, inputs.sigma0), state[0], report
 
 
@@ -282,11 +264,7 @@ def solve(
     )
     geometry = compute_axis_geometry(axis, nphi=nphi)
     if solve_for == "iota":
-        sigma, solved_iota, root_report = solve_sigma(
-            inputs,
-            geometry,
-            root_options=root_options,
-        )
+        sigma, solved_iota, root_report = solve_sigma(inputs, geometry, root_options=root_options)
         inverse = None
     else:
         from pyqsc_jax.inverse import solve_target_iota

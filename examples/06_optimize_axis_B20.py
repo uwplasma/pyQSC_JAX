@@ -41,10 +41,7 @@ axes[0].set_title(r"database ID 57409 + exact $B_{2c}$")
 axes[0].set_xlabel("Boozer angle / field period")
 axes[0].set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
 axes[1].plot(
-    optimized_angle,
-    np.asarray(optimized_diagnostics.anomaly),
-    linewidth=2,
-    color="tab:green",
+    optimized_angle, np.asarray(optimized_diagnostics.anomaly), linewidth=2, color="tab:green"
 )
 axes[1].set_title(f"optimized axis ({improvement:,.0f}x smaller)")
 axes[1].set_xlabel("Boozer angle / field period")

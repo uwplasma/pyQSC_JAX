@@ -20,11 +20,7 @@ def standard_solution(nphi=31, **kwargs):
 def test_sigma_residual_and_report():
     solution = standard_solution()
     state = solution.sigma.at[0].set(solution.iota)
-    residual = sigma_residual(
-        state,
-        inputs=solution.inputs,
-        geometry=solution.geometry,
-    )
+    residual = sigma_residual(state, inputs=solution.inputs, geometry=solution.geometry)
 
     assert bool(solution.root_report.converged)
     assert bool(solution.root_report.finite)
@@ -53,16 +49,10 @@ def test_first_order_shapes_and_coefficients():
     assert solution.sigma.shape == (31,)
     np.testing.assert_allclose(solution.X1s, 0.0)
     np.testing.assert_allclose(
-        solution.X1c * solution.curvature,
-        solution.inputs.etabar,
-        rtol=2e-13,
+        solution.X1c * solution.curvature, solution.inputs.etabar, rtol=2e-13
     )
     area_jacobian = solution.X1c * solution.Y1s - solution.X1s * solution.Y1c
-    np.testing.assert_allclose(
-        area_jacobian,
-        solution.inputs.sG * solution.inputs.spsi,
-        rtol=2e-13,
-    )
+    np.testing.assert_allclose(area_jacobian, solution.inputs.sG * solution.inputs.spsi, rtol=2e-13)
 
 
 def test_invalid_order_and_inverse_mode_are_explicitly_rejected():
@@ -85,10 +75,7 @@ def test_invalid_order_and_inverse_mode_are_explicitly_rejected():
     ],
 )
 def test_input_model_validation(overrides, message):
-    parameters = {
-        "axis": qsc.Axis(rc=[1.0], zs=[0.0]),
-        "etabar": -0.9,
-    }
+    parameters = {"axis": qsc.Axis(rc=[1.0], zs=[0.0]), "etabar": -0.9}
     parameters.update(overrides)
     with pytest.raises(ValueError, match=message):
         NearAxisInputs(**parameters)

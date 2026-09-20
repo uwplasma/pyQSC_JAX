@@ -7,13 +7,7 @@ from pyqsc_jax.near_axis import near_axis
 
 
 def standard_field(**kwargs):
-    parameters = {
-        "rc": [1.0, 0.045],
-        "zs": [0.0, -0.045],
-        "etabar": -0.9,
-        "nfp": 3,
-        "nphi": 15,
-    }
+    parameters = {"rc": [1.0, 0.045], "zs": [0.0, -0.045], "etabar": -0.9, "nfp": 3, "nphi": 15}
     parameters.update(kwargs)
     return near_axis(**parameters)
 
@@ -73,12 +67,7 @@ def test_coordinate_helpers_and_boundary_are_finite():
     assert RBC.shape == ZBS.shape == (5, 3)
 
     x, y, z, cylindrical_R = field.get_boundary(
-        r=0.01,
-        ntheta=6,
-        nphi=8,
-        ntheta_fourier=5,
-        mpol=2,
-        ntor=2,
+        r=0.01, ntheta=6, nphi=8, ntheta_fourier=5, mpol=2, ntor=2
     )
     assert x.shape == y.shape == z.shape == cylindrical_R.shape == (6, 8)
     assert jnp.all(jnp.isfinite(jnp.stack((x, y, z))))
@@ -97,13 +86,7 @@ def test_varphi_coordinate_inversion():
     assert jnp.all(jnp.isfinite(R))
 
     x, y, z, _ = field.get_boundary(
-        r=r,
-        ntheta=2,
-        nphi=3,
-        ntheta_fourier=3,
-        mpol=1,
-        ntor=1,
-        phi_is_varphi=True,
+        r=r, ntheta=2, nphi=3, ntheta_fourier=3, mpol=1, ntor=1, phi_is_varphi=True
     )
     assert jnp.all(jnp.isfinite(jnp.stack((x, y, z))))
 
@@ -127,14 +110,7 @@ def test_plot_supports_created_and_supplied_axes(monkeypatch):
 
     monkeypatch.setattr(plt, "show", lambda: None)
     field = standard_field()
-    figure, axes = field.plot(
-        r=0.005,
-        ntheta=3,
-        nphi=4,
-        ntheta_fourier=3,
-        show=False,
-        close=True,
-    )
+    figure, axes = field.plot(r=0.005, ntheta=3, nphi=4, ntheta_fourier=3, show=False, close=True)
     assert axes.figure is figure
 
     supplied_figure = plt.figure()

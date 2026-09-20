@@ -46,13 +46,7 @@ def test_vacuum_mercier_pressure_terms_vanish():
 
 
 def test_second_order_diagnostics_reject_first_order_solution():
-    solution = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=31,
-    )
+    solution = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=31)
 
     with pytest.raises(ValueError, match="second-order"):
         qsc.mercier_diagnostics(solution)

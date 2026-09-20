@@ -9,10 +9,7 @@ from pyqsc_jax.geometry import cylindrical_vector_to_cartesian
 from pyqsc_jax.models import FieldJet, NearAxisSolution
 
 
-def _differentiate_cylindrical_vector(
-    vector: jax.Array,
-    solution: NearAxisSolution,
-) -> jax.Array:
+def _differentiate_cylindrical_vector(vector: jax.Array, solution: NearAxisSolution) -> jax.Array:
     """Differentiate a vector with respect to Boozer ``varphi``.
 
     Cylindrical components are periodic over one field period, while fixed
@@ -97,16 +94,10 @@ def total_field_jet(solution: NearAxisSolution) -> FieldJet:
     C22 = 2 * inputs.B0 * (r2.B20 - inputs.B2c) / solution.G0 - flux_term
 
     field_coordinate_gradient_cylindrical = jnp.stack(
-        (
-            p0 * derivative(V0),
-            p1 * V0 + p0 * V1,
-            p0 * V2,
-        ),
-        axis=-1,
+        (p0 * derivative(V0), p1 * V0 + p0 * V1, p0 * V2), axis=-1
     )
     field_coordinate_hessian_cylindrical = jnp.zeros(
-        (inputs.nphi, 3, 3, 3),
-        dtype=field_coordinate_gradient_cylindrical.dtype,
+        (inputs.nphi, 3, 3, 3), dtype=field_coordinate_gradient_cylindrical.dtype
     )
     coordinate_hessian_values = {
         (0, 0): p0 * derivative(derivative(V0)),
@@ -136,8 +127,7 @@ def total_field_jet(solution: NearAxisSolution) -> FieldJet:
             jnp.stack(
                 [
                     _to_cartesian(
-                        field_coordinate_hessian_cylindrical[:, :, first, second],
-                        solution,
+                        field_coordinate_hessian_cylindrical[:, :, first, second], solution
                     )
                     for second in range(3)
                 ],
@@ -170,11 +160,7 @@ def total_field_jet(solution: NearAxisSolution) -> FieldJet:
         coordinate_hessian = coordinate_hessian.at[:, :, second, first].set(value)
 
     inverse_coordinate_jacobian = jnp.linalg.inv(coordinate_jacobian)
-    gradient = jnp.einsum(
-        "nia,naj->nij",
-        field_coordinate_gradient,
-        inverse_coordinate_jacobian,
-    )
+    gradient = jnp.einsum("nia,naj->nij", field_coordinate_gradient, inverse_coordinate_jacobian)
     hessian = jnp.einsum(
         "niab,naj,nbk->nijk",
         field_coordinate_hessian,
@@ -191,19 +177,11 @@ def total_field_jet(solution: NearAxisSolution) -> FieldJet:
     field = p0 * _to_cartesian(V0, solution)
 
     frenet_basis = jnp.stack(
-        (
-            geometry.normal_cartesian,
-            geometry.binormal_cartesian,
-            geometry.tangent_cartesian,
-        ),
+        (geometry.normal_cartesian, geometry.binormal_cartesian, geometry.tangent_cartesian),
         axis=-1,
     )
     field_first_frenet = jnp.einsum(
-        "nia,nijk,njb,nkc->nabc",
-        frenet_basis,
-        hessian,
-        frenet_basis,
-        frenet_basis,
+        "nia,nijk,njb,nkc->nabc", frenet_basis, hessian, frenet_basis, frenet_basis
     )
     hessian_frenet = jnp.transpose(field_first_frenet, (0, 2, 3, 1))
 

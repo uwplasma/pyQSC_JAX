@@ -59,12 +59,7 @@ def test_vacuum_field_hessian_is_fully_symmetric_and_trace_free():
 
     np.testing.assert_allclose(hessian, np.swapaxes(hessian, 1, 2), rtol=0, atol=7e-7)
     np.testing.assert_allclose(hessian, np.swapaxes(hessian, 1, 3), rtol=0, atol=7e-7)
-    np.testing.assert_allclose(
-        np.einsum("niik->nk", hessian),
-        0,
-        rtol=0,
-        atol=7e-7,
-    )
+    np.testing.assert_allclose(np.einsum("niik->nk", hessian), 0, rtol=0, atol=7e-7)
 
 
 @pytest.mark.parametrize(
@@ -90,25 +85,16 @@ def test_vacuum_field_hessian_is_fully_symmetric_and_trace_free():
         ),
     ],
 )
-def test_field_hessian_matches_upstream_pyqsc(
-    factory,
-    expected_components,
-    expected_inverse_scale,
-):
+def test_field_hessian_matches_upstream_pyqsc(factory, expected_components, expected_inverse_scale):
     solution = factory()
     indices = [0, 15, 30]
 
     for component, expected in expected_components.items():
         np.testing.assert_allclose(
-            np.asarray(solution.grad_grad_B)[indices, *component],
-            expected,
-            rtol=3e-6,
-            atol=2e-6,
+            np.asarray(solution.grad_grad_B)[indices, *component], expected, rtol=3e-6, atol=2e-6
         )
     np.testing.assert_allclose(
-        solution.grad_grad_B_inverse_scale_length,
-        expected_inverse_scale,
-        rtol=3e-7,
+        solution.grad_grad_B_inverse_scale_length, expected_inverse_scale, rtol=3e-7
     )
 
 
@@ -117,10 +103,7 @@ def test_field_hessian_resolution_convergence():
     fine = _vacuum_qa(nphi=91)
 
     np.testing.assert_allclose(
-        np.asarray(medium.grad_grad_B)[0],
-        np.asarray(fine.grad_grad_B)[0],
-        rtol=2e-6,
-        atol=2e-6,
+        np.asarray(medium.grad_grad_B)[0], np.asarray(fine.grad_grad_B)[0], rtol=2e-6, atol=2e-6
     )
     np.testing.assert_allclose(
         medium.grad_grad_B_inverse_scale_length_vs_varphi[0],

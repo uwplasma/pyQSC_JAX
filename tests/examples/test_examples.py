@@ -18,25 +18,15 @@ PUBLICATION_SCRIPTS = tuple(
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "script",
-    EXAMPLE_SCRIPTS + PUBLICATION_SCRIPTS,
-    ids=lambda path: path.stem,
+    "script", EXAMPLE_SCRIPTS + PUBLICATION_SCRIPTS, ids=lambda path: path.stem
 )
 def test_example_executes_as_direct_script(script: Path, tmp_path: Path) -> None:
     """Execute the public script contract without relying on repository cwd."""
 
     environment = os.environ.copy()
     environment.update(
-        {
-            "JAX_ENABLE_X64": "true",
-            "MPLBACKEND": "Agg",
-            "PYTHONPATH": str(REPOSITORY_ROOT / "src"),
-        }
+        {"JAX_ENABLE_X64": "true", "MPLBACKEND": "Agg", "PYTHONPATH": str(REPOSITORY_ROOT / "src")}
     )
     subprocess.run(
-        (sys.executable, str(script)),
-        cwd=tmp_path,
-        env=environment,
-        check=True,
-        timeout=180,
+        (sys.executable, str(script)), cwd=tmp_path, env=environment, check=True, timeout=180
     )

@@ -6,12 +6,7 @@ from pyqsc_jax.near_axis import near_axis
 
 
 def test_geometry_matches_legacy_first_order_baseline():
-    parameters = {
-        "rc": [1.0, 0.045],
-        "zs": [0.0, -0.045],
-        "nfp": 3,
-        "nphi": 31,
-    }
+    parameters = {"rc": [1.0, 0.045], "zs": [0.0, -0.045], "nfp": 3, "nphi": 31}
     geometry = compute_axis_geometry(
         Axis(rc=parameters["rc"], zs=parameters["zs"], nfp=parameters["nfp"]),
         nphi=parameters["nphi"],
@@ -96,9 +91,6 @@ def test_asymmetric_geometry_matches_independent_fortran_reference():
 
 
 def test_qh_frame_helicity_matches_upstream_convention():
-    geometry = compute_axis_geometry(
-        Axis(rc=[1.0, 0.265], zs=[0.0, -0.21], nfp=4),
-        nphi=31,
-    )
+    geometry = compute_axis_geometry(Axis(rc=[1.0, 0.265], zs=[0.0, -0.21], nfp=4), nphi=31)
 
     assert int(geometry.frame_helicity) == -1

@@ -43,19 +43,12 @@ def test_iteration_limit_returns_failure_report():
 
 def test_implicit_root_gradient_uses_converged_equation():
     def root(parameter):
-        solved, _ = implicit_dense_root(
-            lambda x: x**2 - parameter,
-            jnp.asarray(1.0),
-        )
+        solved, _ = implicit_dense_root(lambda x: x**2 - parameter, jnp.asarray(1.0))
         return solved
 
     parameter = 2.0
     np.testing.assert_allclose(root(parameter), jnp.sqrt(parameter), rtol=2e-13)
-    np.testing.assert_allclose(
-        jax.grad(root)(parameter),
-        1 / (2 * jnp.sqrt(parameter)),
-        rtol=2e-12,
-    )
+    np.testing.assert_allclose(jax.grad(root)(parameter), 1 / (2 * jnp.sqrt(parameter)), rtol=2e-12)
     np.testing.assert_allclose(jax.jit(root)(parameter), root(parameter), rtol=2e-13)
 
 

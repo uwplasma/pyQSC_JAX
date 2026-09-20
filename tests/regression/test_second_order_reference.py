@@ -81,8 +81,5 @@ def test_second_order_matches_upstream(parameters, expected):
     indices = [0, 7, 15]
     for name in ("X20", "Y20", "B20"):
         np.testing.assert_allclose(
-            np.asarray(getattr(solution, name))[indices],
-            expected[name],
-            rtol=3e-11,
-            atol=3e-11,
+            np.asarray(getattr(solution, name))[indices], expected[name], rtol=3e-11, atol=3e-11
         )

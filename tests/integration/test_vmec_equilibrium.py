@@ -35,14 +35,7 @@ def test_frozen_vmec_wout_recovers_near_axis_iota():
     input_digest = hashlib.sha256(vmec_input.read_bytes()).hexdigest()
     digest = hashlib.sha256(wout.read_bytes()).hexdigest()
     result = _read_vmec_result(wout)
-    solution = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=121,
-        order="r2",
-    )
+    solution = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=121, order="r2")
     relative_iota_error = abs(result["iota_axis"] - float(solution.iota)) / abs(
         float(solution.iota)
     )
@@ -53,10 +46,7 @@ def test_frozen_vmec_wout_recovers_near_axis_iota():
     assert max(result["fsqr"], result["fsqz"], result["fsql"]) < 1.0e-9
     assert relative_iota_error < 1.0e-3
     np.testing.assert_allclose(
-        result["iota_axis"],
-        manifest["vmec_result"]["iota_axis"],
-        rtol=0,
-        atol=2.0e-15,
+        result["iota_axis"], manifest["vmec_result"]["iota_axis"], rtol=0, atol=2.0e-15
     )
 
 
@@ -66,14 +56,7 @@ def test_local_vmec_rerun_when_executable_is_requested(tmp_path):
     executable = os.environ.get("PYQSC_VMEC_EXECUTABLE")
     if not executable:
         pytest.skip("Set PYQSC_VMEC_EXECUTABLE to rerun the fixed-boundary VMEC case.")
-    solution = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=121,
-        order="r2",
-    )
+    solution = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=121, order="r2")
     qsc.to_vmec(
         solution,
         tmp_path / "input.qa_r0025",
@@ -81,18 +64,9 @@ def test_local_vmec_rerun_when_executable_is_requested(tmp_path):
         ntheta=32,
         mpol=6,
         ntor=6,
-        parameters={
-            "ns_array": (31,),
-            "ftol_array": (1.0e-10,),
-            "niter_array": (3000,),
-        },
+        parameters={"ns_array": (31,), "ftol_array": (1.0e-10,), "niter_array": (3000,)},
     )
-    subprocess.run(
-        [executable, "input.qa_r0025"],
-        cwd=tmp_path,
-        check=True,
-        timeout=120,
-    )
+    subprocess.run([executable, "input.qa_r0025"], cwd=tmp_path, check=True, timeout=120)
     result = _read_vmec_result(tmp_path / "wout_qa_r0025.nc")
 
     assert result["ier_flag"] == 0
@@ -120,12 +94,7 @@ def test_local_vmec_finite_pressure_zero_current_database_case(tmp_path):
             "niter_array": (3000, 5000),
         },
     )
-    subprocess.run(
-        [executable, "input.qa139524_beta_r0015"],
-        cwd=tmp_path,
-        check=True,
-        timeout=120,
-    )
+    subprocess.run([executable, "input.qa139524_beta_r0015"], cwd=tmp_path, check=True, timeout=120)
     result = _read_vmec_result(tmp_path / "wout_qa139524_beta_r0015.nc")
     torsion_rms = np.sqrt(
         np.sum(np.asarray(solution.torsion**2 * solution.geometry.d_l_d_phi))

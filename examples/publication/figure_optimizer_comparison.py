@@ -37,12 +37,7 @@ axes[0].set_yscale("log")
 axes[0].set_ylabel(r"weighted $\|P B_{20}\|_2$ [T m$^{-2}$]")
 axes[0].set_title("Same dense target, visibly different outcomes")
 axes[0].tick_params(axis="x", rotation=20)
-axes[0].bar_label(
-    bars,
-    labels=[f"{value:.1e}" for value in residuals],
-    padding=3,
-    fontsize=8,
-)
+axes[0].bar_label(bars, labels=[f"{value:.1e}" for value in residuals], padding=3, fontsize=8)
 axes[0].text(
     0.98,
     0.36,
@@ -63,13 +58,7 @@ point_colors = colors[1:5]
 point_labels = ("L-BFGS-B", "least squares", "low-budget DE", "multistart LM")
 sizes = 75.0 + 55.0 * np.log10(1.0 + seconds / seconds.min())
 for evaluation, residual, size, color, label, elapsed in zip(
-    evaluations,
-    screened_residuals,
-    sizes,
-    point_colors,
-    point_labels,
-    seconds,
-    strict=True,
+    evaluations, screened_residuals, sizes, point_colors, point_labels, seconds, strict=True
 ):
     axes[1].scatter(
         evaluation,
@@ -126,8 +115,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=130, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

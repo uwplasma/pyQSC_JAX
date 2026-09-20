@@ -23,9 +23,7 @@ assert float(solution.inputs.p2) != 0.0
 print("torsion RMS [1/m]:", float((solution.torsion**2).mean() ** 0.5))
 print("Separating the surface-free plasma and external jets...")
 result = qsc.plasma_hessian_on_axis(
-    solution,
-    formal_radius=FORMAL_RADIUS,
-    angular_resolution=ANGULAR_RESOLUTION,
+    solution, formal_radius=FORMAL_RADIUS, angular_resolution=ANGULAR_RESOLUTION
 )
 enclosed_current = result.field.field.current_source.enclosed_toroidal_current
 plasma_fraction = (
@@ -42,10 +40,7 @@ print("external Hessian STF components:", result.external_hessian_independent.sh
 print("maximum external-gradient trace:", float(result.field.maximum_external_trace))
 print("maximum external-Hessian trace:", float(result.maximum_external_trace))
 print("estimated plasma-field remainder [T]:", float(result.field.field.estimated_field_remainder))
-print(
-    "estimated plasma-Hessian remainder [T/m^2]:",
-    float(result.estimated_hessian_remainder),
-)
+print("estimated plasma-Hessian remainder [T/m^2]:", float(result.estimated_hessian_remainder))
 
 figure, _ = plot_field_split_components(result, solution)
 if SAVE_OUTPUT:

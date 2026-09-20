@@ -22,33 +22,14 @@ NTOR = 14
 WARM_REPETITIONS = 7
 OUTPUT = Path(os.environ.get("PYQSC_VMEC_BENCHMARK_OUTPUT", "benchmarks/results/vmec_export.json"))
 
-solution = qsc.Qsc(
-    rc=[1.0, 0.045],
-    zs=[0.0, -0.045],
-    nfp=3,
-    etabar=-0.9,
-    nphi=NPHI,
-    order="r2",
-)
+solution = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=NPHI, order="r2")
 with tempfile.TemporaryDirectory() as temporary_directory:
     destination = Path(temporary_directory) / "input.benchmark"
     jax.clear_caches()
-    cold = qsc.to_vmec(
-        solution,
-        destination,
-        r=RADIUS,
-        ntheta=NTHETA,
-        mpol=MPOL,
-        ntor=NTOR,
-    )
+    cold = qsc.to_vmec(solution, destination, r=RADIUS, ntheta=NTHETA, mpol=MPOL, ntor=NTOR)
     warm = [
         qsc.to_vmec(
-            solution,
-            destination,
-            r=RADIUS,
-            ntheta=NTHETA,
-            mpol=MPOL,
-            ntor=NTOR,
+            solution, destination, r=RADIUS, ntheta=NTHETA, mpol=MPOL, ntor=NTOR
         ).conversion_seconds
         for _ in range(WARM_REPETITIONS)
     ]
@@ -56,8 +37,7 @@ with tempfile.TemporaryDirectory() as temporary_directory:
 repository = Path(__file__).resolve().parents[1]
 try:
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -69,13 +49,7 @@ report = {
     "jax": jax.__version__,
     "jax_backend": jax.default_backend(),
     "jax_enable_x64": bool(jax.config.jax_enable_x64),
-    "case": {
-        "radius": RADIUS,
-        "nphi": NPHI,
-        "ntheta": NTHETA,
-        "mpol": MPOL,
-        "ntor": NTOR,
-    },
+    "case": {"radius": RADIUS, "nphi": NPHI, "ntheta": NTHETA, "mpol": MPOL, "ntor": NTOR},
     "cold_compile_and_execute_seconds": cold.conversion_seconds,
     "warm_median_seconds": statistics.median(warm),
     "warm_samples_seconds": warm,

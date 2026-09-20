@@ -8,13 +8,7 @@ from pyqsc_jax.axis import evaluate_axis
 
 
 def test_coefficients_are_normalized_and_round_trip():
-    axis = Axis(
-        rc=[1.0, 0.2, -0.01],
-        rs=[0.0, 0.03],
-        zc=[0.1],
-        zs=[0.0, -0.15],
-        nfp=5,
-    )
+    axis = Axis(rc=[1.0, 0.2, -0.01], rs=[0.0, 0.03], zc=[0.1], zs=[0.0, -0.15], nfp=5)
 
     assert axis.nfourier == 3
     np.testing.assert_array_equal(axis.rs, [0.0, 0.03, 0.0])
@@ -42,13 +36,7 @@ def test_axis_input_validation():
 
 
 def test_general_axis_and_analytic_derivatives():
-    axis = Axis(
-        rc=[1.2, 0.3],
-        rs=[0.0, -0.11],
-        zc=[0.2, 0.04],
-        zs=[0.0, 0.17],
-        nfp=3,
-    )
+    axis = Axis(rc=[1.2, 0.3], rs=[0.0, -0.11], zc=[0.2, 0.04], zs=[0.0, 0.17], nfp=3)
     phi = jnp.array([0.0, 0.13, 0.51])
     samples = evaluate_axis(axis, phi)
     angle = 3 * phi

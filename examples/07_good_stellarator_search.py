@@ -16,11 +16,7 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/07_good_stellarator_search.png")
 
 configuration = qsc.get_configuration(CONFIGURATION)
-axis = qsc.Axis(
-    rc=configuration.rc,
-    zs=configuration.zs,
-    nfp=configuration.nfp,
-)
+axis = qsc.Axis(rc=configuration.rc, zs=configuration.zs, nfp=configuration.nfp)
 variable_indices = qsc.stellarator_symmetric_variable_indices(axis, modes=(3,))
 criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
 problem = qsc.AxisSearchProblem(

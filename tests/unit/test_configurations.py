@@ -32,10 +32,7 @@ def test_named_configurations_are_immutable_and_solve():
 
 def test_solve_configuration_preserves_topology_and_overrides():
     qh = qsc.solve_configuration("qh", nphi=31, order="r1")
-    finite = qsc.solve_configuration(
-        "finite_pressure_current",
-        nphi=15,
-    )
+    finite = qsc.solve_configuration("finite_pressure_current", nphi=15)
 
     assert int(qh.helicity) == 1
     assert finite.second_order is not None
@@ -58,9 +55,7 @@ def test_database_showcase_configurations_are_traceable_and_screened():
         configuration = qsc.get_configuration(name)
         solution = configuration.solve(nphi=61)
         minimum_abs_iota = 0.3 if name == "database_qa_139524" else 0.4
-        criteria = qsc.Criteria.from_curvo_2025(
-            minimum_abs_iota=minimum_abs_iota,
-        )
+        criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=minimum_abs_iota)
 
         assert configuration.source_database_id == database_id
         assert configuration.source_url == (

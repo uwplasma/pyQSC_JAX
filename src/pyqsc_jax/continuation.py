@@ -115,18 +115,10 @@ def continue_etabar_branch(
     tangents = [tangent, tangent]
     responses = [
         parameter_response_derivative(
-            first.inputs,
-            first.geometry,
-            first.sigma,
-            first.iota,
-            parameter="etabar",
+            first.inputs, first.geometry, first.sigma, first.iota, parameter="etabar"
         ),
         parameter_response_derivative(
-            second.inputs,
-            second.geometry,
-            second.sigma,
-            second.iota,
-            parameter="etabar",
+            second.inputs, second.geometry, second.sigma, second.iota, parameter="etabar"
         ),
     ]
     fold_flags = [
@@ -150,11 +142,7 @@ def continue_etabar_branch(
         )
         predicted_sigma = previous.sigma + sigma_scale * (previous.sigma - before_previous.sigma)
         initial_state = jnp.concatenate(
-            (
-                jnp.log(jnp.abs(predicted_etabar))[None],
-                predicted_pair[1:],
-                predicted_sigma[1:],
-            )
+            (jnp.log(jnp.abs(predicted_etabar))[None], predicted_pair[1:], predicted_sigma[1:])
         )
         base_inputs = previous.inputs
 
@@ -169,33 +157,17 @@ def continue_etabar_branch(
             iota = state[1]
             sigma = jnp.concatenate((base_inputs.sigma0[None], state[2:]))
             local_inputs = replace(base_inputs, etabar=etabar)
-            sigma_part = sigma_equation(
-                sigma,
-                iota,
-                inputs=local_inputs,
-                geometry=geometry,
-            )
-            arclength_part = jnp.dot(
-                jnp.asarray((etabar, iota)) - predicted_pair,
-                tangent,
-            )
+            sigma_part = sigma_equation(sigma, iota, inputs=local_inputs, geometry=geometry)
+            arclength_part = jnp.dot(jnp.asarray((etabar, iota)) - predicted_pair, tangent)
             return jnp.concatenate((sigma_part, arclength_part[None]))
 
-        state, report = implicit_dense_root(
-            residual,
-            initial_state,
-            options=root_options,
-        )
+        state, report = implicit_dense_root(residual, initial_state, options=root_options)
         corrected_etabar = sign * jnp.exp(state[0])
         corrected_iota = state[1]
         corrected_sigma = jnp.concatenate((base_inputs.sigma0[None], state[2:]))
         corrected_inputs = replace(base_inputs, etabar=corrected_etabar)
         corrected = first_order_solution(
-            corrected_inputs,
-            previous.geometry,
-            corrected_sigma,
-            corrected_iota,
-            report,
+            corrected_inputs, previous.geometry, corrected_sigma, corrected_iota, report
         )
         if not bool(report.converged):
             status = "solver_failure"

@@ -146,9 +146,7 @@ class AxisSearchContinuation:
 
 
 def stellarator_symmetric_variable_indices(
-    axis: Axis,
-    *,
-    modes: tuple[int, ...] | None = None,
+    axis: Axis, *, modes: tuple[int, ...] | None = None
 ) -> tuple[int, ...]:
     """Return packed indices for nonconstant ``rc`` and ``zs`` coefficients."""
 
@@ -235,11 +233,7 @@ def _validate_problem(problem: AxisSearchProblem, options: AxisSearchOptions) ->
     ):
         raise ValueError("Unknown canonical selector.")
 
-    positive_integers = (
-        options.coarse_samples,
-        options.local_starts,
-        options.maximum_iterations,
-    )
+    positive_integers = (options.coarse_samples, options.local_starts, options.maximum_iterations)
     if any(
         not isinstance(value, int) or isinstance(value, bool) or value < 1
         for value in positive_integers
@@ -263,29 +257,20 @@ def _validate_problem(problem: AxisSearchProblem, options: AxisSearchOptions) ->
         raise ValueError("verification_multipliers must be nonempty.")
 
 
-def _physical_from_internal(
-    internal: jax.Array,
-    lower: jax.Array,
-    upper: jax.Array,
-) -> jax.Array:
+def _physical_from_internal(internal: jax.Array, lower: jax.Array, upper: jax.Array) -> jax.Array:
     midpoint = 0.5 * (lower + upper)
     half_width = 0.5 * (upper - lower)
     return midpoint + half_width * jnp.tanh(internal)
 
 
-def _internal_from_physical(
-    physical: jax.Array,
-    lower: jax.Array,
-    upper: jax.Array,
-) -> jax.Array:
+def _internal_from_physical(physical: jax.Array, lower: jax.Array, upper: jax.Array) -> jax.Array:
     midpoint = 0.5 * (lower + upper)
     half_width = 0.5 * (upper - lower)
     return jnp.arctanh((physical - midpoint) / half_width)
 
 
 def _solve_axis_candidate(
-    problem: AxisSearchProblem,
-    variables: jax.Array,
+    problem: AxisSearchProblem, variables: jax.Array
 ) -> tuple[NearAxisSolution, B20Diagnostics]:
     indices = jnp.asarray(problem.variable_indices)
     axis = problem.axis.with_dofs(problem.axis.dofs.at[indices].set(variables))
@@ -310,18 +295,14 @@ def _solve_axis_candidate(
     return optimized.solution, optimized.diagnostics
 
 
-def _projected_residual(
-    problem: AxisSearchProblem,
-    variables: jax.Array,
-) -> jax.Array:
+def _projected_residual(problem: AxisSearchProblem, variables: jax.Array) -> jax.Array:
     solution, diagnostics = _solve_axis_candidate(problem, variables)
     weights = solution.geometry.d_l_d_phi
     return jnp.sqrt(weights / jnp.sum(weights)) * diagnostics.anomaly / solution.inputs.B0
 
 
 def _coarse_metrics(
-    problem: AxisSearchProblem,
-    variables: jax.Array,
+    problem: AxisSearchProblem, variables: jax.Array
 ) -> tuple[jax.Array, jax.Array]:
     solution, diagnostics = _solve_axis_candidate(problem, variables)
     finite = (
@@ -335,9 +316,7 @@ def _coarse_metrics(
 
 
 def _levenberg_marquardt(
-    residual_function,
-    initial: jax.Array,
-    options: AxisSearchOptions,
+    residual_function, initial: jax.Array, options: AxisSearchOptions
 ) -> tuple[jax.Array, LocalLeastSquaresReport]:
     residual_and_jacobian = jax.jit(
         lambda value: (residual_function(value), jax.jacrev(residual_function)(value))
@@ -359,10 +338,7 @@ def _levenberg_marquardt(
         gradient = jacobian.T @ current_residual
         gradient_norm = jnp.linalg.norm(gradient, ord=jnp.inf)
         diagonal_scale = jnp.maximum(jnp.diag(normal_matrix), 1.0)
-        step = -jnp.linalg.solve(
-            normal_matrix + damping * jnp.diag(diagonal_scale),
-            gradient,
-        )
+        step = -jnp.linalg.solve(normal_matrix + damping * jnp.diag(diagonal_scale), gradient)
         step_norm = jnp.linalg.norm(step)
         candidate = internal + step
         candidate_residual = residual(candidate)
@@ -371,8 +347,7 @@ def _levenberg_marquardt(
         candidate_cost = 0.5 * jnp.sum(candidate_residual**2)
         predicted_reduction = -gradient @ step - 0.5 * step @ normal_matrix @ step
         ratio = (current_cost - candidate_cost) / jnp.maximum(
-            predicted_reduction,
-            jnp.finfo(current_cost.dtype).tiny,
+            predicted_reduction, jnp.finfo(current_cost.dtype).tiny
         )
         accept = bool(
             jnp.isfinite(candidate_cost)
@@ -402,17 +377,12 @@ def _levenberg_marquardt(
         if converged:
             break
 
-    normal_eigenvalues = jnp.maximum(
-        jnp.linalg.eigvalsh(jacobian.T @ jacobian),
-        0,
-    )
+    normal_eigenvalues = jnp.maximum(jnp.linalg.eigvalsh(jacobian.T @ jacobian), 0)
     largest_eigenvalue = normal_eigenvalues[-1]
     smallest_eigenvalue = normal_eigenvalues[0]
     rank_deficient = smallest_eigenvalue <= (jnp.finfo(jacobian.dtype).eps * largest_eigenvalue)
     condition_number = jnp.where(
-        rank_deficient,
-        jnp.inf,
-        jnp.sqrt(largest_eigenvalue / smallest_eigenvalue),
+        rank_deficient, jnp.inf, jnp.sqrt(largest_eigenvalue / smallest_eigenvalue)
     )
     condition_number = jnp.where(jnp.isnan(condition_number), jnp.inf, condition_number)
     residual_converged = jnp.linalg.norm(current_residual) <= options.residual_tolerance
@@ -445,9 +415,7 @@ def _axis_sobolev_norm(axis: Axis) -> jax.Array:
 
 
 def _selector_value(
-    problem: AxisSearchProblem,
-    solution: NearAxisSolution,
-    criteria_report: CriteriaReport | None,
+    problem: AxisSearchProblem, solution: NearAxisSolution, criteria_report: CriteriaReport | None
 ) -> float:
     if problem.selector == "maximum_singular_radius":
         value = solution.r_singularity
@@ -498,8 +466,7 @@ def _copy_retained_axis_modes(source: Axis, target: Axis) -> Axis:
 
 
 def _verification_passes(
-    verification: B20ResolutionVerification,
-    options: AxisSearchOptions,
+    verification: B20ResolutionVerification, options: AxisSearchOptions
 ) -> bool:
     weighted_zero = verification.weighted_l2 <= options.verified_zero_tolerance
     maximum_zero = verification.grid_maximum <= options.verified_zero_tolerance
@@ -543,9 +510,7 @@ def search_axis(
             raise ValueError("Every explicit seed must be finite, in bounds, and correctly sized.")
 
     samples = lower + (upper - lower) * _halton_box(
-        options.coarse_samples,
-        len(problem.variable_indices),
-        initial.dtype,
+        options.coarse_samples, len(problem.variable_indices), initial.dtype
     )
     explicit = jnp.stack((initial, *(jnp.asarray(seed) for seed in seeds)))
     coarse_variables = jnp.concatenate((explicit, samples), axis=0)
@@ -573,8 +538,7 @@ def search_axis(
         )
 
     residual_function = lambda internal: _projected_residual(  # noqa: E731
-        problem,
-        _physical_from_internal(internal, lower, upper),
+        problem, _physical_from_internal(internal, lower, upper)
     )
     candidates: list[AxisSearchCandidate] = []
     local_evaluations = 0
@@ -582,11 +546,7 @@ def search_axis(
     for index in selected_indices:
         start = coarse_variables[index]
         internal_start = _internal_from_physical(start, lower, upper)
-        internal, local_report = _levenberg_marquardt(
-            residual_function,
-            internal_start,
-            options,
-        )
+        internal, local_report = _levenberg_marquardt(residual_function, internal_start, options)
         local_evaluations += int(local_report.function_evaluations)
         variables = _physical_from_internal(internal, lower, upper)
         if not bool(local_report.finite):
@@ -603,17 +563,10 @@ def search_axis(
             & solution.geometry.diagnostics.cylindrical_coordinates_valid
         ) and (criteria_report is None or criteria_report.passed)
         if not _candidate_is_distinct(
-            variables,
-            candidates,
-            lower,
-            upper,
-            options.basin_distance_tolerance,
+            variables, candidates, lower, upper, options.basin_distance_tolerance
         ):
             continue
-        verification = verify_B20_resolution(
-            solution,
-            multipliers=options.verification_multipliers,
-        )
+        verification = verify_B20_resolution(solution, multipliers=options.verification_multipliers)
         candidates.append(
             AxisSearchCandidate(
                 variables=variables,
@@ -725,13 +678,10 @@ def continue_axis_search(
     for stage_index, stage in enumerate(stages):
         if previous_solution is not None:
             stage = replace(
-                stage,
-                axis=_copy_retained_axis_modes(previous_solution.inputs.axis, stage.axis),
+                stage, axis=_copy_retained_axis_modes(previous_solution.inputs.axis, stage.axis)
             )
         result = search_axis(
-            stage,
-            options=options,
-            seeds=initial_seeds if stage_index == 0 else (),
+            stage, options=options, seeds=initial_seeds if stage_index == 0 else ()
         )
         results.append(result)
         if result.best is None:
@@ -739,7 +689,5 @@ def continue_axis_search(
         previous_solution = result.best.solution
     complete = len(results) == len(stages) and all(result.best is not None for result in results)
     return AxisSearchContinuation(
-        stages=tuple(results),
-        final=results[-1] if results else None,
-        complete=complete,
+        stages=tuple(results), final=results[-1] if results else None, complete=complete
     )

@@ -27,27 +27,14 @@ def test_covariant_and_enclosed_current_conversions_round_trip():
     I2 = 0.9
     radius = 0.08
     chi = -1
-    current = qsc.enclosed_current_from_covariant(
-        I2,
-        formal_radius=radius,
-        chi=chi,
-    )
+    current = qsc.enclosed_current_from_covariant(I2, formal_radius=radius, chi=chi)
 
     np.testing.assert_allclose(current, 2 * np.pi * chi * I2 * radius**2 / MU0)
     np.testing.assert_allclose(
-        qsc.covariant_current_from_enclosed(
-            current,
-            formal_radius=radius,
-            chi=chi,
-        ),
-        I2,
+        qsc.covariant_current_from_enclosed(current, formal_radius=radius, chi=chi), I2
     )
     derivative = jax.grad(
-        lambda a: qsc.enclosed_current_from_covariant(
-            I2,
-            formal_radius=a,
-            chi=chi,
-        )
+        lambda a: qsc.enclosed_current_from_covariant(I2, formal_radius=a, chi=chi)
     )(radius)
     np.testing.assert_allclose(derivative, 4 * np.pi * chi * I2 * radius / MU0)
 
@@ -63,13 +50,9 @@ def test_positive_volume_source_matches_manuscript_coefficients():
     np.testing.assert_allclose(source.parallel_current_mu0, expected_j)
     np.testing.assert_allclose(source.C2, expected_C2)
     np.testing.assert_allclose(
-        source.enclosed_toroidal_current,
-        np.pi * radius**2 * expected_j / MU0,
+        source.enclosed_toroidal_current, np.pi * radius**2 * expected_j / MU0
     )
-    np.testing.assert_allclose(
-        source.w1,
-        expected_j * solution.geometry.tangent_cartesian,
-    )
+    np.testing.assert_allclose(source.w1, expected_j * solution.geometry.tangent_cartesian)
     np.testing.assert_allclose(
         source.w2_cosine,
         source.wstar2_cosine
@@ -118,32 +101,15 @@ def test_pressure_and_parallel_current_paths_remain_well_defined_at_I2_zero():
 def test_current_source_guards():
     with pytest.raises(ValueError, match="second-order"):
         qsc.plasma_current_source(
-            qsc.Qsc(
-                rc=[1.0, 0.045],
-                zs=[0.0, -0.045],
-                nfp=3,
-                etabar=-0.9,
-                order="r1",
-            ),
+            qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, order="r1"),
             formal_radius=0.1,
         )
     for value in (0.0, -0.1):
         with pytest.raises(ValueError, match="positive"):
-            qsc.enclosed_current_from_covariant(
-                1.0,
-                formal_radius=value,
-                chi=1,
-            )
+            qsc.enclosed_current_from_covariant(1.0, formal_radius=value, chi=1)
     with pytest.raises(ValueError, match="scalar"):
-        qsc.covariant_current_from_enclosed(
-            1.0,
-            formal_radius=[0.1],
-            chi=1,
-        )
-    for function in (
-        qsc.enclosed_current_from_covariant,
-        qsc.covariant_current_from_enclosed,
-    ):
+        qsc.covariant_current_from_enclosed(1.0, formal_radius=[0.1], chi=1)
+    for function in (qsc.enclosed_current_from_covariant, qsc.covariant_current_from_enclosed):
         with pytest.raises(ValueError, match="chi"):
             if function is qsc.enclosed_current_from_covariant:
                 function(1.0, formal_radius=0.1, chi=0)

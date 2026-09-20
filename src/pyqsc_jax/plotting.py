@@ -70,10 +70,7 @@ def plot_axis(
 
 
 def surface_coordinates(
-    solution: NearAxisSolution,
-    *,
-    radius: float = 0.05,
-    ntheta: int = 32,
+    solution: NearAxisSolution, *, radius: float = 0.05, ntheta: int = 32
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Return full-torus Cartesian coordinates of a near-axis surface."""
 
@@ -83,18 +80,9 @@ def surface_coordinates(
         raise ValueError("ntheta must be an integer >= 4.")
     theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)[:, None]
     phi0 = solution.phi[None, :]
-    X, Y, Z = frenet_displacements(
-        solution,
-        jnp.asarray(radius),
-        theta,
-        phi0,
-    )
+    X, Y, Z = frenet_displacements(solution, jnp.asarray(radius), theta, phi0)
     axis_position = jnp.stack(
-        (
-            solution.R0 * jnp.cos(solution.phi),
-            solution.R0 * jnp.sin(solution.phi),
-            solution.Z0,
-        ),
+        (solution.R0 * jnp.cos(solution.phi), solution.R0 * jnp.sin(solution.phi), solution.Z0),
         axis=-1,
     )
     period_position = (
@@ -111,10 +99,7 @@ def surface_coordinates(
     y_period = period_position[..., 1][:, None, :]
     x = x_period * cosine - y_period * sine
     y = x_period * sine + y_period * cosine
-    z = jnp.broadcast_to(
-        period_position[..., 2][:, None, :],
-        x.shape,
-    )
+    z = jnp.broadcast_to(period_position[..., 2][:, None, :], x.shape)
     x = x.reshape(ntheta, -1)
     y = y.reshape(ntheta, -1)
     z = z.reshape(ntheta, -1)
@@ -145,14 +130,9 @@ def plot_surface_3d(
         ax = figure.add_subplot(111, projection="3d")
     else:
         figure = ax.figure
-    defaults = {
-        "cmap": cmap,
-        "linewidth": 0,
-        "antialiased": True,
-        "alpha": alpha,
-    }
+    defaults = {"cmap": cmap, "linewidth": 0, "antialiased": True, "alpha": alpha}
     defaults.update(surface_kwargs)
-    ax.plot_surface(np.asarray(x), np.asarray(y), np.asarray(z))#, **defaults)
+    ax.plot_surface(np.asarray(x), np.asarray(y), np.asarray(z))  # , **defaults)
     if plot_axis_line:
         phi = jnp.linspace(0, 2 * jnp.pi, 361)
         axis_samples = evaluate_axis(solution.inputs.axis, phi)
@@ -173,11 +153,7 @@ def plot_surface_3d(
 
 
 def plot_b20(
-    solution: NearAxisSolution,
-    *,
-    ax: Any = None,
-    label: str | None = None,
-    **plot_kwargs: Any,
+    solution: NearAxisSolution, *, ax: Any = None, label: str | None = None, **plot_kwargs: Any
 ):
     """Plot the nonconstant second-order field-strength coefficient."""
 
@@ -191,12 +167,7 @@ def plot_b20(
     normalized_angle = np.asarray(solution.varphi * solution.inputs.axis.nfp / (2 * jnp.pi))
     defaults = {"linewidth": 2.0}
     defaults.update(plot_kwargs)
-    ax.plot(
-        normalized_angle,
-        np.asarray(solution.B20_anomaly),
-        label=label,
-        **defaults,
-    )
+    ax.plot(normalized_angle, np.asarray(solution.B20_anomaly), label=label, **defaults)
     ax.set_xlabel("Boozer angle / field period")
     ax.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
     if label is not None:
@@ -204,11 +175,7 @@ def plot_b20(
     return figure, ax
 
 
-def plot_field_jet_norms(
-    result: PlasmaHessianData,
-    *,
-    axes: Any = None,
-):
+def plot_field_jet_norms(result: PlasmaHessianData, *, axes: Any = None):
     """Plot total, plasma, and external field-jet Frobenius norms."""
 
     plt = _matplotlib()
@@ -233,18 +200,8 @@ def plot_field_jet_norms(
 
     tensors = (
         (total_field, plasma_field, external_field, r"$|B|$ [T]"),
-        (
-            total_gradient,
-            plasma_gradient,
-            external_gradient,
-            r"$|\nabla B|_F$ [T/m]",
-        ),
-        (
-            total_hessian,
-            plasma_hessian,
-            external_hessian,
-            r"$|\nabla\nabla B|_F$ [T/m$^2$]",
-        ),
+        (total_gradient, plasma_gradient, external_gradient, r"$|\nabla B|_F$ [T/m]"),
+        (total_hessian, plasma_hessian, external_hessian, r"$|\nabla\nabla B|_F$ [T/m$^2$]"),
     )
     for axis, (total, plasma, external, ylabel) in zip(axes, tensors, strict=True):
         component_axes = tuple(range(1, total.ndim))
@@ -271,8 +228,7 @@ def plot_field_jet_norms(
 
 
 def field_split_frenet_components(
-    result: PlasmaHessianData,
-    solution: NearAxisSolution,
+    result: PlasmaHessianData, solution: NearAxisSolution
 ) -> jax.Array:
     """Return total/plasma/external field components in the Frenet frame.
 
@@ -295,10 +251,7 @@ def field_split_frenet_components(
 
 
 def plot_field_split_components(
-    result: PlasmaHessianData,
-    solution: NearAxisSolution,
-    *,
-    axes: Any = None,
+    result: PlasmaHessianData, solution: NearAxisSolution, *, axes: Any = None
 ):
     """Plot angle-dependent total/plasma/external Frenet field components."""
 
@@ -324,16 +277,15 @@ def plot_field_split_components(
     return figure, axes
 
 
-    
 def set_axes_equal(ax):
-    '''
+    """
     Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
     ax.set_aspect('equal') and ax.axis('equal') not working for 3D.
 
     Args:
       ax: a matplotlib axis, e.g., as output from plt.gca().
-    '''
+    """
     x_limits = ax.get_xlim3d()
     y_limits = ax.get_ylim3d()
     z_limits = ax.get_zlim3d()

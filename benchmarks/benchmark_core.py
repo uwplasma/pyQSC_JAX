@@ -94,8 +94,7 @@ for nphi in RESOLUTIONS:
 repository = Path(__file__).resolve().parents[1]
 try:
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"

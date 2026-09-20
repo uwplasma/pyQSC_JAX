@@ -89,10 +89,7 @@ def test_third_order_matches_upstream_pyqsc(_name, kwargs, reference):
 
     for name, expected in reference.items():
         np.testing.assert_allclose(
-            np.asarray(getattr(solution, name))[indices],
-            expected,
-            rtol=3.0e-9,
-            atol=5.0e-10,
+            np.asarray(getattr(solution, name))[indices], expected, rtol=3.0e-9, atol=5.0e-10
         )
 
 
@@ -123,17 +120,7 @@ def test_third_order_structure_and_independent_constraints():
     assert float(jnp.max(jnp.abs(third.flux_constraint_residual))) < 2.0e-13
     assert float(jnp.max(jnp.abs(third.consistency_error))) < 2.0e-10
 
-    for name in (
-        "X3s1",
-        "Z3s1",
-        "Z3c1",
-        "X3s3",
-        "X3c3",
-        "Y3s3",
-        "Y3c3",
-        "Z3s3",
-        "Z3c3",
-    ):
+    for name in ("X3s1", "Z3s1", "Z3c1", "X3s3", "X3c3", "Y3s3", "Y3c3", "Z3s3", "Z3c3"):
         np.testing.assert_array_equal(getattr(third, name), jnp.zeros(solution.inputs.nphi))
 
     derivative = solution.geometry.d_d_varphi

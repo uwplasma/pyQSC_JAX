@@ -36,14 +36,8 @@ def test_axis_and_b20_plotters_return_objects():
 
 
 def test_field_jet_norm_plotter_and_axes_guard():
-    solution = qsc.solve_configuration(
-        "finite_pressure_current",
-        nphi=31,
-    )
-    result = qsc.plasma_hessian_on_axis(
-        solution,
-        formal_radius=0.05,
-    )
+    solution = qsc.solve_configuration("finite_pressure_current", nphi=31)
+    result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.05)
     figure, axes = plot_field_jet_norms(result)
 
     assert axes.shape == (3,)
@@ -58,11 +52,7 @@ def test_surface_and_angle_dependent_field_split_plotters():
     x, y, z = surface_coordinates(solution, radius=0.05, ntheta=12)
     figure, axis = plot_surface_3d(solution, radius=0.05, ntheta=12)
     reused_figure, reused_axis = plot_surface_3d(
-        solution,
-        radius=0.05,
-        ntheta=12,
-        ax=axis,
-        plot_axis_line=False,
+        solution, radius=0.05, ntheta=12, ax=axis, plot_axis_line=False
     )
     result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.1)
     components = field_split_frenet_components(result, solution)

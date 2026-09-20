@@ -53,10 +53,7 @@ class FakeImplicit:
     @staticmethod
     def run(_inp, params, **_kwargs):
         return SimpleNamespace(
-            state=params,
-            runtime=SimpleNamespace(),
-            wb=jnp.sum(params.rbc**2),
-            wp=params.am[0],
+            state=params, runtime=SimpleNamespace(), wb=jnp.sum(params.rbc**2), wp=params.am[0]
         )
 
     @staticmethod
@@ -92,10 +89,7 @@ class FakeOptimize:
 @pytest.fixture
 def fake_vmex(monkeypatch):
     module = SimpleNamespace(
-        __version__="test",
-        VmecInput=FakeVmecInput,
-        implicit=FakeImplicit,
-        optimize=FakeOptimize,
+        __version__="test", VmecInput=FakeVmecInput, implicit=FakeImplicit, optimize=FakeOptimize
     )
     monkeypatch.setattr(bridge, "_import_vmex", lambda: module)
     return module
@@ -215,14 +209,7 @@ def test_unconverged_vmex_boundary_is_rejected(fake_vmex):
 
 def test_parameter_remap_rejects_changed_field_period(fake_vmex):
     problem = make_problem(fake_vmex)
-    changed = qsc.Qsc(
-        rc=[1.0, 0.02],
-        zs=[0.0, -0.02],
-        nfp=2,
-        etabar=-0.9,
-        nphi=15,
-        order="r2",
-    )
+    changed = qsc.Qsc(rc=[1.0, 0.02], zs=[0.0, -0.02], nfp=2, etabar=-0.9, nphi=15, order="r2")
     with pytest.raises(ValueError, match="field periods"):
         problem.parameters_for(changed)
 
@@ -234,10 +221,7 @@ def test_runtime_and_import_guards(fake_vmex, monkeypatch):
         vmex.implicit,
         "run",
         lambda *_args, **_kwargs: SimpleNamespace(
-            state=problem.parameters,
-            runtime=None,
-            wb=0.0,
-            wp=0.0,
+            state=problem.parameters, runtime=None, wb=0.0, wp=0.0
         ),
     )
     with pytest.raises(RuntimeError, match="runtime"):
@@ -255,9 +239,7 @@ def test_runtime_and_import_guards(fake_vmex, monkeypatch):
 
 def test_incomplete_vmex_api_is_rejected(monkeypatch):
     monkeypatch.setattr(
-        bridge.importlib,
-        "import_module",
-        lambda _name: SimpleNamespace(VmecInput=FakeVmecInput),
+        bridge.importlib, "import_module", lambda _name: SimpleNamespace(VmecInput=FakeVmecInput)
     )
     with pytest.raises(ImportError, match="implicit, optimize"):
         bridge._import_vmex()

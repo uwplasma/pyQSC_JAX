@@ -30,21 +30,10 @@ b20_errors = np.abs(b20_values[:-1] - b20_values[-1])
 floor = np.finfo(float).eps
 
 figure, axes = plt.subplots(1, 2, figsize=(9.8, 3.9))
-axes[0].loglog(
-    RESOLUTIONS[:-1],
-    np.maximum(iota_errors, floor),
-    "-o",
-    linewidth=2,
-)
+axes[0].loglog(RESOLUTIONS[:-1], np.maximum(iota_errors, floor), "-o", linewidth=2)
 axes[0].set_xlabel("toroidal grid points")
 axes[0].set_ylabel(r"$|\iota_N-\iota_{121}|$")
-axes[1].loglog(
-    RESOLUTIONS[:-1],
-    np.maximum(b20_errors, floor),
-    "-o",
-    linewidth=2,
-    color="tab:red",
-)
+axes[1].loglog(RESOLUTIONS[:-1], np.maximum(b20_errors, floor), "-o", linewidth=2, color="tab:red")
 axes[1].set_xlabel("toroidal grid points")
 axes[1].set_ylabel(r"$|R_{B20,N}-R_{B20,121}|$")
 figure.suptitle(r"Resolution audit: $\iota$ converges early, $B_{20}$ needs a finer grid")
@@ -53,8 +42,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -72,8 +60,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

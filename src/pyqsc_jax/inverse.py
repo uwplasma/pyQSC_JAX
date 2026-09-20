@@ -31,17 +31,11 @@ def parameter_response_derivative(
     parameter_value = getattr(inputs, parameter)
     forward_state = jnp.asarray(sigma).at[0].set(iota)
     forward_jacobian = jax.jacfwd(
-        lambda candidate: sigma_residual(
-            candidate,
-            inputs=inputs,
-            geometry=geometry,
-        )
+        lambda candidate: sigma_residual(candidate, inputs=inputs, geometry=geometry)
     )(forward_state)
     parameter_derivative = jax.jacfwd(
         lambda value: sigma_residual(
-            forward_state,
-            inputs=replace(inputs, **{parameter: value}),
-            geometry=geometry,
+            forward_state, inputs=replace(inputs, **{parameter: value}), geometry=geometry
         )
     )(parameter_value)
     return jnp.linalg.solve(forward_jacobian, -parameter_derivative)[0]
@@ -54,13 +48,7 @@ def solve_target_iota(
     target_iota: ArrayLike,
     root_options: RootSolveOptions = DEFAULT_ROOT_OPTIONS,
     fold_tolerance: float = 1e-8,
-) -> tuple[
-    NearAxisInputs,
-    jax.Array,
-    jax.Array,
-    RootSolveReport,
-    InverseSolveDiagnostics,
-]:
+) -> tuple[NearAxisInputs, jax.Array, jax.Array, RootSolveReport, InverseSolveDiagnostics]:
     """Solve the sigma equation at fixed iota for etabar or I2."""
 
     target_iota = jnp.asarray(target_iota)
@@ -95,28 +83,15 @@ def solve_target_iota(
         parameter = parameter_from_state(state)
         local_inputs = inputs_from_parameter(parameter)
         sigma = state.at[0].set(inputs.sigma0)
-        return sigma_equation(
-            sigma,
-            target_iota,
-            inputs=local_inputs,
-            geometry=geometry,
-        )
+        return sigma_equation(sigma, target_iota, inputs=local_inputs, geometry=geometry)
 
-    state, report = implicit_dense_root(
-        residual,
-        initial_state,
-        options=root_options,
-    )
+    state, report = implicit_dense_root(residual, initial_state, options=root_options)
     solved_parameter = parameter_from_state(state)
     solved_inputs = inputs_from_parameter(solved_parameter)
     sigma = state.at[0].set(inputs.sigma0)
 
     response_derivative = parameter_response_derivative(
-        solved_inputs,
-        geometry,
-        sigma,
-        target_iota,
-        parameter=inputs.solve_for,
+        solved_inputs, geometry, sigma, target_iota, parameter=inputs.solve_for
     )
     absolute_response = jnp.abs(response_derivative)
     branch_fold = ~jnp.isfinite(response_derivative) | (absolute_response <= fold_tolerance)

@@ -62,6 +62,10 @@ packages = ["src/pyqsc_jax"]
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.format]
+# One argument per line only when a call does not fit; keeps tensors and short calls readable.
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]
 

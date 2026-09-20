@@ -5,13 +5,7 @@ from pyqsc_jax.near_axis import near_axis
 
 
 def test_standard_solution_matches_legacy_and_upstream_reference():
-    parameters = {
-        "rc": [1.0, 0.045],
-        "zs": [0.0, -0.045],
-        "nfp": 3,
-        "etabar": -0.9,
-        "nphi": 31,
-    }
+    parameters = {"rc": [1.0, 0.045], "zs": [0.0, -0.045], "nfp": 3, "etabar": -0.9, "nphi": 31}
     solution = qsc.Qsc(**parameters)
     legacy = near_axis(**parameters)
 
@@ -20,24 +14,14 @@ def test_standard_solution_matches_legacy_and_upstream_reference():
     np.testing.assert_allclose(solution.sigma, legacy.sigma, rtol=2e-13, atol=2e-13)
     np.testing.assert_allclose(solution.B_axis, legacy.B_axis.T, rtol=2e-13, atol=2e-13)
     np.testing.assert_allclose(
-        solution.grad_B_axis,
-        np.moveaxis(legacy.grad_B_axis, -1, 0),
-        rtol=2e-12,
-        atol=2e-12,
+        solution.grad_B_axis, np.moveaxis(legacy.grad_B_axis, -1, 0), rtol=2e-12, atol=2e-12
     )
     np.testing.assert_allclose(solution.L_grad_B, legacy.L_grad_B, rtol=2e-13)
 
 
 def test_finite_current_and_sigma0_match_upstream_reference():
     solution = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=31,
-        I2=0.3,
-        B0=1.2,
-        sigma0=0.1,
+        rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=31, I2=0.3, B0=1.2, sigma0=0.1
     )
 
     np.testing.assert_allclose(solution.iota, 0.5981040523602934, rtol=2e-13)
@@ -54,21 +38,12 @@ def test_finite_current_and_sigma0_match_upstream_reference():
     }
     for component, expected in expected_gradient_components.items():
         np.testing.assert_allclose(
-            np.asarray(solution.grad_B_axis)[indices, *component],
-            expected,
-            rtol=3e-12,
-            atol=3e-12,
+            np.asarray(solution.grad_B_axis)[indices, *component], expected, rtol=3e-12, atol=3e-12
         )
 
 
 def test_qh_topology_matches_upstream_reference():
-    solution = qsc.Qsc(
-        rc=[1.0, 0.265],
-        zs=[0.0, -0.21],
-        nfp=4,
-        etabar=-0.9,
-        nphi=31,
-    )
+    solution = qsc.Qsc(rc=[1.0, 0.265], zs=[0.0, -0.21], nfp=4, etabar=-0.9, nphi=31)
 
     assert int(solution.helicity) == -1
     np.testing.assert_allclose(solution.iota, 3.0598175213150203, rtol=2e-13)

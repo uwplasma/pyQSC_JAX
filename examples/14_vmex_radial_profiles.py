@@ -62,11 +62,7 @@ axes[0].axhline(float(solution.iota), color="black", linestyle="--", label="near
 axes[0].set_xlabel(r"normalized toroidal flux $s$")
 axes[0].set_ylabel(r"$\iota(s)$")
 axes[0].legend()
-axes[1].semilogy(
-    np.asarray(quantities.qs_surfaces),
-    np.asarray(quantities.quasisymmetry),
-    "-o",
-)
+axes[1].semilogy(np.asarray(quantities.qs_surfaces), np.asarray(quantities.quasisymmetry), "-o")
 axes[1].set_xlabel(r"normalized toroidal flux $s$")
 axes[1].set_ylabel("VMEX QS residual")
 figure.tight_layout()

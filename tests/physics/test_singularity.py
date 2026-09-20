@@ -46,11 +46,7 @@ CASES = [
 
 
 @pytest.mark.parametrize("parameters, expected_minimum, expected_samples", CASES)
-def test_singular_radius_matches_upstream_pyqsc(
-    parameters,
-    expected_minimum,
-    expected_samples,
-):
+def test_singular_radius_matches_upstream_pyqsc(parameters, expected_minimum, expected_samples):
     solution = qsc.Qsc(**parameters, nphi=61, order="r2")
 
     np.testing.assert_allclose(solution.r_singularity, expected_minimum, rtol=0, atol=5e-8)
@@ -61,12 +57,10 @@ def test_singular_radius_matches_upstream_pyqsc(
         atol=5e-8,
     )
     np.testing.assert_allclose(
-        solution.inv_r_singularity_vs_varphi,
-        1 / solution.r_singularity_vs_varphi,
+        solution.inv_r_singularity_vs_varphi, 1 / solution.r_singularity_vs_varphi
     )
     np.testing.assert_allclose(
-        solution.r_singularity_basic_vs_varphi,
-        solution.r_singularity_vs_varphi,
+        solution.r_singularity_basic_vs_varphi, solution.r_singularity_vs_varphi
     )
 
 
@@ -94,31 +88,17 @@ def test_determinant_coefficients_and_refined_residual():
         2 * theta
     )
     np.testing.assert_allclose(
-        diagnostics.g0 + radius * linear + radius**2 * quadratic,
-        0,
-        rtol=0,
-        atol=2e-13,
+        diagnostics.g0 + radius * linear + radius**2 * quadratic, 0, rtol=0, atol=2e-13
     )
     np.testing.assert_allclose(
-        radius * linear_prime + radius**2 * quadratic_prime,
-        0,
-        rtol=0,
-        atol=2e-13,
+        radius * linear_prime + radius**2 * quadratic_prime, 0, rtol=0, atol=2e-13
     )
 
 
 def test_newton_refinement_removes_angular_grid_dependence():
     solution = qsc.Qsc(**CASES[0][0], nphi=31, order="r2")
-    coarse = qsc.singularity_diagnostics(
-        solution,
-        angular_resolution=32,
-        newton_iterations=8,
-    )
-    fine = qsc.singularity_diagnostics(
-        solution,
-        angular_resolution=512,
-        newton_iterations=8,
-    )
+    coarse = qsc.singularity_diagnostics(solution, angular_resolution=32, newton_iterations=8)
+    fine = qsc.singularity_diagnostics(solution, angular_resolution=512, newton_iterations=8)
 
     np.testing.assert_allclose(coarse.r_singularity, fine.r_singularity, rtol=0, atol=2e-11)
     assert coarse.maximum_residual_norm < 3e-13
@@ -147,24 +127,16 @@ def test_singular_radius_supports_jit_and_jvp():
 
 
 def test_singularity_validation_and_legacy_adapter():
-    first_order = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=31,
-    )
+    first_order = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=31)
     with pytest.raises(ValueError, match="second-order"):
         qsc.singularity_diagnostics(first_order)
     with pytest.raises(ValueError, match="angular_resolution"):
         qsc.singularity_diagnostics(
-            qsc.Qsc(**CASES[0][0], nphi=15, order="r2"),
-            angular_resolution=4,
+            qsc.Qsc(**CASES[0][0], nphi=15, order="r2"), angular_resolution=4
         )
     with pytest.raises(ValueError, match="newton_iterations"):
         qsc.singularity_diagnostics(
-            qsc.Qsc(**CASES[0][0], nphi=15, order="r2"),
-            newton_iterations=-1,
+            qsc.Qsc(**CASES[0][0], nphi=15, order="r2"), newton_iterations=-1
         )
     with pytest.raises(AttributeError, match="singular-radius"):
         _ = first_order.r_singularity
@@ -172,6 +144,5 @@ def test_singularity_validation_and_legacy_adapter():
     legacy = near_axis(**CASES[0][0], nphi=31, order="r2")
     np.testing.assert_allclose(legacy.r_singularity, legacy.solution.r_singularity)
     np.testing.assert_allclose(
-        legacy.r_singularity_residual_sqnorm,
-        legacy.solution.r_singularity_residual_sqnorm,
+        legacy.r_singularity_residual_sqnorm, legacy.solution.r_singularity_residual_sqnorm
     )

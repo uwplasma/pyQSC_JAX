@@ -18,15 +18,7 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/05_optimal_B2c.png")
 
 print("Solving the initial r2 configuration...")
-initial = qsc.Qsc(
-    rc=RC,
-    zs=ZS,
-    nfp=NFP,
-    etabar=ETABAR,
-    B2c=INITIAL_B2C,
-    nphi=NPHI,
-    order="r2",
-)
+initial = qsc.Qsc(rc=RC, zs=ZS, nfp=NFP, etabar=ETABAR, B2c=INITIAL_B2C, nphi=NPHI, order="r2")
 result = qsc.optimize_B2c(initial)
 optimized = result.solution
 print("initial B2c:", INITIAL_B2C)

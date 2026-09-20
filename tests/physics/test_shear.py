@@ -65,8 +65,7 @@ def test_magnetic_shear_matches_upstream_paper_cases(parameters, expected_iota2)
     np.testing.assert_allclose(solution.iota2, expected_iota2, rtol=2.0e-12, atol=2.0e-12)
     assert bool(solution.stellarator_symmetric)
     np.testing.assert_allclose(
-        solution.iota2,
-        solution.inputs.B0 * solution.numerator / (2 * solution.denominator),
+        solution.iota2, solution.inputs.B0 * solution.numerator / (2 * solution.denominator)
     )
     assert np.all(np.isfinite(np.asarray(solution.Lambda_tilde)))
     assert np.all(np.isfinite(np.asarray(solution.integrating_factor)))

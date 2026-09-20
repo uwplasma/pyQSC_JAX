@@ -85,10 +85,7 @@ class VmecExport:
 
 
 def _periodic_interpolate(
-    query: jax.Array,
-    grid: jax.Array,
-    values: jax.Array,
-    period: jax.Array,
+    query: jax.Array, grid: jax.Array, values: jax.Array, period: jax.Array
 ) -> jax.Array:
     period = jnp.asarray(period)
     wrapped = jnp.mod(query, period)
@@ -98,10 +95,7 @@ def _periodic_interpolate(
 
 
 def frenet_displacements(
-    solution: NearAxisSolution,
-    radius: jax.Array,
-    theta: jax.Array,
-    phi0: jax.Array,
+    solution: NearAxisSolution, radius: jax.Array, theta: jax.Array, phi0: jax.Array
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     """Evaluate all available near-axis Frenet displacements."""
 
@@ -160,10 +154,7 @@ def frenet_displacements(
 
 
 def _surface_at_axis_angle(
-    solution: NearAxisSolution,
-    radius: jax.Array,
-    theta: jax.Array,
-    phi0: jax.Array,
+    solution: NearAxisSolution, radius: jax.Array, theta: jax.Array, phi0: jax.Array
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
     period = 2 * jnp.pi / solution.inputs.axis.nfp
     grid = solution.phi
@@ -194,16 +185,9 @@ def _surface_at_axis_angle(
     return R, cylindrical_Z, cylindrical_phi
 
 
-@partial(
-    jax.jit,
-    static_argnames=("ntheta", "newton_iterations"),
-)
+@partial(jax.jit, static_argnames=("ntheta", "newton_iterations"))
 def uniform_cylindrical_surface(
-    solution: NearAxisSolution,
-    radius: ArrayLike,
-    *,
-    ntheta: int = 32,
-    newton_iterations: int = 6,
+    solution: NearAxisSolution, radius: ArrayLike, *, ntheta: int = 32, newton_iterations: int = 6
 ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
     """Map a near-axis boundary to a uniform cylindrical-toroidal grid."""
 
@@ -214,15 +198,10 @@ def uniform_cylindrical_surface(
 
     def newton_step(_iteration, current_phi0):
         angle_function = lambda value: _surface_at_axis_angle(  # noqa: E731
-            solution,
-            radius,
-            theta,
-            value,
+            solution, radius, theta, value
         )[2]
         cylindrical_phi, derivative = jax.jvp(
-            angle_function,
-            (current_phi0,),
-            (jnp.ones_like(current_phi0),),
+            angle_function, (current_phi0,), (jnp.ones_like(current_phi0),)
         )
         derivative_floor = jnp.sqrt(jnp.finfo(current_phi0.dtype).eps)
         safe_derivative = jnp.where(
@@ -233,29 +212,17 @@ def uniform_cylindrical_surface(
         return current_phi0 - (cylindrical_phi - target_phi) / safe_derivative
 
     phi0 = jax.lax.fori_loop(0, newton_iterations, newton_step, phi0)
-    R, Z, cylindrical_phi = _surface_at_axis_angle(
-        solution,
-        radius,
-        theta,
-        phi0,
-    )
+    R, Z, cylindrical_phi = _surface_at_axis_angle(solution, radius, theta, phi0)
     residual = jnp.max(jnp.abs(cylindrical_phi - target_phi))
     return R, Z, phi0, residual
 
 
-def _fft_coefficients(
-    values: jax.Array,
-    mpol: int,
-    ntor: int,
-) -> tuple[jax.Array, jax.Array]:
+def _fft_coefficients(values: jax.Array, mpol: int, ntor: int) -> tuple[jax.Array, jax.Array]:
     ntheta, nphi = values.shape
     spectrum = jnp.fft.fft2(values) / (ntheta * nphi)
     poloidal_modes = jnp.arange(mpol + 1)
     toroidal_modes = jnp.arange(-ntor, ntor + 1)
-    selected = spectrum[
-        poloidal_modes[None, :],
-        jnp.mod(-toroidal_modes[:, None], nphi),
-    ]
+    selected = spectrum[poloidal_modes[None, :], jnp.mod(-toroidal_modes[:, None], nphi)]
     cosine = 2 * jnp.real(selected)
     sine = -2 * jnp.imag(selected)
     constant_index = ntor
@@ -292,10 +259,7 @@ def _reconstruct_surface(
     )
 
 
-@partial(
-    jax.jit,
-    static_argnames=("ntheta", "mpol", "ntor", "newton_iterations"),
-)
+@partial(jax.jit, static_argnames=("ntheta", "mpol", "ntor", "newton_iterations"))
 def vmec_boundary(
     solution: NearAxisSolution,
     radius: ArrayLike,
@@ -315,10 +279,7 @@ def vmec_boundary(
     """
 
     R, Z, phi0, angle_residual = uniform_cylindrical_surface(
-        solution,
-        radius,
-        ntheta=ntheta,
-        newton_iterations=newton_iterations,
+        solution, radius, ntheta=ntheta, newton_iterations=newton_iterations
     )
     RBC, RBS = _fft_coefficients(R, mpol, ntor)
     ZBC, ZBS = _fft_coefficients(Z, mpol, ntor)
@@ -342,11 +303,7 @@ def vmec_boundary(
     )
     requested_tolerance = jnp.asarray(toroidal_angle_tolerance, dtype=R.dtype)
     automatic_tolerance = 100 * jnp.finfo(R.dtype).eps
-    angle_tolerance = jnp.where(
-        requested_tolerance == 0,
-        automatic_tolerance,
-        requested_tolerance,
-    )
+    angle_tolerance = jnp.where(requested_tolerance == 0, automatic_tolerance, requested_tolerance)
     return VmecBoundary(
         R=R,
         Z=Z,
@@ -368,12 +325,7 @@ def vmec_boundary(
 
 
 def _validated_resolution(
-    solution: NearAxisSolution,
-    *,
-    ntheta: int,
-    mpol: int,
-    ntor: int,
-    newton_iterations: int,
+    solution: NearAxisSolution, *, ntheta: int, mpol: int, ntor: int, newton_iterations: int
 ) -> None:
     integers = {
         "ntheta": ntheta,
@@ -419,10 +371,7 @@ def _format_integer_sequence(values: tuple[int, ...]) -> str:
 
 
 def _coefficient_lines(
-    boundary: VmecBoundary,
-    *,
-    lasym: bool,
-    coefficient_tolerance: float,
+    boundary: VmecBoundary, *, lasym: bool, coefficient_tolerance: float
 ) -> list[str]:
     arrays = tuple(
         jax.device_get(value) for value in (boundary.RBC, boundary.RBS, boundary.ZBC, boundary.ZBS)
@@ -480,11 +429,7 @@ def to_vmec(
         raise ValueError("coefficient_tolerance must be nonnegative and finite.")
     effective_ntor = min(ntor, ntor_max)
     _validated_resolution(
-        solution,
-        ntheta=ntheta,
-        mpol=mpol,
-        ntor=effective_ntor,
-        newton_iterations=newton_iterations,
+        solution, ntheta=ntheta, mpol=mpol, ntor=effective_ntor, newton_iterations=newton_iterations
     )
     controls = _input_parameters(parameters)
 
@@ -511,8 +456,7 @@ def to_vmec(
         )
 
     asymmetric_amplitude = max(
-        float(jnp.max(jnp.abs(boundary.RBS))),
-        float(jnp.max(jnp.abs(boundary.ZBC))),
+        float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC)))
     )
     lasym = asymmetric_amplitude > coefficient_tolerance
     inputs = solution.inputs
@@ -562,11 +506,7 @@ def to_vmec(
         "! Boundary coefficients",
     ]
     lines.extend(
-        _coefficient_lines(
-            boundary,
-            lasym=lasym,
-            coefficient_tolerance=coefficient_tolerance,
-        )
+        _coefficient_lines(boundary, lasym=lasym, coefficient_tolerance=coefficient_tolerance)
     )
     lines.append("/")
     output_path = Path(filename)

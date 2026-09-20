@@ -19,11 +19,7 @@ nphi = np.asarray([row["nphi"] for row in rows])
 cold_ms = np.asarray([1.0e3 * row["cold_compile_and_execute_seconds"] for row in rows])
 warm_ms = np.asarray(
     [
-        1.0e3
-        * row.get(
-            "warm_median_seconds",
-            float(np.median(row["warm_samples_seconds"])),
-        )
+        1.0e3 * row.get("warm_median_seconds", float(np.median(row["warm_samples_seconds"])))
         for row in rows
     ]
 )
@@ -32,20 +28,14 @@ finest = rows[-1]
 batch_size = int(finest["vmap_batch_size"])
 latencies_ms = np.asarray(
     [
+        1.0e3 * finest.get("warm_median_seconds", float(np.median(finest["warm_samples_seconds"]))),
         1.0e3
         * finest.get(
-            "warm_median_seconds",
-            float(np.median(finest["warm_samples_seconds"])),
+            "jvp_warm_median_seconds", float(np.median(finest["jvp_warm_samples_seconds"]))
         ),
         1.0e3
         * finest.get(
-            "jvp_warm_median_seconds",
-            float(np.median(finest["jvp_warm_samples_seconds"])),
-        ),
-        1.0e3
-        * finest.get(
-            "vmap_warm_median_seconds",
-            float(np.median(finest["vmap_warm_samples_seconds"])),
+            "vmap_warm_median_seconds", float(np.median(finest["vmap_warm_samples_seconds"]))
         ),
     ]
 )
@@ -54,19 +44,9 @@ plt.style.use("seaborn-v0_8-whitegrid")
 figure, axes = plt.subplots(1, 2, figsize=(10.8, 4.2))
 width = 5.5
 axes[0].bar(
-    nphi - width / 2,
-    cold_ms,
-    width=width,
-    label="compile + first execution",
-    color="#34495e",
+    nphi - width / 2, cold_ms, width=width, label="compile + first execution", color="#34495e"
 )
-axes[0].bar(
-    nphi + width / 2,
-    warm_ms,
-    width=width,
-    label="warm median",
-    color="#1abc9c",
-)
+axes[0].bar(nphi + width / 2, warm_ms, width=width, label="warm median", color="#1abc9c")
 axes[0].set_yscale("log")
 axes[0].set_xlabel("toroidal grid points")
 axes[0].set_ylabel("wall time [ms, log scale]")
@@ -135,8 +115,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=130, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

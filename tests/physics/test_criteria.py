@@ -43,12 +43,10 @@ def test_curvo_profile_values_margins_and_scaling():
     beta = -MU0 * solution.inputs.p2 * solution.r_singularity**2 / solution.inputs.B0**2
     np.testing.assert_allclose(report["beta"].value, beta)
     np.testing.assert_allclose(
-        report["B20_variation"].margin,
-        criteria.maximum_B20_variation - solution.B20_variation,
+        report["B20_variation"].margin, criteria.maximum_B20_variation - solution.B20_variation
     )
     np.testing.assert_allclose(
-        report["minimum_L_grad_B"].margin,
-        np.min(solution.L_grad_B) - criteria.minimum_L_grad_B,
+        report["minimum_L_grad_B"].margin, np.min(solution.L_grad_B) - criteria.minimum_L_grad_B
     )
     assert report["B20_variation"].sense == "max"
     assert report["B20_variation"].units == "T/m^2"

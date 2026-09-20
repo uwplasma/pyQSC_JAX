@@ -7,18 +7,11 @@ import pyqsc_jax as qsc
 
 
 def resolved_volume_biot_savart(
-    solution,
-    formal_radius,
-    *,
-    radial_resolution=16,
-    angular_resolution=64,
+    solution, formal_radius, *, radial_resolution=16, angular_resolution=64
 ):
     """Independent midpoint/Gauss volume integral at the first axis point."""
 
-    source = qsc.plasma_current_source(
-        solution,
-        formal_radius=formal_radius,
-    )
+    source = qsc.plasma_current_source(solution, formal_radius=formal_radius)
     geometry = solution.geometry
     radial_nodes, radial_weights = np.polynomial.legendre.leggauss(radial_resolution)
     radial = 0.5 * formal_radius * (radial_nodes + 1)
@@ -77,11 +70,7 @@ def resolved_volume_biot_savart(
     displacement = np.asarray(geometry.position_cartesian[0]) - source_position
     kernel = (
         np.cross(weighted_current, displacement)
-        / np.linalg.norm(
-            displacement,
-            axis=-1,
-        )[..., None]
-        ** 3
+        / np.linalg.norm(displacement, axis=-1)[..., None] ** 3
     )
     cylindrical_period = 2 * np.pi / solution.inputs.axis.nfp
     d_phi = cylindrical_period / solution.inputs.nphi
@@ -98,26 +87,13 @@ def resolved_volume_biot_savart(
 @pytest.mark.literature
 @pytest.mark.slow
 def test_matched_field_converges_to_resolved_volume_current_biot_savart():
-    solution = qsc.Qsc(
-        rc=[1.0],
-        zs=[0.0],
-        nfp=1,
-        etabar=1.0,
-        I2=0.1,
-        nphi=301,
-        order="r2",
-    )
+    solution = qsc.Qsc(rc=[1.0], zs=[0.0], nfp=1, etabar=1.0, I2=0.1, nphi=301, order="r2")
     radii = (0.1, 0.07)
     errors = []
     scaled_errors = []
     for radius in radii:
         direct = resolved_volume_biot_savart(solution, radius)
-        asymptotic = np.asarray(
-            qsc.plasma_field_on_axis(
-                solution,
-                formal_radius=radius,
-            ).field[0]
-        )
+        asymptotic = np.asarray(qsc.plasma_field_on_axis(solution, formal_radius=radius).field[0])
         error = np.linalg.norm(direct - asymptotic)
         errors.append(error)
         scaled_errors.append(error / (radius**4 * abs(np.log(radius))))

@@ -17,14 +17,7 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/01_first_order_qa.png")
 
 print("Solving first-order QA configuration...")
-solution = qsc.Qsc(
-    rc=RC,
-    zs=ZS,
-    nfp=NFP,
-    etabar=ETABAR,
-    nphi=NPHI,
-    order="r1",
-)
+solution = qsc.Qsc(rc=RC, zs=ZS, nfp=NFP, etabar=ETABAR, nphi=NPHI, order="r1")
 print("iota:", float(solution.iota))
 print("sigma residual:", float(solution.root_report.residual_norm))
 print("axis length [m]:", float(solution.axis_length))

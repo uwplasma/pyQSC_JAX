@@ -19,15 +19,7 @@ CASES = (
         55,
         0.3,
     ),
-    (
-        "database_example_3",
-        r"QH • database ID 3 • 4 field periods",
-        0.075,
-        "magma",
-        23,
-        35,
-        0.4,
-    ),
+    ("database_example_3", r"QH • database ID 3 • 4 field periods", 0.075, "magma", 23, 35, 0.4),
     (
         "b20_optimized_good",
         r"optimization • nearly constant $B_{20}$",
@@ -58,28 +50,14 @@ figure = plt.figure(figsize=(12.0, 9.2))
 metadata = {"nphi": NPHI, "configurations": {}}
 
 print("Rendering the bundled stellarator gallery...")
-for panel, (
-    name,
-    title,
-    radius,
-    cmap,
-    elevation,
-    azimuth,
-    minimum_abs_iota,
-) in enumerate(CASES, start=1):
+for panel, (name, title, radius, cmap, elevation, azimuth, minimum_abs_iota) in enumerate(
+    CASES, start=1
+):
     solution = qsc.solve_configuration(name, nphi=NPHI)
-    criteria = qsc.Criteria.from_curvo_2025(
-        minimum_abs_iota=minimum_abs_iota,
-    )
+    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=minimum_abs_iota)
     assert criteria.evaluate(solution).passed
     axis = figure.add_subplot(2, 2, panel, projection="3d")
-    plot_surface_3d(
-        solution,
-        radius=radius,
-        ntheta=36,
-        ax=axis,
-        cmap=cmap,
-    )
+    plot_surface_3d(solution, radius=radius, ntheta=36, ax=axis, cmap=cmap)
     axis.view_init(elev=elevation, azim=azimuth)
     if name == "b20_optimized_good":
         diagnostic = rf"$\|P B_{{20}}\|_2={float(solution.B20_residual):.2e}$"
@@ -119,8 +97,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -132,8 +109,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=130, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

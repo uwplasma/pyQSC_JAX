@@ -26,9 +26,7 @@ solution = qsc.solve_configuration(CONFIGURATION, nphi=NPHI)
 assert float(solution.inputs.I2) == 0.0
 assert float(solution.inputs.p2) != 0.0
 result = qsc.plasma_hessian_on_axis(
-    solution,
-    formal_radius=FORMAL_RADIUS,
-    angular_resolution=ANGULAR_RESOLUTION,
+    solution, formal_radius=FORMAL_RADIUS, angular_resolution=ANGULAR_RESOLUTION
 )
 plasma_fraction = (
     (result.field.field.field**2).sum(axis=-1) / (solution.B_axis**2).sum(axis=-1)
@@ -40,13 +38,7 @@ external_norm = np.linalg.norm(np.asarray(result.field.external_field), axis=1)
 
 figure = plt.figure(figsize=(12.8, 8.0))
 surface_axis = figure.add_subplot(2, 2, 1, projection="3d")
-plot_surface_3d(
-    solution,
-    radius=DISPLAY_RADIUS,
-    ntheta=32,
-    ax=surface_axis,
-    cmap="plasma",
-)
+plot_surface_3d(solution, radius=DISPLAY_RADIUS, ntheta=32, ax=surface_axis, cmap="plasma")
 surface_axis.view_init(elev=25, azim=35)
 surface_axis.set_title(
     r"database stellarator: finite $p_2$, exactly $I_2=0$"
@@ -85,8 +77,7 @@ figure.tight_layout()
 try:
     repository = Path(__file__).resolve().parents[2]
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"
@@ -122,8 +113,7 @@ if SAVE_OUTPUT:
     README_PNG.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(README_PNG, dpi=120, bbox_inches="tight")
     OUTPUT_STEM.with_suffix(".json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print("saved:", OUTPUT_STEM)
 if SHOW_FIGURE:

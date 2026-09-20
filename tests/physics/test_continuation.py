@@ -10,11 +10,7 @@ AXIS = qsc.Axis(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3)
 
 def test_pseudo_arclength_crosses_etabar_iota_fold():
     branch = qsc.continue_etabar_branch(
-        axis=AXIS,
-        etabar_start=-1.0,
-        etabar_next=-0.98,
-        num_points=15,
-        nphi=31,
+        axis=AXIS, etabar_start=-1.0, etabar_next=-0.98, num_points=15, nphi=31
     )
 
     assert branch.complete
@@ -40,12 +36,7 @@ def test_pseudo_arclength_crosses_etabar_iota_fold():
 
 def test_corrected_points_match_independent_forward_solves():
     branch = qsc.continue_etabar_branch(
-        axis=AXIS,
-        etabar_start=-0.9,
-        etabar_next=-0.88,
-        num_points=6,
-        step_size=0.018,
-        nphi=31,
+        axis=AXIS, etabar_start=-0.9, etabar_next=-0.88, num_points=6, step_size=0.018, nphi=31
     )
 
     for index in (2, 4, 5):
@@ -59,11 +50,7 @@ def test_corrected_points_match_independent_forward_solves():
 
 def test_positive_branch_and_two_point_result():
     branch = qsc.continue_etabar_branch(
-        axis=AXIS,
-        etabar_start=0.9,
-        etabar_next=0.88,
-        num_points=2,
-        nphi=31,
+        axis=AXIS, etabar_start=0.9, etabar_next=0.88, num_points=2, nphi=31
     )
 
     assert branch.complete
@@ -73,12 +60,7 @@ def test_positive_branch_and_two_point_result():
 
 def test_continuation_reports_fixed_sign_boundary():
     branch = qsc.continue_etabar_branch(
-        axis=AXIS,
-        etabar_start=-0.1,
-        etabar_next=-0.05,
-        num_points=5,
-        step_size=0.2,
-        nphi=31,
+        axis=AXIS, etabar_start=-0.1, etabar_next=-0.05, num_points=5, step_size=0.2, nphi=31
     )
 
     assert branch.status == "branch_zero_crossing"

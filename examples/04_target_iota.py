@@ -16,18 +16,8 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/04_target_iota.png")
 
 print("Solving inverse target-iota problem...")
-inverse = qsc.solve(
-    axis=AXIS,
-    etabar=ETABAR_SEED,
-    iota=TARGET_IOTA,
-    solve_for="etabar",
-    nphi=NPHI,
-)
-forward = qsc.solve(
-    axis=AXIS,
-    etabar=inverse.inputs.etabar,
-    nphi=NPHI,
-)
+inverse = qsc.solve(axis=AXIS, etabar=ETABAR_SEED, iota=TARGET_IOTA, solve_for="etabar", nphi=NPHI)
+forward = qsc.solve(axis=AXIS, etabar=inverse.inputs.etabar, nphi=NPHI)
 print("target iota:", TARGET_IOTA)
 print("solved etabar:", float(inverse.inputs.etabar))
 print("forward-check iota:", float(forward.iota))
@@ -35,11 +25,7 @@ print("response d(iota)/d(etabar):", float(inverse.response_derivative))
 print("branch fold:", bool(inverse.branch_fold))
 
 figure, axis = plt.subplots(figsize=(6.0, 3.6))
-axis.plot(
-    np.asarray(inverse.varphi),
-    np.asarray(inverse.sigma),
-    linewidth=2,
-)
+axis.plot(np.asarray(inverse.varphi), np.asarray(inverse.sigma), linewidth=2)
 axis.set_xlabel("Boozer toroidal angle [rad]")
 axis.set_ylabel(r"$\sigma$")
 axis.set_title("Target-iota periodic solution")

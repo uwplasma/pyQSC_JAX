@@ -48,14 +48,7 @@ def _assemble_periodic_system(
     Z2s: jax.Array,
     Z2c: jax.Array,
     beta_1s: jax.Array,
-) -> tuple[
-    jax.Array,
-    jax.Array,
-    jax.Array,
-    jax.Array,
-    jax.Array,
-    jax.Array,
-]:
+) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array, jax.Array, jax.Array]:
     """Assemble the coupled periodic system for ``X20`` and ``Y20``."""
 
     inputs = first_order.inputs
@@ -212,9 +205,7 @@ def _assemble_periodic_system(
 
 
 def solve_second_order(
-    first_order: NearAxisSolution,
-    *,
-    attach_diagnostics: bool = True,
+    first_order: NearAxisSolution, *, attach_diagnostics: bool = True
 ) -> NearAxisSolution:
     """Add the complete finite-pressure/current second-order solution."""
 
@@ -268,21 +259,10 @@ def solve_second_order(
     )
     beta_1s = -4 * sign_product * MU0 * inputs.p2 * inputs.etabar * lp / (iotaN * inputs.B0**2)
 
-    (
-        matrix,
-        right_hand_side,
-        Y2s_from_X20,
-        Y2s_inhomogeneous,
-        Y2c_from_X20,
-        Y2c_inhomogeneous,
-    ) = _assemble_periodic_system(
-        first_order,
-        X2s=X2s,
-        X2c=X2c,
-        Z20=Z20,
-        Z2s=Z2s,
-        Z2c=Z2c,
-        beta_1s=beta_1s,
+    (matrix, right_hand_side, Y2s_from_X20, Y2s_inhomogeneous, Y2c_from_X20, Y2c_inhomogeneous) = (
+        _assemble_periodic_system(
+            first_order, X2s=X2s, X2c=X2c, Z20=Z20, Z2s=Z2s, Z2c=Z2c, beta_1s=beta_1s
+        )
     )
     solution, linear_report = implicit_dense_linear_solve(matrix, right_hand_side)
     X20, Y20 = jnp.split(solution, 2)

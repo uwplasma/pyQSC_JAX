@@ -17,10 +17,7 @@ import pyqsc_jax as qsc
 CONFIGURATION = "plasma_stellarator"
 RADIUS = 0.02
 OUTPUT = Path(
-    os.environ.get(
-        "PYQSC_VMEX_BENCHMARK_OUTPUT",
-        "benchmarks/results/vmex_interface.json",
-    )
+    os.environ.get("PYQSC_VMEX_BENCHMARK_OUTPUT", "benchmarks/results/vmex_interface.json")
 )
 
 near_axis = qsc.solve_configuration(CONFIGURATION, nphi=31)
@@ -59,8 +56,7 @@ value_and_gradient_seconds = perf_counter() - start
 repository = Path(__file__).resolve().parents[1]
 try:
     commit = subprocess.check_output(
-        ("git", "-C", str(repository), "rev-parse", "HEAD"),
-        text=True,
+        ("git", "-C", str(repository), "rev-parse", "HEAD"), text=True
     ).strip()
 except (OSError, subprocess.CalledProcessError):
     commit = "unavailable"

@@ -75,11 +75,7 @@ class Criteria:
 
     @classmethod
     def from_curvo_2025(
-        cls,
-        *,
-        major_radius: float = 1.0,
-        B0: float = 1.0,
-        **overrides: float,
+        cls, *, major_radius: float = 1.0, B0: float = 1.0, **overrides: float
     ) -> Criteria:
         """Return the scalable version of Curvo et al. (2025), Table 3."""
 
@@ -114,13 +110,7 @@ class Criteria:
             raise ValueError("The criteria profile requires a second-order solution.")
         beta = -MU0 * solution.inputs.p2 * solution.r_singularity**2 / solution.inputs.B0**2
         values = (
-            (
-                "axis_length",
-                solution.axis_length,
-                self.minimum_axis_length,
-                "strict_min",
-                "m",
-            ),
+            ("axis_length", solution.axis_length, self.minimum_axis_length, "strict_min", "m"),
             ("abs_iota", jnp.abs(solution.iota), self.minimum_abs_iota, "min", "1"),
             (
                 "maximum_elongation",
@@ -129,27 +119,9 @@ class Criteria:
                 "max",
                 "1",
             ),
-            (
-                "minimum_L_grad_B",
-                jnp.min(solution.L_grad_B),
-                self.minimum_L_grad_B,
-                "min",
-                "m",
-            ),
-            (
-                "minimum_axis_radius",
-                jnp.min(solution.R0),
-                self.minimum_axis_radius,
-                "min",
-                "m",
-            ),
-            (
-                "singular_radius",
-                solution.r_singularity,
-                self.minimum_singular_radius,
-                "min",
-                "m",
-            ),
+            ("minimum_L_grad_B", jnp.min(solution.L_grad_B), self.minimum_L_grad_B, "min", "m"),
+            ("minimum_axis_radius", jnp.min(solution.R0), self.minimum_axis_radius, "min", "m"),
+            ("singular_radius", solution.r_singularity, self.minimum_singular_radius, "min", "m"),
             (
                 "minimum_L_grad_grad_B",
                 jnp.min(solution.L_grad_grad_B),
@@ -157,13 +129,7 @@ class Criteria:
                 "min",
                 "m",
             ),
-            (
-                "B20_variation",
-                solution.B20_variation,
-                self.maximum_B20_variation,
-                "max",
-                "T/m^2",
-            ),
+            ("B20_variation", solution.B20_variation, self.maximum_B20_variation, "max", "T/m^2"),
             ("beta", beta, self.minimum_beta, "min", "1"),
             (
                 "DMerc_times_r2",
@@ -194,7 +160,4 @@ class Criteria:
                     units=units,
                 )
             )
-        return CriteriaReport(
-            profile_name=self.profile_name,
-            evaluations=tuple(evaluations),
-        )
+        return CriteriaReport(profile_name=self.profile_name, evaluations=tuple(evaluations))

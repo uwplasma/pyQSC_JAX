@@ -63,9 +63,7 @@ class B20ResolutionVerification:
 
 
 def b20_diagnostics(
-    solution: NearAxisSolution,
-    *,
-    smooth_maximum_power: int = 16,
+    solution: NearAxisSolution, *, smooth_maximum_power: int = 16
 ) -> B20Diagnostics:
     """Evaluate normalized dense-grid and nonzero-mode B20 diagnostics."""
 
@@ -148,9 +146,7 @@ def _affine_B20(solution: NearAxisSolution) -> tuple[jax.Array, jax.Array]:
 
 
 def optimal_B2c_value(
-    solution: NearAxisSolution,
-    *,
-    degeneracy_tolerance: float = 1e-24,
+    solution: NearAxisSolution, *, degeneracy_tolerance: float = 1e-24
 ) -> jax.Array:
     """Return the exact B2c minimizing the nonconstant weighted-L2 B20."""
 
@@ -164,9 +160,7 @@ def optimal_B2c_value(
     denominator = jnp.sum(weights * projected_response**2)
     numerator = jnp.sum(weights * projected_intercept * projected_response)
     return jnp.where(
-        denominator > degeneracy_tolerance,
-        -numerator / denominator,
-        solution.inputs.B2c,
+        denominator > degeneracy_tolerance, -numerator / denominator, solution.inputs.B2c
     )
 
 
@@ -199,10 +193,7 @@ def optimize_B2c(
     reconstruction_error = jnp.max(jnp.abs(optimal.B20 - (intercept + optimum * response)))
     return B2cOptimizationResult(
         solution=optimal,
-        diagnostics=b20_diagnostics(
-            optimal,
-            smooth_maximum_power=smooth_maximum_power,
-        ),
+        diagnostics=b20_diagnostics(optimal, smooth_maximum_power=smooth_maximum_power),
         B2c_optimal=optimum,
         affine_intercept=intercept,
         affine_response=response,

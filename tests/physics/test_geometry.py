@@ -17,19 +17,13 @@ def test_circular_axis_geometry_is_analytic():
     np.testing.assert_allclose(geometry.torsion, 0.0, atol=2e-14)
     np.testing.assert_allclose(geometry.varphi, geometry.samples.phi, rtol=2e-14, atol=2e-14)
     np.testing.assert_allclose(
-        geometry.tangent_cylindrical,
-        jnp.tile(jnp.array([0.0, 1.0, 0.0]), (nphi, 1)),
-        atol=2e-14,
+        geometry.tangent_cylindrical, jnp.tile(jnp.array([0.0, 1.0, 0.0]), (nphi, 1)), atol=2e-14
     )
     np.testing.assert_allclose(
-        geometry.normal_cylindrical,
-        jnp.tile(jnp.array([-1.0, 0.0, 0.0]), (nphi, 1)),
-        atol=2e-14,
+        geometry.normal_cylindrical, jnp.tile(jnp.array([-1.0, 0.0, 0.0]), (nphi, 1)), atol=2e-14
     )
     np.testing.assert_allclose(
-        geometry.binormal_cylindrical,
-        jnp.tile(jnp.array([0.0, 0.0, 1.0]), (nphi, 1)),
-        atol=2e-14,
+        geometry.binormal_cylindrical, jnp.tile(jnp.array([0.0, 0.0, 1.0]), (nphi, 1)), atol=2e-14
     )
     assert int(geometry.frame_helicity) == 0
     assert bool(geometry.diagnostics.frenet_valid)

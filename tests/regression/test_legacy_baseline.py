@@ -5,13 +5,7 @@ from pyqsc_jax.near_axis import near_axis
 
 
 def standard_field(**kwargs):
-    parameters = {
-        "rc": [1.0, 0.045],
-        "zs": [0.0, -0.045],
-        "etabar": -0.9,
-        "nfp": 3,
-        "nphi": 31,
-    }
+    parameters = {"rc": [1.0, 0.045], "zs": [0.0, -0.045], "etabar": -0.9, "nfp": 3, "nphi": 31}
     parameters.update(kwargs)
     return near_axis(**parameters)
 

@@ -39,12 +39,10 @@ def test_dense_B20_diagnostics_match_direct_definitions():
     )
     np.testing.assert_allclose(diagnostics.weighted_l2, solution.B20_residual)
     np.testing.assert_allclose(
-        diagnostics.grid_maximum,
-        np.max(np.abs(anomaly / solution.inputs.B0)),
+        diagnostics.grid_maximum, np.max(np.abs(anomaly / solution.inputs.B0))
     )
     np.testing.assert_allclose(
-        diagnostics.peak_to_peak,
-        solution.B20_variation / solution.inputs.B0,
+        diagnostics.peak_to_peak, solution.B20_variation / solution.inputs.B0
     )
     assert diagnostics.smooth_maximum_power == 12
     assert diagnostics.fourier_modes.shape == (15,)
@@ -104,16 +102,7 @@ def test_optimal_solution_recomputes_r3_and_shear_without_stale_data():
 
 
 def test_circular_axis_has_degenerate_nonconstant_B2c_response():
-    solution = qsc.Qsc(
-        rc=[1.0],
-        zs=[0.0],
-        nfp=1,
-        etabar=1.0,
-        I2=0.1,
-        B2c=0.2,
-        nphi=15,
-        order="r2",
-    )
+    solution = qsc.Qsc(rc=[1.0], zs=[0.0], nfp=1, etabar=1.0, I2=0.1, B2c=0.2, nphi=15, order="r2")
     result = qsc.optimize_B2c(solution)
 
     assert bool(result.degenerate)

@@ -17,11 +17,7 @@ from pyqsc_jax.models import NearAxisSolution, ShearData
 ArrayLike = Any
 
 
-def solve_magnetic_shear(
-    solution: NearAxisSolution,
-    *,
-    B31c: ArrayLike = 0.0,
-) -> NearAxisSolution:
+def solve_magnetic_shear(solution: NearAxisSolution, *, B31c: ArrayLike = 0.0) -> NearAxisSolution:
     """Attach the standard-MHS order-r-squared transform correction.
 
     ``B31c`` uses the inverse-field-squared convention of the generalized
@@ -320,10 +316,7 @@ def solve_magnetic_shear(
     )
 
     sigma_average = jnp.sum(solution.sigma * solution.geometry.d_varphi_d_phi) / inputs.nphi
-    periodic_integral = jnp.linalg.solve(
-        reduced_derivative,
-        solution.sigma[1:] - sigma_average,
-    )
+    periodic_integral = jnp.linalg.solve(reduced_derivative, solution.sigma[1:] - sigma_average)
     general_integral = jnp.concatenate(
         (
             jnp.zeros(1, dtype=solution.sigma.dtype),
@@ -339,10 +332,7 @@ def solve_magnetic_shear(
     denominator_extended = jnp.concatenate((denominator_factor, denominator_factor[:1]))
     varphi_extended = jnp.concatenate((solution.varphi, jnp.asarray([period])))
     general_numerator = jnp.trapezoid(factor_extended * Lambda_extended, varphi_extended)
-    general_denominator = jnp.trapezoid(
-        factor_extended * denominator_extended,
-        varphi_extended,
-    )
+    general_denominator = jnp.trapezoid(factor_extended * denominator_extended, varphi_extended)
 
     stellarator_symmetric = (
         (inputs.sigma0 == 0)

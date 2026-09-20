@@ -14,11 +14,7 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/03_second_order_finite_beta.png")
 
 print("Solving the finite-pressure, zero-current stellarator...")
-solution = qsc.solve_configuration(
-    CONFIGURATION,
-    nphi=NPHI,
-    order="r2",
-)
+solution = qsc.solve_configuration(CONFIGURATION, nphi=NPHI, order="r2")
 assert float(solution.inputs.I2) == 0.0
 assert float(solution.inputs.p2) != 0.0
 print("iota:", float(solution.iota))

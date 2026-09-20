@@ -89,13 +89,7 @@ def dense_newton_root(
 
         damping0 = jnp.asarray(1.0, dtype=dtype)
         candidate_x0, candidate_residual0, candidate_norm0 = candidate(damping0)
-        line_state0 = (
-            damping0,
-            candidate_x0,
-            candidate_residual0,
-            candidate_norm0,
-            jnp.int32(0),
-        )
+        line_state0 = (damping0, candidate_x0, candidate_residual0, candidate_norm0, jnp.int32(0))
 
         def continue_backtracking(line_state):
             _, _, candidate_residual, candidate_norm, backtracking = line_state
@@ -110,13 +104,7 @@ def dense_newton_root(
             damping, _, _, _, backtracking = line_state
             damping = 0.5 * damping
             candidate_x, candidate_residual, candidate_norm = candidate(damping)
-            return (
-                damping,
-                candidate_x,
-                candidate_residual,
-                candidate_norm,
-                backtracking + 1,
-            )
+            return (damping, candidate_x, candidate_residual, candidate_norm, backtracking + 1)
 
         damping, candidate_x, candidate_residual, candidate_norm, backtracking = jax.lax.while_loop(
             continue_backtracking, backtrack, line_state0
@@ -173,16 +161,10 @@ def implicit_dense_root(
     than differentiating the iteration history.
     """
 
-    candidate, report = dense_newton_root(
-        residual_function,
-        initial_guess,
-        options=options,
-    )
+    candidate, report = dense_newton_root(residual_function, initial_guess, options=options)
     candidate = jax.lax.stop_gradient(candidate)
     root = root_solve(
-        residual_function,
-        candidate,
-        lambda _function, supplied_candidate: supplied_candidate,
+        residual_function, candidate, lambda _function, supplied_candidate: supplied_candidate
     )
     return root, report
 
@@ -212,8 +194,7 @@ def implicit_dense_linear_solve(
     transpose_matvec = lambda value: matrix.T @ value  # noqa: E731
     primal_solver = lambda _operator, value: jnp.linalg.solve(matrix, value)  # noqa: E731
     transpose_solver = lambda _operator, value: jnp.linalg.solve(  # noqa: E731
-        matrix.T,
-        value,
+        matrix.T, value
     )
     solution = linear_solve(
         matvec,
@@ -226,8 +207,7 @@ def implicit_dense_linear_solve(
     residual_norm = _infinity_norm(residual)
     right_hand_side_norm = _infinity_norm(right_hand_side)
     relative_residual_norm = residual_norm / jnp.maximum(
-        right_hand_side_norm,
-        jnp.finfo(right_hand_side.dtype).tiny,
+        right_hand_side_norm, jnp.finfo(right_hand_side.dtype).tiny
     )
     condition_number = jnp.linalg.cond(matrix)
     finite = (

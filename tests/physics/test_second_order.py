@@ -47,13 +47,9 @@ def test_second_order_definitions_and_derivatives():
     np.testing.assert_allclose(solution.B20_mean, weighted_mean, rtol=2e-13)
     np.testing.assert_allclose(solution.B20_anomaly, solution.B20 - weighted_mean)
     np.testing.assert_allclose(
-        solution.B20_variation,
-        jnp.max(solution.B20) - jnp.min(solution.B20),
+        solution.B20_variation, jnp.max(solution.B20) - jnp.min(solution.B20)
     )
-    np.testing.assert_allclose(
-        solution.d_X20_d_varphi,
-        solution.geometry.d_d_varphi @ solution.X20,
-    )
+    np.testing.assert_allclose(solution.d_X20_d_varphi, solution.geometry.d_d_varphi @ solution.X20)
     np.testing.assert_allclose(
         solution.d2_X1c_d_varphi2,
         solution.geometry.d_d_varphi @ (solution.geometry.d_d_varphi @ solution.X1c),
@@ -115,13 +111,7 @@ def test_qh_untwisting_preserves_harmonic_norm():
 
 
 def test_second_order_residual_requires_r2_solution():
-    first_order = qsc.Qsc(
-        rc=[1.0, 0.045],
-        zs=[0.0, -0.045],
-        nfp=3,
-        etabar=-0.9,
-        nphi=15,
-    )
+    first_order = qsc.Qsc(rc=[1.0, 0.045], zs=[0.0, -0.045], nfp=3, etabar=-0.9, nphi=15)
 
     assert not hasattr(first_order, "X20")
     with pytest.raises(AttributeError, match="no 'X20'"):

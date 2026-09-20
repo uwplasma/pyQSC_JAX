@@ -69,10 +69,7 @@ class near_axis:  # noqa: N801
         self._refresh()
 
     def _canonical_solution(
-        self,
-        rc: ArrayLike,
-        zs: ArrayLike,
-        etabar: ArrayLike,
+        self, rc: ArrayLike, zs: ArrayLike, etabar: ArrayLike
     ) -> NearAxisSolution:
         canonical_order = (
             "r1" if self.order in (1, "r1") else ("r2" if self.order in (2, "r2") else "r3")
@@ -353,20 +350,13 @@ class near_axis:  # noqa: N801
         """Wrapped cylindrical-angle residual for a Frenet point."""
 
         _, _, phi = self.Frenet_to_cylindrical_1_point(
-            phi0,
-            X_at_this_theta,
-            Y_at_this_theta,
-            Z_at_this_theta,
+            phi0, X_at_this_theta, Y_at_this_theta, Z_at_this_theta
         )
         difference = phi - phi_target
         return jnp.arctan2(jnp.sin(difference), jnp.cos(difference))
 
     def residual_phi0_of_theta_varphi_func(
-        self,
-        phi0: ArrayLike,
-        r: ArrayLike,
-        theta: ArrayLike,
-        varphi: ArrayLike,
+        self, phi0: ArrayLike, r: ArrayLike, theta: ArrayLike, varphi: ArrayLike
     ) -> jax.Array:
         """Residual for inversion at fixed Boozer toroidal angle."""
 
@@ -390,9 +380,7 @@ class near_axis:  # noqa: N801
         return phi + nu - varphi
 
     def _frenet_displacements(
-        self,
-        r: ArrayLike,
-        theta: ArrayLike,
+        self, r: ArrayLike, theta: ArrayLike
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
         """Assemble all available radial-order Frenet displacements."""
 
@@ -436,19 +424,11 @@ class near_axis:  # noqa: N801
             )
         return X, Y, Z
 
-    def phi_of_theta_varphi(
-        self,
-        r: ArrayLike,
-        theta: ArrayLike,
-        varphi: ArrayLike,
-    ) -> jax.Array:
+    def phi_of_theta_varphi(self, r: ArrayLike, theta: ArrayLike, varphi: ArrayLike) -> jax.Array:
         """Invert the regular-coordinate map for cylindrical toroidal angle."""
 
         residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
-            phi0,
-            r,
-            theta,
-            varphi,
+            phi0, r, theta, varphi
         )
         phi_on_axis, _ = implicit_dense_root(residual, jnp.asarray(varphi))
         X, Y, Z = self._frenet_displacements(r, theta)
@@ -456,10 +436,7 @@ class near_axis:  # noqa: N801
         return phi
 
     def Frenet_to_cylindrical(
-        self,
-        r: ArrayLike,
-        ntheta: int = 20,
-        phi_is_varphi: bool = False,
+        self, r: ArrayLike, ntheta: int = 20, phi_is_varphi: bool = False
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
         """Map the available-order surface over one field period."""
 
@@ -472,18 +449,11 @@ class near_axis:  # noqa: N801
             def for_toroidal_angle(target):
                 if phi_is_varphi:
                     residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
-                        phi0,
-                        r,
-                        theta_value,
-                        target,
+                        phi0, r, theta_value, target
                     )
                 else:
                     residual = lambda phi0: self.Frenet_to_cylindrical_residual_func(  # noqa: E731
-                        phi0,
-                        target,
-                        X,
-                        Y,
-                        Z,
+                        phi0, target, X, Y, Z
                     )
                 phi0, _ = implicit_dense_root(residual, target)
                 R, cylindrical_Z, _ = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
@@ -494,12 +464,7 @@ class near_axis:  # noqa: N801
         return jax.vmap(for_theta)(theta)
 
     def to_Fourier(  # noqa: N802
-        self,
-        R_2D: ArrayLike,
-        Z_2D: ArrayLike,
-        nfp: int,
-        mpol: int,
-        ntor: int,
+        self, R_2D: ArrayLike, Z_2D: ArrayLike, nfp: int, mpol: int, ntor: int
     ) -> tuple[jax.Array, jax.Array]:
         """Convert a sampled stellarator-symmetric surface to Fourier data."""
 
@@ -537,9 +502,7 @@ class near_axis:  # noqa: N801
         """Return a full-torus available-order surface in Cartesian coordinates."""
 
         R_period, Z_period, _ = self.Frenet_to_cylindrical(
-            r,
-            ntheta=ntheta_fourier,
-            phi_is_varphi=phi_is_varphi,
+            r, ntheta=ntheta_fourier, phi_is_varphi=phi_is_varphi
         )
         RBC, ZBS = self.to_Fourier(R_period, Z_period, self.nfp, mpol, ntor)
         theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
@@ -550,9 +513,7 @@ class near_axis:  # noqa: N801
             phi2d = jax.vmap(
                 lambda theta_row, varphi_row: jax.vmap(
                     lambda theta_value, varphi_value: self.phi_of_theta_varphi(
-                        r,
-                        theta_value,
-                        varphi_value,
+                        r, theta_value, varphi_value
                     )
                 )(theta_row, varphi_row)
             )(theta2d, phi2d)
@@ -636,12 +597,7 @@ class near_axis:  # noqa: N801
         else:
             figure = ax.figure
 
-        x, y, z, _ = self.get_boundary(
-            r=r,
-            ntheta=ntheta,
-            nphi=nphi,
-            ntheta_fourier=ntheta_fourier,
-        )
+        x, y, z, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
         theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
         phi = jnp.linspace(0, 2 * jnp.pi, nphi)
         phi2d, theta2d = jnp.meshgrid(phi, theta)
@@ -649,9 +605,7 @@ class near_axis:  # noqa: N801
         normalization = Normalize(vmin=field_strength.min(), vmax=field_strength.max())
         colormap = cm.viridis
         facecolors = LightSource(azdeg=0, altdeg=10).shade(
-            field_strength,
-            colormap,
-            norm=normalization,
+            field_strength, colormap, norm=normalization
         )
         kwargs.setdefault("alpha", 1)
         ax.plot_surface(
@@ -668,24 +622,14 @@ class near_axis:  # noqa: N801
         )
         if created_axes:
             colorbar = figure.colorbar(
-                cm.ScalarMappable(cmap=colormap, norm=normalization),
-                ax=ax,
-                shrink=0.7,
+                cm.ScalarMappable(cmap=colormap, norm=normalization), ax=ax, shrink=0.7
             )
             colorbar.ax.set_title(r"$|B|$ [T]")
             ax.grid(False)
         if axis_equal:
-            ranges = (
-                np.ptp(np.asarray(x)),
-                np.ptp(np.asarray(y)),
-                np.ptp(np.asarray(z)),
-            )
+            ranges = (np.ptp(np.asarray(x)), np.ptp(np.asarray(y)), np.ptp(np.asarray(z)))
             radius = max(ranges) / 2
-            centers = (
-                np.mean(np.asarray(x)),
-                np.mean(np.asarray(y)),
-                np.mean(np.asarray(z)),
-            )
+            centers = (np.mean(np.asarray(x)), np.mean(np.asarray(y)), np.mean(np.asarray(z)))
             ax.set_xlim(centers[0] - radius, centers[0] + radius)
             ax.set_ylim(centers[1] - radius, centers[1] + radius)
             ax.set_zlim(centers[2] - radius, centers[2] + radius)
@@ -696,8 +640,4 @@ class near_axis:  # noqa: N801
         return figure, ax
 
 
-jax.tree_util.register_pytree_node(
-    near_axis,
-    near_axis._tree_flatten,
-    near_axis._tree_unflatten,
-)
+jax.tree_util.register_pytree_node(near_axis, near_axis._tree_flatten, near_axis._tree_unflatten)

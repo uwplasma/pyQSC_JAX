@@ -20,20 +20,8 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/08_boundary_and_coordinates.png")
 
 print("Constructing an r2 compatibility surface...")
-field = near_axis(
-    rc=RC,
-    zs=ZS,
-    nfp=NFP,
-    etabar=ETABAR,
-    B2c=B2C,
-    nphi=31,
-    order="r2",
-)
-x, y, z, radius = field.get_boundary(
-    r=RADIUS,
-    ntheta=NTHETA,
-    nphi=NPHI,
-)
+field = near_axis(rc=RC, zs=ZS, nfp=NFP, etabar=ETABAR, B2c=B2C, nphi=31, order="r2")
+x, y, z, radius = field.get_boundary(r=RADIUS, ntheta=NTHETA, nphi=NPHI)
 print("boundary array shape:", x.shape)
 print("R range [m]:", float(radius.min()), float(radius.max()))
 print("Z range [m]:", float(z.min()), float(z.max()))
@@ -41,12 +29,7 @@ print("Z range [m]:", float(z.min()), float(z.max()))
 figure = plt.figure(figsize=(8.0, 3.8))
 axis_3d = figure.add_subplot(1, 2, 1, projection="3d")
 axis_3d.plot_surface(
-    np.asarray(x),
-    np.asarray(y),
-    np.asarray(z),
-    cmap="viridis",
-    alpha=0.8,
-    linewidth=0,
+    np.asarray(x), np.asarray(y), np.asarray(z), cmap="viridis", alpha=0.8, linewidth=0
 )
 axis_3d.set_box_aspect((1, 1, 1))
 axis_3d.set_xlabel("x [m]")

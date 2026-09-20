@@ -17,14 +17,7 @@ SHOW_FIGURE = False
 OUTPUT = Path("examples/output/02_first_order_qh.png")
 
 print("Solving first-order QH configuration...")
-solution = qsc.Qsc(
-    rc=RC,
-    zs=ZS,
-    nfp=NFP,
-    etabar=ETABAR,
-    nphi=NPHI,
-    order="r1",
-)
+solution = qsc.Qsc(rc=RC, zs=ZS, nfp=NFP, etabar=ETABAR, nphi=NPHI, order="r1")
 print("iota:", float(solution.iota))
 print("iota_N:", float(solution.iotaN))
 print("frame helicity:", int(solution.helicity))

@@ -78,12 +78,7 @@ class VmexProblem:
 
         return bool(np.any(np.asarray(self.input.am)))
 
-    def parameters_for(
-        self,
-        solution: NearAxisSolution,
-        *,
-        radius: Any | None = None,
-    ) -> Any:
+    def parameters_for(self, solution: NearAxisSolution, *, radius: Any | None = None) -> Any:
         """Map another near-axis solution into this problem's parameter pytree."""
 
         return vmex_parameters_from_solution(self, solution, radius=radius)
@@ -127,11 +122,7 @@ def _validated_surfaces(surfaces: Any) -> tuple[float, ...]:
 
 
 def _validated_radial_controls(
-    ns_array: Any,
-    ftol_array: Any | None,
-    *,
-    ftol: float,
-    max_iterations: int,
+    ns_array: Any, ftol_array: Any | None, *, ftol: float, max_iterations: int
 ) -> tuple[tuple[int, ...], tuple[float, ...], tuple[int, ...]]:
     ns = tuple(int(value) for value in ns_array)
     if not ns or any(value < 3 for value in ns):
@@ -163,10 +154,7 @@ def _validated_radial_controls(
 
 def _is_asymmetric(boundary: VmecBoundary, tolerance: float = 1.0e-13) -> bool:
     return (
-        max(
-            float(jnp.max(jnp.abs(boundary.RBS))),
-            float(jnp.max(jnp.abs(boundary.ZBC))),
-        )
+        max(float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC))))
         > tolerance
     )
 
@@ -199,10 +187,7 @@ def _profile_arrays(parameters: Any, solution: NearAxisSolution, radius: Any):
 
 
 def vmex_parameters_from_solution(
-    problem: VmexProblem,
-    solution: NearAxisSolution,
-    *,
-    radius: Any | None = None,
+    problem: VmexProblem, solution: NearAxisSolution, *, radius: Any | None = None
 ) -> Any:
     """Traceably map a near-axis boundary and profiles to VMEX parameters.
 
@@ -279,10 +264,7 @@ def to_vmex_problem(
         raise ValueError("r must be positive and finite.")
     surfaces = _validated_surfaces(qs_surfaces)
     ns, tolerances, iteration_limits = _validated_radial_controls(
-        ns_array,
-        ftol_array,
-        ftol=ftol,
-        max_iterations=max_iterations,
+        ns_array, ftol_array, ftol=ftol, max_iterations=max_iterations
     )
     if not isinstance(helicity_m, int) or isinstance(helicity_m, bool):
         raise ValueError("helicity_m must be an integer.")
@@ -295,11 +277,7 @@ def to_vmex_problem(
     if not np.isfinite(toroidal_angle_tolerance) or toroidal_angle_tolerance < 0:
         raise ValueError("toroidal_angle_tolerance must be nonnegative and finite.")
     _validated_resolution(
-        solution,
-        ntheta=ntheta,
-        mpol=mpol,
-        ntor=ntor,
-        newton_iterations=newton_iterations,
+        solution, ntheta=ntheta, mpol=mpol, ntor=ntor, newton_iterations=newton_iterations
     )
 
     boundary = vmec_boundary(
@@ -379,10 +357,7 @@ def to_vmex_problem(
         device=device,
         vmex_version=str(vmex.__version__),
     )
-    return dataclasses.replace(
-        problem,
-        parameters=vmex_parameters_from_solution(problem, solution),
-    )
+    return dataclasses.replace(problem, parameters=vmex_parameters_from_solution(problem, solution))
 
 
 def _radial_quantities(problem: VmexProblem, vmex_solution: Any) -> VmexRadialQuantities:
@@ -395,9 +370,7 @@ def _radial_quantities(problem: VmexProblem, vmex_solution: Any) -> VmexRadialQu
     surfaces = jnp.asarray(problem.qs_surfaces, dtype=iota_vmec.dtype)
     if problem.qs_surfaces:
         qs = vmex.optimize.QuasisymmetryRatioResidual(
-            problem.qs_surfaces,
-            problem.helicity_m,
-            problem.helicity_n,
+            problem.qs_surfaces, problem.helicity_m, problem.helicity_n
         )
         quasisymmetry = qs.profile_state(vmex_solution.state, runtime)
     else:
@@ -430,15 +403,11 @@ def solve_vmex(problem: VmexProblem, parameters: Any | None = None) -> VmexEquil
         multigrid=problem.multigrid,
         device=problem.device,
     )
-    return VmexEquilibrium(
-        solution=solution,
-        quantities=_radial_quantities(problem, solution),
-    )
+    return VmexEquilibrium(solution=solution, quantities=_radial_quantities(problem, solution))
 
 
 def vmex_radial_quantities(
-    problem: VmexProblem,
-    parameters: Any | None = None,
+    problem: VmexProblem, parameters: Any | None = None
 ) -> VmexRadialQuantities:
     """Solve and return only the differentiable VMEX diagnostic pytree."""
 
