@@ -111,14 +111,16 @@ def test_third_order_structure_and_independent_constraints():
     np.testing.assert_allclose(third.X3c1, solution.X1c * third.flux_constraint_coefficient)
     np.testing.assert_allclose(third.Y3c1, solution.Y1c * third.flux_constraint_coefficient)
     np.testing.assert_allclose(third.Y3s1, solution.Y1s * third.flux_constraint_coefficient)
+    # Independent routes to the same coefficient, so they agree to the resolution of the
+    # second-order solve (2.4e-10 at this nphi), not identically.
     np.testing.assert_allclose(
         third.B0_order_a_squared_to_cancel,
         2 * solution.inputs.B0 * third.flux_constraint_coefficient,
-        rtol=2.0e-10,
-        atol=2.0e-12,
+        rtol=0,
+        atol=1.0e-9,
     )
-    assert float(jnp.max(jnp.abs(third.flux_constraint_residual))) < 2.0e-13
-    assert float(jnp.max(jnp.abs(third.consistency_error))) < 2.0e-10
+    assert float(third.flux_constraint_residual) < 1.0e-9
+    assert float(third.consistency_error) < 1.0e-9
 
     for name in ("X3s1", "Z3s1", "Z3c1", "X3s3", "X3c3", "Y3s3", "Y3c3", "Z3s3", "Z3c3"):
         np.testing.assert_array_equal(getattr(third, name), jnp.zeros(solution.inputs.nphi))
@@ -127,6 +129,38 @@ def test_third_order_structure_and_independent_constraints():
     np.testing.assert_allclose(third.d_X3c1_d_varphi, derivative @ third.X3c1, atol=2.0e-12)
     np.testing.assert_allclose(third.d_Y3s1_d_varphi, derivative @ third.Y3s1, atol=2.0e-12)
     np.testing.assert_allclose(third.d_Y3c1_d_varphi, derivative @ third.Y3c1, atol=2.0e-12)
+
+
+def test_flux_constraint_diagnostics_track_resolution():
+    # pyQSC computes the coefficient from the parent O(r**3) equations and checks it against
+    # two shortened forms, warning when they disagree. Taking the coefficient from one of the
+    # shortened forms instead makes both checks vanish identically at every resolution, so
+    # they can never report an under-resolved solve. Require them to be genuinely nonzero
+    # when coarse and to converge spectrally to roundoff.
+    residuals = []
+    for nphi in (15, 31, 61, 91):
+        solution = standard_solution(
+            rc=[1.0, 0.09],
+            zs=[0.0, -0.09],
+            nfp=2,
+            etabar=0.95,
+            I2=0.9,
+            B2c=-0.7,
+            p2=-600000.0,
+            order="r3",
+            nphi=nphi,
+        )
+        third = solution.third_order
+        residuals.append(float(third.flux_constraint_residual))
+        np.testing.assert_allclose(
+            third.consistency_error, third.flux_constraint_residual, rtol=1e-6
+        )
+    assert residuals[0] > 1.0e-4
+    # Each refinement below the roundoff plateau gains more than a decade.
+    assert all(
+        fine < 0.1 * coarse for coarse, fine in zip(residuals[:2], residuals[1:3], strict=True)
+    )
+    assert residuals[-1] < 1.0e-12
 
 
 def test_qh_untwisting_and_compatibility_surface_include_r3():

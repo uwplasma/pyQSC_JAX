@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -97,8 +99,16 @@ def test_optimal_solution_recomputes_r3_and_shear_without_stale_data():
     assert result.solution.third_order is not None
     assert result.solution.shear is not None
     np.testing.assert_allclose(result.solution.B31c, original.B31c)
-    assert result.solution.flux_constraint_residual < 2.0e-13
-    assert result.solution.consistency_error < 2.0e-10
+    # The third-order data must be rebuilt from the optimized second order. Optimizing B2c
+    # moves the flux-constraint coefficient by order one, so data carried over from the
+    # original would match it rather than a fresh evaluation.
+    fresh = qsc.solve_third_order(replace(result.solution, third_order=None))
+    np.testing.assert_allclose(
+        result.solution.flux_constraint_coefficient, fresh.flux_constraint_coefficient, rtol=1e-12
+    )
+    assert not np.allclose(
+        result.solution.flux_constraint_coefficient, original.flux_constraint_coefficient
+    )
 
 
 def test_circular_axis_has_degenerate_nonconstant_B2c_response():

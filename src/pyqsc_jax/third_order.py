@@ -9,10 +9,84 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import jax
 import jax.numpy as jnp
 
 from pyqsc_jax.models import NearAxisSolution, ThirdOrderData
 from pyqsc_jax.second_order import MU0
+
+
+def _flux_constraint(solution: NearAxisSolution) -> jax.Array:
+    """The flux-constraint coefficient from the parent O(r**3) equations.
+
+    This is the primary route of ``landreman/pyQSC:qsc/calculate_r3.py``, transcribed from it
+    verbatim. It shares no algebra with the two shortened forms that
+    :func:`solve_third_order` compares it against, so their agreement tests the resolution
+    of the second-order solution rather than repeating one expression.
+    """
+
+    r2, inputs, geometry = solution.second_order, solution.inputs, solution.geometry
+    B0, G0, I2, iotaN = inputs.B0, solution.G0, inputs.I2, solution.iotaN
+    B1c, B20 = inputs.etabar * B0, r2.B20
+    X1c, Y1c, Y1s = solution.X1c, solution.Y1c, solution.Y1s
+    X20, X2c, X2s, Y20, Y2c, Y2s = r2.X20, r2.X2c, r2.X2s, r2.Y20, r2.Y2c, r2.Y2s
+    Z20, Z2c, Z2s = r2.Z20, r2.Z2c, r2.Z2s
+    torsion, abs_G0_over_B0 = geometry.torsion, geometry.abs_G0_over_B0
+    d_X1c_d_varphi = geometry.d_d_varphi @ X1c
+    d_Y1c_d_varphi = geometry.d_d_varphi @ Y1c
+    return (
+        -4 * B0**2 * G0 * X20**2 * Y1c**2
+        + 8 * B0**2 * G0 * X20 * X2c * Y1c**2
+        - 4 * B0**2 * G0 * X2c**2 * Y1c**2
+        - 4 * B0**2 * G0 * X2s**2 * Y1c**2
+        + 8 * B0 * G0 * B1c * X1c * X2s * Y1c * Y1s
+        + 16 * B0**2 * G0 * X20 * X2s * Y1c * Y1s
+        + 2 * B0**2 * I2 * iotaN * X1c**2 * Y1s**2
+        - G0 * B1c**2 * X1c**2 * Y1s**2
+        - 4 * B0 * G0 * B20 * X1c**2 * Y1s**2
+        - 8 * B0 * G0 * B1c * X1c * X20 * Y1s**2
+        - 4 * B0**2 * G0 * X20**2 * Y1s**2
+        - 8 * B0 * G0 * B1c * X1c * X2c * Y1s**2
+        - 8 * B0**2 * G0 * X20 * X2c * Y1s**2
+        - 4 * B0**2 * G0 * X2c**2 * Y1s**2
+        - 4 * B0**2 * G0 * X2s**2 * Y1s**2
+        + 8 * B0**2 * G0 * X1c * X20 * Y1c * Y20
+        - 8 * B0**2 * G0 * X1c * X2c * Y1c * Y20
+        - 8 * B0**2 * G0 * X1c * X2s * Y1s * Y20
+        - 4 * B0**2 * G0 * X1c**2 * Y20**2
+        - 8 * B0**2 * G0 * X1c * X20 * Y1c * Y2c
+        + 8 * B0**2 * G0 * X1c * X2c * Y1c * Y2c
+        + 24 * B0**2 * G0 * X1c * X2s * Y1s * Y2c
+        + 8 * B0**2 * G0 * X1c**2 * Y20 * Y2c
+        - 4 * B0**2 * G0 * X1c**2 * Y2c**2
+        + 8 * B0**2 * G0 * X1c * X2s * Y1c * Y2s
+        - 8 * B0 * G0 * B1c * X1c**2 * Y1s * Y2s
+        - 8 * B0**2 * G0 * X1c * X20 * Y1s * Y2s
+        - 24 * B0**2 * G0 * X1c * X2c * Y1s * Y2s
+        - 4 * B0**2 * G0 * X1c**2 * Y2s**2
+        - 4 * B0**2 * G0 * X1c**2 * Z20**2
+        - 4 * B0**2 * G0 * Y1c**2 * Z20**2
+        - 4 * B0**2 * G0 * Y1s**2 * Z20**2
+        - 4 * B0**2 * abs_G0_over_B0 * I2 * Y1c * Y1s * Z2c
+        + 8 * B0**2 * G0 * X1c**2 * Z20 * Z2c
+        + 8 * B0**2 * G0 * Y1c**2 * Z20 * Z2c
+        - 8 * B0**2 * G0 * Y1s**2 * Z20 * Z2c
+        - 4 * B0**2 * G0 * X1c**2 * Z2c**2
+        - 4 * B0**2 * G0 * Y1c**2 * Z2c**2
+        - 4 * B0**2 * G0 * Y1s**2 * Z2c**2
+        + 2 * B0**2 * abs_G0_over_B0 * I2 * X1c**2 * Z2s
+        + 2 * B0**2 * abs_G0_over_B0 * I2 * Y1c**2 * Z2s
+        - 2 * B0**2 * abs_G0_over_B0 * I2 * Y1s**2 * Z2s
+        + 16 * B0**2 * G0 * Y1c * Y1s * Z20 * Z2s
+        - 4 * B0**2 * G0 * X1c**2 * Z2s**2
+        - 4 * B0**2 * G0 * Y1c**2 * Z2s**2
+        - 4 * B0**2 * G0 * Y1s**2 * Z2s**2
+        + B0**2 * abs_G0_over_B0 * I2 * X1c**3 * Y1s * torsion
+        + B0**2 * abs_G0_over_B0 * I2 * X1c * Y1c**2 * Y1s * torsion
+        + B0**2 * abs_G0_over_B0 * I2 * X1c * Y1s**3 * torsion
+        - B0**2 * I2 * X1c * Y1c * Y1s * d_X1c_d_varphi
+        + B0**2 * I2 * X1c**2 * Y1s * d_Y1c_d_varphi
+    ) / (16 * B0**2 * G0 * X1c**2 * Y1s**2)
 
 
 def solve_third_order(solution: NearAxisSolution) -> NearAxisSolution:
@@ -47,7 +121,7 @@ def solve_third_order(solution: NearAxisSolution) -> NearAxisSolution:
         )
     )
     sign_product = inputs.sG * inputs.spsi
-    coefficient = -Q / (2 * sign_product)
+    coefficient = _flux_constraint(solution)
     N_helicity = solution.iota - solution.iotaN
     B0_correction = (
         -inputs.sG
@@ -96,7 +170,8 @@ def solve_third_order(solution: NearAxisSolution) -> NearAxisSolution:
     third_order = ThirdOrderData(
         flux_constraint_coefficient=coefficient,
         B0_order_a_squared_to_cancel=B0_correction,
-        flux_constraint_residual=jnp.max(jnp.abs(Q + 2 * sign_product * coefficient)),
+        # The two checks pyQSC warns on: both vanish only as the second-order solve resolves.
+        flux_constraint_residual=jnp.max(jnp.abs(coefficient + Q / (2 * sign_product))),
         consistency_error=jnp.max(jnp.abs(coefficient - B0_correction / (2 * inputs.B0))),
         X3s1=X3s1,
         X3c1=X3c1,
