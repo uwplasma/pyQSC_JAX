@@ -10,6 +10,7 @@ import jax.numpy as jnp
 
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.second_order import MU0
+from pyqsc_jax.spectral import periodic_antiderivative
 
 ArrayLike = Any
 
@@ -211,6 +212,22 @@ def evaluate_weighted_current(
     )
 
 
+def arclength_boozer_angle(solution: NearAxisSolution) -> jax.Array:
+    """Spectral arclength angle on the axis grid, used by the global axis integral.
+
+    This is the periodic spectral antiderivative of ``d_varphi_d_phi`` with
+    ``varphi(0) = 0``. Because ``d_varphi_d_phi`` has unit mean, the increment
+    over one field period is exactly ``2*pi/nfp``. The stored
+    ``geometry.varphi`` keeps pyQSC's cumulative-trapezoid definition, whose
+    error is ``O(h**2)``; inside the finite-part integral that error sets an
+    ``O(h**2)`` floor, so the integral uses this angle instead.
+    """
+
+    geometry = solution.geometry
+    period = 2 * jnp.pi / solution.inputs.axis.nfp
+    return periodic_antiderivative(geometry.d_varphi_d_phi, period=period)
+
+
 def _full_torus_axis_samples(
     solution: NearAxisSolution,
 ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
@@ -222,7 +239,8 @@ def _full_torus_axis_samples(
     full_phi = (geometry.samples.phi[None, :] + period_index[:, None] * cylindrical_period).reshape(
         -1
     )
-    full_varphi = (geometry.varphi[None, :] + period_index[:, None] * boozer_period).reshape(-1)
+    varphi = arclength_boozer_angle(solution)
+    full_varphi = (varphi[None, :] + period_index[:, None] * boozer_period).reshape(-1)
     radius = jnp.tile(geometry.samples.R, nfp)
     height = jnp.tile(geometry.samples.Z, nfp)
     position = jnp.stack((radius * jnp.cos(full_phi), radius * jnp.sin(full_phi), height), axis=-1)
@@ -242,31 +260,75 @@ def _full_torus_axis_samples(
     return full_varphi, position, tangent, weights
 
 
-def regularized_axis_integral(solution: NearAxisSolution) -> jax.Array:
-    """Evaluate the full-torus periodic finite-part integral in Eq. (136)."""
+def paired_axis_integrand(
+    observation_position: ArrayLike,
+    curvature: ArrayLike,
+    binormal: ArrayLike,
+    angle: ArrayLike,
+    source_position: ArrayLike,
+    source_tangent: ArrayLike,
+    axis_length_per_radian: ArrayLike,
+) -> jax.Array:
+    """Bounded filament-minus-model integrand of the finite-part axis integral.
 
-    source_varphi, source_position, source_tangent, weights = _full_torus_axis_samples(solution)
-    observation_varphi = solution.varphi
-    observation_position = solution.geometry.position_cartesian
-    displacement = observation_position[:, None, :] - source_position[None, :, :]
+    ``observation_position``, ``curvature`` and ``binormal`` carry a leading
+    observation axis; ``angle`` (source minus observation arclength angle),
+    ``source_position`` and ``source_tangent`` carry observation and source
+    axes. At ``angle = 0`` the value is ``0``, the mean of the two one-sided
+    limits ``+-L*(dkappa/ds*b - kappa*tau*n)/3``.
+    """
+
+    displacement = observation_position[:, None, :] - source_position
     distance_squared = jnp.sum(displacement**2, axis=-1)
-    angle = source_varphi[None, :] - observation_varphi[:, None]
     sine_half = jnp.sin(0.5 * angle)
-    coincident = jnp.abs(sine_half) < 16 * jnp.finfo(angle.dtype).eps
+    coincident = jnp.abs(sine_half) < 16 * jnp.finfo(sine_half.dtype).eps
     safe_distance_squared = jnp.where(coincident, 1.0, distance_squared)
     safe_sine = jnp.where(coincident, 1.0, jnp.abs(sine_half))
     filament = (
-        solution.geometry.abs_G0_over_B0
-        * jnp.cross(source_tangent[None, :, :], displacement)
+        axis_length_per_radian
+        * jnp.cross(source_tangent, displacement)
         / safe_distance_squared[..., None] ** 1.5
     )
-    singular_model = (
-        solution.geometry.curvature[:, None, None]
-        * solution.geometry.binormal_cartesian[:, None, :]
-        / (4 * safe_sine[..., None])
+    singular_model = curvature[:, None, None] * binormal[:, None, :] / (4 * safe_sine[..., None])
+    return jnp.where(coincident[..., None], 0.0, filament - singular_model)
+
+
+def regularized_axis_integral(solution: NearAxisSolution) -> jax.Array:
+    """Evaluate the full-torus periodic finite-part integral in Eq. (136).
+
+    The integral depends only on the axis geometry. Near the coincident node
+    the bounded integrand of :func:`paired_axis_integrand` expands as
+    ``c*sign(s) + a1*|s| + (smooth) + O(|s|**3)``. The coincident node is
+    assigned ``0``, the mean of the one-sided limits, so the odd jump cancels
+    in the symmetric grid sum. The ``a1*|s|`` kink gives the punctured
+    trapezoidal rule a ``2*zeta(-1)*a1*h**2 = -a1*h**2/6`` error (generalized
+    Euler--Maclaurin). ``a1*h**2`` is estimated from the four neighbouring
+    weighted samples with the smooth ``h**2`` term eliminated, leaving an
+    ``O(h**4)`` error. The angle is the spectral arclength angle of
+    :func:`arclength_boozer_angle`, not the trapezoidal ``geometry.varphi``.
+    """
+
+    source_varphi, source_position, source_tangent, weights = _full_torus_axis_samples(solution)
+    nphi = solution.inputs.nphi
+    geometry = solution.geometry
+    integrand = paired_axis_integrand(
+        geometry.position_cartesian,
+        geometry.curvature,
+        geometry.binormal_cartesian,
+        source_varphi[None, :] - source_varphi[:nphi, None],
+        source_position[None, :, :],
+        source_tangent[None, :, :],
+        geometry.abs_G0_over_B0,
     )
-    integrand = jnp.where(coincident[..., None], 0.0, filament - singular_model)
-    return jnp.sum(weights[None, :, None] * integrand, axis=1)
+    weighted = weights[None, :, None] * integrand
+    observation_index = jnp.arange(nphi)
+    total = weighted.shape[1]
+
+    def neighbour(offset):
+        return weighted[observation_index, (observation_index + offset) % total]
+
+    kink_correction = (4 * (neighbour(1) + neighbour(-1)) - (neighbour(2) + neighbour(-2))) / 24
+    return jnp.sum(weighted, axis=1) + kink_correction
 
 
 def _second_order_shape_correction(

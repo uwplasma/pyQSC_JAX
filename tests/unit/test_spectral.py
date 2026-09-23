@@ -8,6 +8,7 @@ from pyqsc_jax.spectral import (
     differentiation_matrix,
     fourier_coefficients,
     fourier_interpolate,
+    periodic_antiderivative,
     periodic_grid,
     periodic_integral,
 )
@@ -50,6 +51,30 @@ def test_periodic_integral_and_coefficients():
     np.testing.assert_allclose(periodic_integral(values), 2.3 * 2 * jnp.pi, rtol=2e-14)
     np.testing.assert_allclose(coefficients[frequency == 0], 2.3, rtol=2e-14)
     np.testing.assert_allclose(jax.jit(differentiate)(values), differentiate(values), rtol=2e-14)
+
+
+@pytest.mark.parametrize("n", [8, 9])
+def test_periodic_antiderivative_is_spectrally_exact_with_linear_mean(n):
+    period = 2.1
+    fundamental = 2 * jnp.pi / period
+    x = periodic_grid(n, period=period)
+    values = 1.7 + jnp.cos(fundamental * x) - 0.4 * jnp.sin(3 * fundamental * x)
+    expected = 1.7 * x + jnp.sin(fundamental * x) / fundamental
+    expected = expected + 0.4 * (jnp.cos(3 * fundamental * x) - 1) / (3 * fundamental)
+
+    antiderivative = periodic_antiderivative(values, period=period)
+    np.testing.assert_allclose(antiderivative, expected, rtol=0, atol=2e-14)
+    np.testing.assert_allclose(
+        jax.jit(periodic_antiderivative)(values, period=period), antiderivative, rtol=0, atol=2e-15
+    )
+    # A Nyquist mode integrates to sin(n x / 2), which vanishes on every node.
+    if n % 2 == 0:
+        nyquist = jnp.cos(0.5 * n * fundamental * x)
+        np.testing.assert_allclose(
+            periodic_antiderivative(nyquist, period=period), 0.0, rtol=0, atol=2e-15
+        )
+    with pytest.raises(ValueError, match="one-dimensional"):
+        periodic_antiderivative(jnp.ones((2, 3)))
 
 
 def test_periodic_grid_validation():

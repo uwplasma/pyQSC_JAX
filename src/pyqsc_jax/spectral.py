@@ -54,6 +54,34 @@ def periodic_integral(values: ArrayLike, *, period: ArrayLike = 2 * jnp.pi) -> j
     return jnp.asarray(period) * jnp.mean(jnp.asarray(values), axis=-1)
 
 
+def periodic_antiderivative(values: ArrayLike, *, period: ArrayLike = 2 * jnp.pi) -> jax.Array:
+    """Spectral antiderivative of uniform periodic samples, zero at the first node.
+
+    The result ``F`` satisfies ``F[0] = 0`` and ``F' = values`` for the
+    trigonometric interpolant, so ``F(x + period) - F(x)`` equals
+    :func:`periodic_integral` exactly. An even-length Nyquist mode integrates
+    to ``sin`` and vanishes at every node, so it is dropped.
+    """
+
+    values = jnp.asarray(values)
+    if values.ndim != 1:
+        raise ValueError("periodic_antiderivative accepts one-dimensional samples.")
+    n = values.shape[-1]
+    period = jnp.asarray(period)
+    frequency, coefficients = fourier_coefficients(values)
+    wavenumber = 2 * jnp.pi * frequency / period
+    oscillating = frequency != 0
+    if n % 2 == 0:
+        oscillating = oscillating & (jnp.abs(frequency) != n // 2)
+    safe_wavenumber = jnp.where(oscillating, wavenumber, 1.0)
+    antiderivative_coefficients = jnp.where(oscillating, coefficients / (1j * safe_wavenumber), 0.0)
+    oscillation = jnp.fft.ifft(antiderivative_coefficients) * n
+    grid = periodic_grid(n, period=period)
+    return coefficients[0].real * grid + jnp.real(
+        oscillation - jnp.sum(antiderivative_coefficients)
+    )
+
+
 def fourier_coefficients(values: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """Return integer frequencies and complex Fourier coefficients."""
 
