@@ -208,3 +208,25 @@ def test_to_vmec_rejects_unknown_control(tmp_path):
             ntor=2,
             parameters={"missing": 1},
         )
+
+
+def test_namelist_mpol_keeps_the_highest_exported_poloidal_mode(tmp_path):
+    # VMEC retains m < MPOL, so a boundary exported through m = mpol needs MPOL = mpol + 1.
+    mpol = 4
+    export = qsc.to_vmec(
+        qa_solution(), tmp_path / "input.mpol", r=0.03, ntheta=16, mpol=mpol, ntor=4
+    )
+    text = export.path.read_text()
+    assert f"  MPOL = {mpol + 1}\n" in text
+    written = max(
+        int(line.split(",")[1].split(")")[0]) for line in text.splitlines() if "RBC(" in line
+    )
+    assert written == mpol
+    assert (
+        abs(float(export.boundary.RBC[4, mpol])) > 1e-14
+    )  # The highest mode is not negligible here.
+    vmex = pytest.importorskip("vmex")
+    parsed = vmex.VmecInput.from_file(export.path)
+    assert parsed.mpol == mpol + 1
+    np.testing.assert_allclose(np.asarray(parsed.rbc), np.asarray(export.boundary.RBC), rtol=1e-15)
+    np.testing.assert_allclose(np.asarray(parsed.zbs), np.asarray(export.boundary.ZBS), rtol=1e-15)

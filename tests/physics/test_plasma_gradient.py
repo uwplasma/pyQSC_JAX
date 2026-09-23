@@ -136,6 +136,19 @@ def test_zero_current_gradient_requires_second_order():
         zero_current_gradient(replace(solution, second_order=None), field, formal_radius=0.05)
 
 
+def test_gradient_branch_jumps_at_zero_current_by_the_order_a2_term():
+    # The I2 == 0 branch retains one more order than the finite-current branch. As I2 -> 0 the
+    # finite-current gradient tends to zero, so the returned gradient jumps by the whole
+    # zero-current term. The jump is documented, not smoothed, so it must stay visible here.
+    radius = 0.03
+    at_zero = qsc.plasma_gradient_on_axis(finite_current_solution(I2=0.0), formal_radius=radius)
+    near_zero = qsc.plasma_gradient_on_axis(finite_current_solution(I2=1e-9), formal_radius=radius)
+    zero_term = np.max(np.abs(np.asarray(at_zero.gradient)))
+    assert zero_term > 1e-4
+    assert np.max(np.abs(np.asarray(near_zero.gradient))) < 1e-6 * zero_term
+    np.testing.assert_allclose(near_zero.field.field, at_zero.field.field, atol=1e-8 * zero_term)
+
+
 def test_gradient_and_stf_guards():
     with pytest.raises(ValueError, match="chi"):
         qsc.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=0)

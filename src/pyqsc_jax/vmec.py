@@ -416,7 +416,11 @@ def to_vmec(
     toroidal_angle_tolerance: float = 0.0,
     coefficient_tolerance: float = 1.0e-14,
 ) -> VmecExport:
-    """Write a VMEC fixed-boundary input and return conversion diagnostics."""
+    """Write a VMEC fixed-boundary input and return conversion diagnostics.
+
+    ``mpol`` is the highest poloidal index written, so the namelist has ``MPOL = mpol + 1``:
+    VMEC retains ``m < MPOL``. (pyQSC writes ``MPOL = mpol`` and so drops its ``m = mpol`` row.)
+    """
 
     radius = float(r)
     if not isfinite(radius) or radius <= 0:
@@ -469,7 +473,7 @@ def to_vmec(
         f"! Near-axis radius r = {radius:.16e}; etabar = {float(inputs.etabar):.16e}.",
         (
             f"! nphi = {inputs.nphi}; order = r{inputs.order}; ntheta = {ntheta};"
-            f" mpol = {mpol}; ntor = {effective_ntor}."
+            f" highest poloidal index = {mpol}; ntor = {effective_ntor}."
         ),
         (
             "! Conversion diagnostics:"
@@ -489,7 +493,7 @@ def to_vmec(
         f"  LASYM = {'T' if lasym else 'F'}",
         "  LFREEB = F",
         f"  NFP = {axis.nfp}",
-        f"  MPOL = {mpol}",
+        f"  MPOL = {mpol + 1}",  # VMEC keeps m < MPOL; the boundary includes m = mpol.
         f"  NTOR = {effective_ntor}",
         f"  PHIEDGE = {phiedge:.16e}",
         "  PRES_SCALE = 1.0000000000000000e+00",

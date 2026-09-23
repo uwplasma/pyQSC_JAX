@@ -75,7 +75,11 @@ class PlasmaCurrentSource:
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class PlasmaFieldData:
-    """Matched on-axis free-space plasma field and error metadata."""
+    """Matched on-axis free-space plasma field and error metadata.
+
+    ``estimated_field_remainder`` is ``max|B_p| (a / L_*)**2 (1 + |log(a / L_*)|)`` with
+    ``L_* = |G0| / B0``: an indicator of the omitted relative order, not a certified bound.
+    """
 
     field: jax.Array
     regularized_axis_integral: jax.Array
@@ -367,10 +371,11 @@ def plasma_field_on_axis(
     core_normal = -source.chi * sigma / (trace_Q + 2)
     radius_to_curvature = source.formal_radius * jnp.max(solution.geometry.curvature)
     logarithm = jnp.abs(jnp.log(source.formal_radius / solution.geometry.abs_G0_over_B0))
+    # An order-of-magnitude indicator of the omitted relative order a**2 (with its logarithm), not a
+    # bound. It scales the whole retained field, so the pressure-driven field at I2 == 0 is covered.
     estimated_remainder = (
-        jnp.abs(source.parallel_current_mu0)
-        * source.formal_radius**4
-        / solution.geometry.abs_G0_over_B0**3
+        jnp.max(jnp.linalg.norm(field_value, axis=-1))
+        * (source.formal_radius / solution.geometry.abs_G0_over_B0) ** 2
         * (1 + logarithm)
     )
     return PlasmaFieldData(
@@ -547,6 +552,11 @@ def plasma_gradient_on_axis(
 
     For ``I2 != 0`` this is the leading uniform-channel gradient. For ``I2 == 0`` that
     term vanishes and the first nonzero, order-``a**2`` gradient is returned instead.
+
+    The switch at exactly ``I2 == 0`` changes the retained order, so the gradient jumps by
+    the order-``a**2`` term as ``I2 -> 0``. That jump is a truncation artefact, not physics:
+    hold ``I2`` fixed when optimizing, and do not differentiate with respect to ``I2`` near
+    zero. A uniform order-``a**2`` finite-current gradient needs higher-order equilibrium terms.
     """
 
     plasma_field = plasma_field_on_axis(

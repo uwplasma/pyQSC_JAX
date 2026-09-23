@@ -90,11 +90,18 @@ def test_vacuum_and_pressure_only_limits():
     vacuum_field = qsc.plasma_field_on_axis(vacuum, formal_radius=0.05)
     np.testing.assert_allclose(vacuum_field.field, 0.0, atol=1.0e-14)
     np.testing.assert_allclose(vacuum_field.second_order_shape_correction, 0.0, atol=1.0e-14)
+    assert float(vacuum_field.estimated_field_remainder) == 0
 
     pressure_only = finite_current_solution(I2=0.0)
     pressure_field = qsc.plasma_field_on_axis(pressure_only, formal_radius=0.05)
     assert np.max(np.abs(pressure_field.field)) > 0
     np.testing.assert_allclose(pressure_field.field, pressure_field.second_order_shape_correction)
+    # The remainder indicator must not certify a pressure-driven field as exact.
+    scale = 0.05 / float(pressure_only.geometry.abs_G0_over_B0)
+    expected = (
+        np.max(np.linalg.norm(pressure_field.field, axis=-1)) * scale**2 * (1 + abs(np.log(scale)))
+    )
+    np.testing.assert_allclose(pressure_field.estimated_field_remainder, expected, rtol=1e-12)
 
 
 def test_field_is_jittable_and_radius_derivative_matches_finite_difference():
