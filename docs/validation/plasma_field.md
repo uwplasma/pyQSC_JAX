@@ -13,7 +13,10 @@ The surface-free current and field implementation is gated by tests of:
 - JIT/JVP and centered finite differences;
 - reversible 5- and 7-component STF representations;
 - independent resolved-volume Biot--Savart field comparisons with predicted
-  \(a^4|\log a|\) scaling.
+  \(a^4|\log a|\) scaling, fixed-Cartesian volume finite differences, and
+  finite-part axis-integral convergence. These heavier references live with the
+  study in [plasma-coil-fields](https://github.com/rogeriojorge/plasma-coil-fields)
+  (`validation/`).
 
 The Hessian uses interior-potential contact terms. Naively differentiating a
 singular filament quadrature would omit those terms and is not treated as an
