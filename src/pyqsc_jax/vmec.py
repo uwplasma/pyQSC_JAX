@@ -25,6 +25,15 @@ from pyqsc_jax.second_order import MU0
 ArrayLike = Any
 
 
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValueError(message)
+
+
+def _is_integer(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class VmecBoundary:
@@ -64,17 +73,18 @@ class VmecInputParameters:
     niter_array: tuple[int, ...] = (2000, 3000, 5000)
 
     def __post_init__(self) -> None:
-        lengths = (len(self.ns_array), len(self.ftol_array), len(self.niter_array))
-        if not self.ns_array or len(set(lengths)) != 1:
-            raise ValueError("ns_array, ftol_array, and niter_array must be nonempty and aligned.")
-        if self.delt <= 0 or self.nstep < 1 or self.tcon0 <= 0:
-            raise ValueError("VMEC damping, step interval, and constraint factor must be positive.")
-        if any(value < 3 for value in self.ns_array):
-            raise ValueError("Every VMEC radial resolution must be at least 3.")
-        if any(value <= 0 for value in self.ftol_array):
-            raise ValueError("Every VMEC force tolerance must be positive.")
-        if any(value < 1 for value in self.niter_array):
-            raise ValueError("Every VMEC iteration limit must be positive.")
+        lengths = {len(self.ns_array), len(self.ftol_array), len(self.niter_array)}
+        _require(
+            bool(self.ns_array) and len(lengths) == 1,
+            "ns_array, ftol_array, and niter_array must be nonempty and aligned.",
+        )
+        _require(
+            self.delt > 0 and self.nstep >= 1 and self.tcon0 > 0,
+            "VMEC damping, step interval, and constraint factor must be positive.",
+        )
+        _require(min(self.ns_array) >= 3, "Every VMEC radial resolution must be at least 3.")
+        _require(min(self.ftol_array) > 0, "Every VMEC force tolerance must be positive.")
+        _require(min(self.niter_array) >= 1, "Every VMEC iteration limit must be positive.")
 
 
 @dataclass(frozen=True)
@@ -100,89 +110,65 @@ def _periodic_interpolate(
     return jnp.interp(wrapped, extended_grid, extended_values)
 
 
+def _displacements(
+    solution: NearAxisSolution, radius: ArrayLike, theta: ArrayLike, sample
+) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Sum the Frenet displacements ``(X, Y, Z)`` of every available order.
+
+    ``sample`` maps a one-period array on ``solution.phi`` to the evaluation points; the
+    untwisted coefficients are used, so theta is the poloidal angle of the Frenet frame.
+    """
+
+    cosine, sine = jnp.cos(theta), jnp.sin(theta)
+    orders = [(1, (("1c", cosine), ("1s", sine)), "XY")]
+    if solution.second_order is not None:
+        orders.append(
+            (2, (("20", 1.0), ("2c", jnp.cos(2 * theta)), ("2s", jnp.sin(2 * theta))), "XYZ")
+        )
+    if solution.third_order is not None:
+        cosine3, sine3 = jnp.cos(3 * theta), jnp.sin(3 * theta)
+        harmonics = (("3c1", cosine), ("3s1", sine), ("3c3", cosine3), ("3s3", sine3))
+        orders.append((3, harmonics, "XYZ"))
+    displacements = {}
+    for power, harmonics, components in orders:
+        for component in components:
+            terms = [
+                sample(getattr(solution, f"{component}{name}_untwisted")) * basis
+                for name, basis in harmonics
+            ]
+            term = radius**power * sum(terms[1:], terms[0])
+            previous = displacements.get(component)
+            displacements[component] = term if previous is None else previous + term
+    X, Y = displacements["X"], displacements["Y"]
+    return X, Y, displacements.get("Z", jnp.zeros_like(X))
+
+
 def frenet_displacements(
     solution: NearAxisSolution, radius: jax.Array, theta: jax.Array, phi0: jax.Array
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
-    """Evaluate all available near-axis Frenet displacements."""
+    """Frenet displacements ``(X, Y, Z)`` [m] at radius ``r`` [m], angle ``theta`` and axis
+    angle ``phi0``, including every order the solution carries (linear periodic interpolation)."""
 
     period = 2 * jnp.pi / solution.inputs.axis.nfp
-    grid = solution.phi
-    interpolate = lambda values: _periodic_interpolate(phi0, grid, values, period)  # noqa: E731
-    cosine = jnp.cos(theta)
-    sine = jnp.sin(theta)
-    X = radius * (
-        interpolate(solution.X1c_untwisted) * cosine + interpolate(solution.X1s_untwisted) * sine
+    return _displacements(
+        solution, radius, theta, lambda v: _periodic_interpolate(phi0, solution.phi, v, period)
     )
-    Y = radius * (
-        interpolate(solution.Y1c_untwisted) * cosine + interpolate(solution.Y1s_untwisted) * sine
-    )
-    Z = jnp.zeros_like(X)
-    if solution.second_order is not None:
-        cosine2 = jnp.cos(2 * theta)
-        sine2 = jnp.sin(2 * theta)
-        X = X + radius**2 * (
-            interpolate(solution.X20_untwisted)
-            + interpolate(solution.X2c_untwisted) * cosine2
-            + interpolate(solution.X2s_untwisted) * sine2
-        )
-        Y = Y + radius**2 * (
-            interpolate(solution.Y20_untwisted)
-            + interpolate(solution.Y2c_untwisted) * cosine2
-            + interpolate(solution.Y2s_untwisted) * sine2
-        )
-        Z = Z + radius**2 * (
-            interpolate(solution.Z20_untwisted)
-            + interpolate(solution.Z2c_untwisted) * cosine2
-            + interpolate(solution.Z2s_untwisted) * sine2
-        )
-    if solution.third_order is not None:
-        cosine3 = jnp.cos(3 * theta)
-        sine3 = jnp.sin(3 * theta)
-        X = X + radius**3 * (
-            interpolate(solution.X3c1_untwisted) * cosine
-            + interpolate(solution.X3s1_untwisted) * sine
-            + interpolate(solution.X3c3_untwisted) * cosine3
-            + interpolate(solution.X3s3_untwisted) * sine3
-        )
-        Y = Y + radius**3 * (
-            interpolate(solution.Y3c1_untwisted) * cosine
-            + interpolate(solution.Y3s1_untwisted) * sine
-            + interpolate(solution.Y3c3_untwisted) * cosine3
-            + interpolate(solution.Y3s3_untwisted) * sine3
-        )
-        Z = Z + radius**3 * (
-            interpolate(solution.Z3c1_untwisted) * cosine
-            + interpolate(solution.Z3s1_untwisted) * sine
-            + interpolate(solution.Z3c3_untwisted) * cosine3
-            + interpolate(solution.Z3s3_untwisted) * sine3
-        )
-    return X, Y, Z
 
 
 def _surface_at_axis_angle(
     solution: NearAxisSolution, radius: jax.Array, theta: jax.Array, phi0: jax.Array
 ) -> tuple[jax.Array, jax.Array, jax.Array]:
+    """Cylindrical ``(R, Z, phi)`` of the surface point attached to axis angle ``phi0``."""
+
     period = 2 * jnp.pi / solution.inputs.axis.nfp
-    grid = solution.phi
-    interpolate = lambda values: _periodic_interpolate(phi0, grid, values, period)  # noqa: E731
+    interpolate = lambda values: _periodic_interpolate(phi0, solution.phi, values, period)  # noqa: E731
     X, Y, Z = frenet_displacements(solution, radius, theta, phi0)
-    normal = solution.geometry.normal_cylindrical
-    binormal = solution.geometry.binormal_cylindrical
-    tangent = solution.geometry.tangent_cylindrical
-    delta_R = (
-        X * interpolate(normal[:, 0])
-        + Y * interpolate(binormal[:, 0])
-        + Z * interpolate(tangent[:, 0])
-    )
-    delta_phi = (
-        X * interpolate(normal[:, 1])
-        + Y * interpolate(binormal[:, 1])
-        + Z * interpolate(tangent[:, 1])
-    )
-    delta_Z = (
-        X * interpolate(normal[:, 2])
-        + Y * interpolate(binormal[:, 2])
-        + Z * interpolate(tangent[:, 2])
+    geometry = solution.geometry
+    delta_R, delta_phi, delta_Z = (
+        X * interpolate(geometry.normal_cylindrical[:, k])
+        + Y * interpolate(geometry.binormal_cylindrical[:, k])
+        + Z * interpolate(geometry.tangent_cylindrical[:, k])
+        for k in range(3)
     )
     axis_R = interpolate(solution.R0)
     R = jnp.hypot(axis_R + delta_R, delta_phi)
@@ -289,23 +275,17 @@ def vmec_boundary(
     )
     RBC, RBS = _fft_coefficients(R, mpol, ntor)
     ZBC, ZBS = _fft_coefficients(Z, mpol, ntor)
-    reconstructed_R = _reconstruct_surface(
-        RBC,
-        RBS,
-        ntheta=ntheta,
-        nphi=solution.inputs.nphi,
-        nfp=solution.inputs.axis.nfp,
-        mpol=mpol,
-        ntor=ntor,
-    )
-    reconstructed_Z = _reconstruct_surface(
-        ZBC,
-        ZBS,
-        ntheta=ntheta,
-        nphi=solution.inputs.nphi,
-        nfp=solution.inputs.axis.nfp,
-        mpol=mpol,
-        ntor=ntor,
+    reconstructed_R, reconstructed_Z = (
+        _reconstruct_surface(
+            cosine,
+            sine,
+            ntheta=ntheta,
+            nphi=solution.inputs.nphi,
+            nfp=solution.inputs.axis.nfp,
+            mpol=mpol,
+            ntor=ntor,
+        )
+        for cosine, sine in ((RBC, RBS), (ZBC, ZBS))
     )
     requested_tolerance = jnp.asarray(toroidal_angle_tolerance, dtype=R.dtype)
     automatic_tolerance = 100 * jnp.finfo(R.dtype).eps
@@ -333,20 +313,32 @@ def vmec_boundary(
 def _validated_resolution(
     solution: NearAxisSolution, *, ntheta: int, mpol: int, ntor: int, newton_iterations: int
 ) -> None:
-    integers = {
-        "ntheta": ntheta,
-        "mpol": mpol,
-        "ntor": ntor,
-        "newton_iterations": newton_iterations,
-    }
-    if any(not isinstance(value, int) or isinstance(value, bool) for value in integers.values()):
-        raise ValueError("VMEC conversion resolutions must be integers.")
-    if ntheta < 2 * (mpol + 1):
-        raise ValueError("ntheta must be at least 2 * (mpol + 1).")
-    if mpol < 1 or ntor < 0 or newton_iterations < 1:
-        raise ValueError("mpol and Newton iterations must be positive; ntor must be nonnegative.")
-    if 2 * ntor + 1 > solution.inputs.nphi:
-        raise ValueError("The solution nphi must be at least 2 * ntor + 1.")
+    _require(
+        all(_is_integer(value) for value in (ntheta, mpol, ntor, newton_iterations)),
+        "VMEC conversion resolutions must be integers.",
+    )
+    _require(ntheta >= 2 * (mpol + 1), "ntheta must be at least 2 * (mpol + 1).")
+    _require(
+        mpol >= 1 and ntor >= 0 and newton_iterations >= 1,
+        "mpol and Newton iterations must be positive; ntor must be nonnegative.",
+    )
+    _require(
+        2 * ntor + 1 <= solution.inputs.nphi, "The solution nphi must be at least 2 * ntor + 1."
+    )
+
+
+def _near_axis_profiles(inputs: Any, radius: Any) -> tuple[Any, Any, Any]:
+    """VMEC ``(AM[0], PHIEDGE, CURTOR)`` of the near-axis solution at boundary radius ``r``.
+
+    Pressure ``p = p0 (1 - s)`` with ``p0 = -p2 r**2``; ``PHIEDGE = pi r**2 B0``; the enclosed
+    toroidal current is ``2 pi I2 r**2 / mu0`` (all SI).
+    """
+
+    return (
+        -inputs.p2 * radius**2,
+        jnp.pi * radius**2 * inputs.B0,
+        2 * jnp.pi * inputs.I2 * radius**2 / MU0,
+    )
 
 
 def _input_parameters(
@@ -368,12 +360,8 @@ def _input_parameters(
     return VmecInputParameters(**converted)
 
 
-def _format_sequence(values: tuple[Any, ...] | jax.Array) -> str:
-    return ", ".join(f"{float(value):.16e}" for value in values)
-
-
-def _format_integer_sequence(values: tuple[int, ...]) -> str:
-    return ", ".join(str(int(value)) for value in values)
+def _format_sequence(values: Any, integer: bool = False) -> str:
+    return ", ".join(str(int(v)) if integer else f"{float(v):.16e}" for v in values)
 
 
 def _coefficient_lines(
@@ -429,14 +417,13 @@ def to_vmec(
     """
 
     radius = float(r)
-    if not isfinite(radius) or radius <= 0:
-        raise ValueError("r must be positive and finite.")
-    if not isinstance(ntor_max, int) or isinstance(ntor_max, bool) or ntor_max < 0:
-        raise ValueError("ntor_max must be a nonnegative integer.")
-    if not isfinite(toroidal_angle_tolerance) or toroidal_angle_tolerance < 0:
-        raise ValueError("toroidal_angle_tolerance must be nonnegative and finite.")
-    if not isfinite(coefficient_tolerance) or coefficient_tolerance < 0:
-        raise ValueError("coefficient_tolerance must be nonnegative and finite.")
+    _require(isfinite(radius) and radius > 0, "r must be positive and finite.")
+    _require(_is_integer(ntor_max) and ntor_max >= 0, "ntor_max must be a nonnegative integer.")
+    for name, value in (
+        ("toroidal_angle_tolerance", toroidal_angle_tolerance),
+        ("coefficient_tolerance", coefficient_tolerance),
+    ):
+        _require(isfinite(value) and value >= 0, f"{name} must be nonnegative and finite.")
     effective_ntor = min(ntor, ntor_max)
     _validated_resolution(
         solution, ntheta=ntheta, mpol=mpol, ntor=effective_ntor, newton_iterations=newton_iterations
@@ -468,9 +455,7 @@ def to_vmec(
     lasym = _is_asymmetric(boundary, solution, tolerance=coefficient_tolerance)
     inputs = solution.inputs
     axis = inputs.axis
-    phiedge = float(jnp.pi * radius**2 * inputs.B0)
-    curtor = float(2 * jnp.pi * inputs.I2 * radius**2 / MU0)
-    pressure_axis = float(-inputs.p2 * radius**2)
+    pressure_axis, phiedge, curtor = map(float, _near_axis_profiles(inputs, radius))
     lines = [
         "! Generated deterministically by pyQSC_JAX.",
         f"! Near-axis radius r = {radius:.16e}; etabar = {float(inputs.etabar):.16e}.",
@@ -490,9 +475,9 @@ def to_vmec(
         f"  DELT = {controls.delt:.16e}",
         f"  NSTEP = {controls.nstep}",
         f"  TCON0 = {controls.tcon0:.16e}",
-        f"  NS_ARRAY = {_format_integer_sequence(controls.ns_array)}",
+        f"  NS_ARRAY = {_format_sequence(controls.ns_array, integer=True)}",
         f"  FTOL_ARRAY = {_format_sequence(controls.ftol_array)}",
-        f"  NITER_ARRAY = {_format_integer_sequence(controls.niter_array)}",
+        f"  NITER_ARRAY = {_format_sequence(controls.niter_array, integer=True)}",
         f"  LASYM = {'T' if lasym else 'F'}",
         "  LFREEB = F",
         f"  NFP = {axis.nfp}",
@@ -629,10 +614,14 @@ def _import_vmex():
 
 def _validated_surfaces(surfaces: Any) -> tuple[float, ...]:
     values = tuple(float(value) for value in surfaces)
-    if any(not np.isfinite(value) or value <= 0 or value > 1 for value in values):
-        raise ValueError("Every VMEX quasisymmetry surface must satisfy 0 < s <= 1.")
-    if any(right <= left for left, right in zip(values, values[1:], strict=False)):
-        raise ValueError("VMEX quasisymmetry surfaces must be strictly increasing.")
+    _require(
+        all(np.isfinite(value) and 0 < value <= 1 for value in values),
+        "Every VMEX quasisymmetry surface must satisfy 0 < s <= 1.",
+    )
+    _require(
+        all(right > left for left, right in zip(values, values[1:], strict=False)),
+        "VMEX quasisymmetry surfaces must be strictly increasing.",
+    )
     return values
 
 
@@ -640,61 +629,46 @@ def _validated_radial_controls(
     ns_array: Any, ftol_array: Any | None, *, ftol: float, max_iterations: int
 ) -> tuple[tuple[int, ...], tuple[float, ...], tuple[int, ...]]:
     ns = tuple(int(value) for value in ns_array)
-    if not ns or any(value < 3 for value in ns):
-        raise ValueError("ns_array must be nonempty and every radial resolution must be >= 3.")
-    if any(right <= left for left, right in zip(ns, ns[1:], strict=False)):
-        raise ValueError("ns_array must be strictly increasing.")
-    if not np.isfinite(ftol) or ftol <= 0:
-        raise ValueError("ftol must be positive and finite.")
-    if (
-        not isinstance(max_iterations, int)
-        or isinstance(max_iterations, bool)
-        or max_iterations < 1
-    ):
-        raise ValueError("max_iterations must be a positive integer.")
-    if ftol_array is None:
-        if len(ns) == 1:
-            tolerances = (float(ftol),)
-        else:
-            start = max(float(ftol), 1.0e-8)
-            tolerances = tuple(float(value) for value in np.geomspace(start, ftol, len(ns)))
-    else:
+    _require(
+        bool(ns) and min(ns) >= 3,
+        "ns_array must be nonempty and every radial resolution must be >= 3.",
+    )
+    _require(
+        all(right > left for left, right in zip(ns, ns[1:], strict=False)),
+        "ns_array must be strictly increasing.",
+    )
+    _require(np.isfinite(ftol) and ftol > 0, "ftol must be positive and finite.")
+    _require(
+        _is_integer(max_iterations) and max_iterations >= 1,
+        "max_iterations must be a positive integer.",
+    )
+    if ftol_array is not None:
         tolerances = tuple(float(value) for value in ftol_array)
-    if len(tolerances) != len(ns) or any(
-        not np.isfinite(value) or value <= 0 for value in tolerances
-    ):
-        raise ValueError("ftol_array must contain one positive finite value per ns_array stage.")
+    elif len(ns) == 1:
+        tolerances = (float(ftol),)
+    else:  # Geometric ladder from max(ftol, 1e-8) down to ftol.
+        tolerances = tuple(float(v) for v in np.geomspace(max(float(ftol), 1.0e-8), ftol, len(ns)))
+    _require(
+        len(tolerances) == len(ns) and all(np.isfinite(v) and v > 0 for v in tolerances),
+        "ftol_array must contain one positive finite value per ns_array stage.",
+    )
     return ns, tolerances, (int(max_iterations),) * len(ns)
 
 
-def _stellarator_symmetric_inputs(solution: NearAxisSolution) -> bool:
-    """True when the axis and second-order inputs are stellarator symmetric.
+def _is_asymmetric(boundary: VmecBoundary, solution: NearAxisSolution, tolerance: float) -> bool:
+    """LASYM: false when the axis and second-order inputs are stellarator symmetric.
 
-    The boundary is then symmetric by construction; its RBS/ZBC coefficients are FFT
-    round-off and must not switch on LASYM.
+    The boundary is then symmetric by construction, and its RBS/ZBC coefficients are FFT
+    round-off that must not switch on LASYM. Otherwise the coefficients decide. Both callers
+    write concrete files or inputs, so the values here are concrete.
     """
+
     inputs = solution.inputs
-    values = (inputs.axis.rs, inputs.axis.zc, inputs.sigma0, inputs.B2s)
-    try:
-        return all(
-            float(jnp.max(jnp.abs(jnp.atleast_1d(jnp.asarray(v))))) == 0.0
-            if jnp.size(jnp.asarray(v))
-            else True
-            for v in values
-        )
-    except jax.errors.ConcretizationTypeError:
+    symmetric_inputs = (inputs.axis.rs, inputs.axis.zc, inputs.sigma0, inputs.B2s)
+    if not any(np.any(np.asarray(value)) for value in symmetric_inputs):
         return False
-
-
-def _is_asymmetric(
-    boundary: VmecBoundary, solution: NearAxisSolution | None = None, tolerance: float = 1.0e-13
-) -> bool:
-    if solution is not None and _stellarator_symmetric_inputs(solution):
-        return False
-    return (
-        max(float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC))))
-        > tolerance
-    )
+    largest = max(float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC))))
+    return largest > tolerance
 
 
 def _require_converged_boundary(boundary: VmecBoundary) -> None:
@@ -709,19 +683,6 @@ def _require_converged_boundary(boundary: VmecBoundary) -> None:
             "The VMEX boundary angle inversion did not converge. Reduce r or "
             "increase newton_iterations before solving the radial equilibrium."
         )
-
-
-def _profile_arrays(parameters: Any, solution: NearAxisSolution, radius: Any):
-    radius = jnp.asarray(radius)
-    pressure_axis = -solution.inputs.p2 * radius**2
-    am = jnp.zeros_like(parameters.am)
-    am = am.at[0].set(pressure_axis)
-    if am.shape[0] > 1:
-        am = am.at[1].set(-pressure_axis)
-    ac = jnp.zeros_like(parameters.ac).at[0].set(1.0)
-    phiedge = jnp.pi * radius**2 * solution.inputs.B0
-    curtor = 2 * jnp.pi * solution.inputs.I2 * radius**2 / MU0
-    return am, ac, phiedge, curtor
 
 
 def vmex_parameters_from_solution(
@@ -748,23 +709,25 @@ def vmex_parameters_from_solution(
         toroidal_angle_tolerance=problem.toroidal_angle_tolerance,
     )
     _require_converged_boundary(boundary)
-    boundary_mask = boundary.toroidal_angle_converged
-    rbc = jnp.where(boundary_mask, boundary.RBC, jnp.nan)
-    rbs = jnp.where(boundary_mask, boundary.RBS, jnp.nan)
-    zbc = jnp.where(boundary_mask, boundary.ZBC, jnp.nan)
-    zbs = jnp.where(boundary_mask, boundary.ZBS, jnp.nan)
-    am, ac, phiedge, curtor = _profile_arrays(problem.parameters, solution, selected_radius)
+    # A traced, unconverged inversion poisons the boundary instead of raising.
+    coefficients = {
+        name.lower(): jnp.where(boundary.toroidal_angle_converged, getattr(boundary, name), jnp.nan)
+        for name in ("RBC", "RBS", "ZBC", "ZBS")
+    }
+    pressure_axis, phiedge, curtor = _near_axis_profiles(
+        solution.inputs, jnp.asarray(selected_radius)
+    )
+    am = jnp.zeros_like(problem.parameters.am).at[0].set(pressure_axis)
+    if am.shape[0] > 1:
+        am = am.at[1].set(-pressure_axis)
     return dataclasses.replace(
         problem.parameters,
-        rbc=rbc,
-        rbs=rbs,
-        zbc=zbc,
-        zbs=zbs,
+        **coefficients,
         phiedge=phiedge,
         curtor=curtor,
         pres_scale=jnp.asarray(1.0, dtype=phiedge.dtype),
         am=am,
-        ac=ac,
+        ac=jnp.zeros_like(problem.parameters.ac).at[0].set(1.0),
     )
 
 
@@ -798,22 +761,22 @@ def to_vmex_problem(
 
     vmex = _import_vmex()
     radius = float(r)
-    if not np.isfinite(radius) or radius <= 0:
-        raise ValueError("r must be positive and finite.")
+    _require(np.isfinite(radius) and radius > 0, "r must be positive and finite.")
     surfaces = _validated_surfaces(qs_surfaces)
     ns, tolerances, iteration_limits = _validated_radial_controls(
         ns_array, ftol_array, ftol=ftol, max_iterations=max_iterations
     )
-    if not isinstance(helicity_m, int) or isinstance(helicity_m, bool):
-        raise ValueError("helicity_m must be an integer.")
     if helicity_n is None:
         helicity_n = -int(np.asarray(solution.helicity))
-    if not isinstance(helicity_n, int) or isinstance(helicity_n, bool):
-        raise ValueError("helicity_n must be an integer.")
-    if not np.isfinite(adjoint_tol) or adjoint_tol <= 0:
-        raise ValueError("adjoint_tol must be positive and finite.")
-    if not np.isfinite(toroidal_angle_tolerance) or toroidal_angle_tolerance < 0:
-        raise ValueError("toroidal_angle_tolerance must be nonnegative and finite.")
+    _require(_is_integer(helicity_m), "helicity_m must be an integer.")
+    _require(_is_integer(helicity_n), "helicity_n must be an integer.")
+    _require(
+        np.isfinite(adjoint_tol) and adjoint_tol > 0, "adjoint_tol must be positive and finite."
+    )
+    _require(
+        np.isfinite(toroidal_angle_tolerance) and toroidal_angle_tolerance >= 0,
+        "toroidal_angle_tolerance must be nonnegative and finite.",
+    )
     _validated_resolution(
         solution, ntheta=ntheta, mpol=mpol, ntor=ntor, newton_iterations=newton_iterations
     )
@@ -828,7 +791,7 @@ def to_vmex_problem(
         toroidal_angle_tolerance=toroidal_angle_tolerance,
     )
     _require_converged_boundary(boundary)
-    lasym = _is_asymmetric(boundary, solution)
+    lasym = _is_asymmetric(boundary, solution, 1.0e-13)
     if lasym and surfaces:
         raise NotImplementedError(
             "VMEX's traceable quasisymmetry profile currently supports "
@@ -838,12 +801,11 @@ def to_vmex_problem(
 
     inputs = solution.inputs
     axis = inputs.axis
-    arrays = tuple(
+    rbc, rbs, zbc, zbs = (
         np.asarray(jax.device_get(value))
         for value in (boundary.RBC, boundary.RBS, boundary.ZBC, boundary.ZBS)
     )
-    rbc, rbs, zbc, zbs = arrays
-    pressure_axis = -float(inputs.p2) * radius**2
+    pressure_axis, phiedge, curtor = map(float, _near_axis_profiles(inputs, radius))
     am = np.zeros(21)
     am[:2] = (pressure_axis, -pressure_axis)
     ac = np.zeros(21)
@@ -859,12 +821,12 @@ def to_vmex_problem(
         niter_array=np.asarray(iteration_limits),
         delt=0.9,
         tcon0=2.0,
-        phiedge=np.pi * radius**2 * float(inputs.B0),
+        phiedge=phiedge,
         pres_scale=1.0,
         am=am,
         ncurr=1,
         ac=ac,
-        curtor=2 * np.pi * float(inputs.I2) * radius**2 / MU0,
+        curtor=curtor,
         raxis_c=np.asarray(axis.rc),
         raxis_s=-np.asarray(axis.rs),
         zaxis_c=np.asarray(axis.zc),

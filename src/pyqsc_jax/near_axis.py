@@ -11,7 +11,12 @@ from pyqsc_jax.first_order import solve
 from pyqsc_jax.geometry import Axis
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.solvers import implicit_dense_root
-from pyqsc_jax.vmec import VmecExport
+from pyqsc_jax.vmec import (
+    VmecExport,
+    _displacements,
+    _fft_coefficients,
+    uniform_cylindrical_surface,
+)
 from pyqsc_jax.vmec import to_vmec as export_to_vmec
 
 ArrayLike = Any
@@ -304,47 +309,9 @@ class near_axis:  # noqa: N801
     def _frenet_displacements(
         self, r: ArrayLike, theta: ArrayLike
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
-        """Assemble all available radial-order Frenet displacements."""
+        """All available radial-order Frenet displacements on the solution grid."""
 
-        cosine = jnp.cos(theta)
-        sine = jnp.sin(theta)
-        X = r * (self.X1c_untwisted * cosine + self.X1s_untwisted * sine)
-        Y = r * (self.Y1c_untwisted * cosine + self.Y1s_untwisted * sine)
-        Z = jnp.zeros_like(X)
-        if self.solution.second_order is not None:
-            cosine2 = jnp.cos(2 * theta)
-            sine2 = jnp.sin(2 * theta)
-            X = X + r**2 * (
-                self.X20_untwisted + self.X2c_untwisted * cosine2 + self.X2s_untwisted * sine2
-            )
-            Y = Y + r**2 * (
-                self.Y20_untwisted + self.Y2c_untwisted * cosine2 + self.Y2s_untwisted * sine2
-            )
-            Z = Z + r**2 * (
-                self.Z20_untwisted + self.Z2c_untwisted * cosine2 + self.Z2s_untwisted * sine2
-            )
-        if self.solution.third_order is not None:
-            cosine3 = jnp.cos(3 * theta)
-            sine3 = jnp.sin(3 * theta)
-            X = X + r**3 * (
-                self.X3c1_untwisted * cosine
-                + self.X3s1_untwisted * sine
-                + self.X3c3_untwisted * cosine3
-                + self.X3s3_untwisted * sine3
-            )
-            Y = Y + r**3 * (
-                self.Y3c1_untwisted * cosine
-                + self.Y3s1_untwisted * sine
-                + self.Y3c3_untwisted * cosine3
-                + self.Y3s3_untwisted * sine3
-            )
-            Z = Z + r**3 * (
-                self.Z3c1_untwisted * cosine
-                + self.Z3s1_untwisted * sine
-                + self.Z3c3_untwisted * cosine3
-                + self.Z3s3_untwisted * sine3
-            )
-        return X, Y, Z
+        return _displacements(self.solution, r, theta, lambda values: values)
 
     def phi_of_theta_varphi(self, r: ArrayLike, theta: ArrayLike, varphi: ArrayLike) -> jax.Array:
         """Invert the regular-coordinate map for cylindrical toroidal angle."""
@@ -360,55 +327,43 @@ class near_axis:  # noqa: N801
     def Frenet_to_cylindrical(
         self, r: ArrayLike, ntheta: int = 20, phi_is_varphi: bool = False
     ) -> tuple[jax.Array, jax.Array, jax.Array]:
-        """Map the available-order surface over one field period."""
+        """Map the available-order surface over one field period.
 
+        Returns ``(R, Z, phi0)`` of shape ``(ntheta, nphi)`` on the uniform cylindrical grid
+        ``phi = solution.phi`` (``phi_is_varphi=False``, shared with the VMEC export) or on the
+        uniform Boozer grid ``varphi = solution.phi`` (``phi_is_varphi=True``).
+        """
+
+        if not phi_is_varphi:
+            R, Z, phi0, _ = uniform_cylindrical_surface(self.solution, r, ntheta=ntheta)
+            return R, Z, phi0
         theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)
-        toroidal_grid = self.phi
 
         def for_theta(theta_value):
             X, Y, Z = self._frenet_displacements(r, theta_value)
 
             def for_toroidal_angle(target):
-                if phi_is_varphi:
-                    residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
-                        phi0, r, theta_value, target
-                    )
-                else:
-                    residual = lambda phi0: self.Frenet_to_cylindrical_residual_func(  # noqa: E731
-                        phi0, target, X, Y, Z
-                    )
+                residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
+                    phi0, r, theta_value, target
+                )
                 phi0, _ = implicit_dense_root(residual, target)
                 R, cylindrical_Z, _ = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
                 return R, cylindrical_Z, phi0
 
-            return jax.vmap(for_toroidal_angle)(toroidal_grid)
+            return jax.vmap(for_toroidal_angle)(self.phi)
 
         return jax.vmap(for_theta)(theta)
 
     def to_Fourier(  # noqa: N802
         self, R_2D: ArrayLike, Z_2D: ArrayLike, nfp: int, mpol: int, ntor: int
     ) -> tuple[jax.Array, jax.Array]:
-        """Convert a sampled stellarator-symmetric surface to Fourier data."""
+        """Stellarator-symmetric ``(RBC, ZBS)`` of shape ``(2 ntor + 1, mpol + 1)`` of a surface
+        sampled on a uniform ``(theta, phi)`` grid over one field period (``nfp`` is implied)."""
 
-        R_2D = jnp.asarray(R_2D)
-        Z_2D = jnp.asarray(Z_2D)
-        ntheta, nphi = R_2D.shape
-        theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)
-        phi = jnp.linspace(0, 2 * jnp.pi / nfp, nphi, endpoint=False)
-        phi2d, theta2d = jnp.meshgrid(phi, theta, indexing="xy")
-        m = jnp.arange(mpol + 1)
-        n = jnp.arange(-ntor, ntor + 1)
-        angle = (
-            m[None, :, None, None] * theta2d[None, None, :, :]
-            - n[:, None, None, None] * nfp * phi2d[None, None, :, :]
-        )
-        factor = 2 / (ntheta * nphi)
-        RBC = factor * jnp.sum(R_2D[None, None, :, :] * jnp.cos(angle), axis=(-2, -1))
-        ZBS = factor * jnp.sum(Z_2D[None, None, :, :] * jnp.sin(angle), axis=(-2, -1))
-        RBC = RBC.at[ntor, 0].set(jnp.mean(R_2D))
-        RBC = RBC.at[:ntor, 0].set(0)
-        ZBS = ZBS.at[:ntor, 0].set(0)
-        return RBC, ZBS
+        del nfp
+        return _fft_coefficients(jnp.asarray(R_2D), mpol, ntor)[0], _fft_coefficients(
+            jnp.asarray(Z_2D), mpol, ntor
+        )[1]
 
     def get_boundary(
         self,
