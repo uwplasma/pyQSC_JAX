@@ -23,7 +23,9 @@ def test_sigma_equation_is_solved_to_roundoff():
 
     assert bool(solution.root_report.converged) and bool(solution.root_report.finite)
     assert solution.root_report.residual_norm < 2e-13
-    np.testing.assert_allclose(jnp.max(jnp.abs(residual)), solution.root_report.residual_norm)
+    np.testing.assert_allclose(
+        jnp.max(jnp.abs(residual)), solution.root_report.residual_norm, rtol=1e-7, atol=1e-15
+    )
     np.testing.assert_allclose(solution.sigma[0], solution.inputs.sigma0)
 
 

@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: uwplasma/ESSOS
-          ref: refactor/pyqsc-external-field-jet
+          ref: plasma-coil
           path: essos-integration
       - uses: actions/setup-python@v5
         with:
@@ -62,8 +62,7 @@ jobs:
       - run: python -m pip install -e .
       - run: >-
           pytest
-          essos-integration/tests/test_field_jet.py
-          essos-integration/tests/test_field_jet_examples.py
+          essos-integration/tests/test_nearaxis_finite_beta.py
 
   vmex-implicit:
     runs-on: ubuntu-latest

@@ -465,10 +465,7 @@ def to_vmec(
             "newton_iterations; no VMEC input was written."
         )
 
-    asymmetric_amplitude = max(
-        float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC)))
-    )
-    lasym = asymmetric_amplitude > coefficient_tolerance
+    lasym = _is_asymmetric(boundary, solution, tolerance=coefficient_tolerance)
     inputs = solution.inputs
     axis = inputs.axis
     phiedge = float(jnp.pi * radius**2 * inputs.B0)
@@ -670,7 +667,30 @@ def _validated_radial_controls(
     return ns, tolerances, (int(max_iterations),) * len(ns)
 
 
-def _is_asymmetric(boundary: VmecBoundary, tolerance: float = 1.0e-13) -> bool:
+def _stellarator_symmetric_inputs(solution: NearAxisSolution) -> bool:
+    """True when the axis and second-order inputs are stellarator symmetric.
+
+    The boundary is then symmetric by construction; its RBS/ZBC coefficients are FFT
+    round-off and must not switch on LASYM.
+    """
+    inputs = solution.inputs
+    values = (inputs.axis.rs, inputs.axis.zc, inputs.sigma0, inputs.B2s)
+    try:
+        return all(
+            float(jnp.max(jnp.abs(jnp.atleast_1d(jnp.asarray(v))))) == 0.0
+            if jnp.size(jnp.asarray(v))
+            else True
+            for v in values
+        )
+    except jax.errors.ConcretizationTypeError:
+        return False
+
+
+def _is_asymmetric(
+    boundary: VmecBoundary, solution: NearAxisSolution | None = None, tolerance: float = 1.0e-13
+) -> bool:
+    if solution is not None and _stellarator_symmetric_inputs(solution):
+        return False
     return (
         max(float(jnp.max(jnp.abs(boundary.RBS))), float(jnp.max(jnp.abs(boundary.ZBC))))
         > tolerance
@@ -808,7 +828,7 @@ def to_vmex_problem(
         toroidal_angle_tolerance=toroidal_angle_tolerance,
     )
     _require_converged_boundary(boundary)
-    lasym = _is_asymmetric(boundary)
+    lasym = _is_asymmetric(boundary, solution)
     if lasym and surfaces:
         raise NotImplementedError(
             "VMEX's traceable quasisymmetry profile currently supports "
