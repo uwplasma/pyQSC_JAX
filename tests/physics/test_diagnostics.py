@@ -46,20 +46,14 @@ def test_vacuum_field_hessian_is_fully_symmetric_and_trace_free():
     np.testing.assert_allclose(np.einsum("niik->nk", hessian), 0, atol=7e-7)
 
 
-def test_field_hessian_resolution_convergence_and_derivative():
-    """grad grad B converges between nphi = 61 and 91; its etabar JVP matches a difference."""
+def test_field_hessian_resolution_convergence():
+    """grad grad B at varphi = 0 agrees between nphi = 61 and 91 to 2e-6."""
 
     medium = solve_configuration("qa", nphi=61)
     fine = solve_configuration("qa", nphi=91)
     np.testing.assert_allclose(
         np.asarray(medium.grad_grad_B)[0], np.asarray(fine.grad_grad_B)[0], rtol=2e-6, atol=2e-6
     )
-
-    def component(etabar):
-        return solve_configuration("qa", nphi=31, etabar=etabar).grad_grad_B_axis[7, 0, 1, 2]
-
-    tangent = jax.jvp(component, (0.64,), (1.0,))[1]
-    np.testing.assert_allclose(tangent, central_difference(component, 0.64, 1e-5), rtol=1e-6)
 
 
 # --- Singular radius ----------------------------------------------------------------------

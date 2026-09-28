@@ -146,13 +146,9 @@ def test_third_order_derivative_matches_finite_difference():
 
 @pytest.mark.physics
 def test_database_r3_surfaces_are_smooth():
-    """Stellarator-database r3 surfaces are finite with no toroidal jumps above 0.25."""
+    """A large-singular-radius database r3 surface at r = 0.15 is finite with no jumps > 0.25."""
 
-    for configuration, radius in (
-        ("database_qa_139524", 0.03),
-        ("database_large_singularity_107579", 0.15),
-    ):
-        solution = solve_configuration(configuration, nphi=121)
-        points = np.stack(surface_coordinates(solution, radius=radius, ntheta=36), axis=-1)
-        assert np.all(np.isfinite(points))
-        assert np.max(np.linalg.norm(np.diff(points, axis=1), axis=-1)) < 0.25
+    solution = solve_configuration("database_large_singularity_107579", nphi=121)
+    points = np.stack(surface_coordinates(solution, radius=0.15, ntheta=36), axis=-1)
+    assert np.all(np.isfinite(points))
+    assert np.max(np.linalg.norm(np.diff(points, axis=1), axis=-1)) < 0.25

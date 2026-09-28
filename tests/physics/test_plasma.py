@@ -277,36 +277,33 @@ def test_symmetric_trace_free_projections_pack_and_unpack():
 # --- Hessian ------------------------------------------------------------------------------
 
 
-def test_external_hessian_is_fully_symmetric_and_trace_free():
-    """The external Hessian is STF to 2e-10 at nphi = 121; the remainder indicator is as stated."""
+def test_external_hessian_is_trace_free_symmetric_and_converges():
+    """External Hessian is STF to 2e-10 at nphi = 121, errors drop 1e4-fold from nphi = 61.
 
-    solution = finite_current(nphi=121)
+    The remainder indicator equals max|H_p| s^2 (1 + |log s|) with s = a / (G0/B0).
+    """
+
     formal_radius = 0.05
-    result = qsc.plasma_hessian_on_axis(solution, formal_radius=formal_radius)
+    solution = finite_current(nphi=121)
+    medium = qsc.plasma_hessian_on_axis(finite_current(nphi=61), formal_radius=formal_radius)
+    fine = qsc.plasma_hessian_on_axis(solution, formal_radius=formal_radius)
 
-    assert result.maximum_derivative_asymmetry < 2.0e-15
-    assert result.maximum_external_symmetry_error < 8.0e-11
-    assert result.maximum_external_trace < 2.0e-10
-    np.testing.assert_allclose(
-        qp.unpack_symmetric_trace_free_rank3(result.external_hessian_independent),
-        result.external_hessian_stf,
-        atol=2.0e-15,
-    )
-    scale = formal_radius / solution.geometry.abs_G0_over_B0
-    expected = jnp.max(jnp.abs(result.hessian)) * scale**2 * (1 + jnp.abs(jnp.log(scale)))
-    np.testing.assert_allclose(result.estimated_hessian_remainder, expected)
-
-
-def test_plasma_hessian_converges_spectrally():
-    """Symmetry and trace errors of the external Hessian drop 1e4-fold from nphi = 61 to 121."""
-
-    medium = qsc.plasma_hessian_on_axis(finite_current(nphi=61), formal_radius=0.05)
-    fine = qsc.plasma_hessian_on_axis(finite_current(nphi=121), formal_radius=0.05)
+    assert fine.maximum_derivative_asymmetry < 2.0e-15
+    assert fine.maximum_external_symmetry_error < 8.0e-11
+    assert fine.maximum_external_trace < 2.0e-10
+    assert fine.maximum_external_symmetry_error < 1.0e-4 * medium.maximum_external_symmetry_error
+    assert fine.maximum_external_trace < 1.0e-4 * medium.maximum_external_trace
     np.testing.assert_allclose(
         medium.hessian_frenet[0], fine.hessian_frenet[0], atol=1e-8, rtol=1e-8
     )
-    assert fine.maximum_external_symmetry_error < 1.0e-4 * medium.maximum_external_symmetry_error
-    assert fine.maximum_external_trace < 1.0e-4 * medium.maximum_external_trace
+    np.testing.assert_allclose(
+        qp.unpack_symmetric_trace_free_rank3(fine.external_hessian_independent),
+        fine.external_hessian_stf,
+        atol=2.0e-15,
+    )
+    scale = formal_radius / solution.geometry.abs_G0_over_B0
+    expected = jnp.max(jnp.abs(fine.hessian)) * scale**2 * (1 + jnp.abs(jnp.log(scale)))
+    np.testing.assert_allclose(fine.estimated_hessian_remainder, expected)
 
 
 def test_qh_external_hessian_preserves_oriented_ellipse_topology():
