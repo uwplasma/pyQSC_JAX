@@ -1,15 +1,17 @@
 """Reference near-axis configurations used by the tests.
 
 Sources:
-- ``qa``: Landreman & Sengupta, J. Plasma Phys. 85, 815850601 (2019), section 5.1
-  (pyQSC ``"r2 section 5.1"``).
+- ``r1_qa``: Landreman, Sengupta & Plunk, J. Plasma Phys. 85, 905850103 (2019), section 5.1
+  (pyQSC ``"r1 section 5.1"``).
+- ``qa``, ``qh`` and ``finite_pressure_current``: Landreman & Sengupta, J. Plasma Phys. 85,
+  815850601 (2019), sections 5.1, 5.2 and 5.5 (pyQSC ``"r2 section 5.1/5.2/5.5"``).
 - ``database_*`` and ``plasma_stellarator``: stellarator database of Curvo et al.
   (2025), https://stellarator.physics.wisc.edu/app/plot/<id>.
 - ``b20_optimized_good``: eight-mode QH refinement of database configuration 57409 by
   exact B2c elimination and bounded least squares (preserved optimizer on
   ``origin/preserve/pr2-before-refactor-2026-09-27``).
-- ``finite_pressure_current`` and ``plasma_dominant_channel``: synthetic finite-beta
-  cases used for plasma-field validation.
+- ``plasma_dominant_channel``: synthetic finite-beta circular channel used for
+  plasma-field validation.
 """
 
 from __future__ import annotations
@@ -19,6 +21,14 @@ from typing import Any
 import pyqsc_jax as qsc
 
 CONFIGURATIONS: dict[str, dict[str, Any]] = {
+    "r1_qa": dict(rc=(1.0, 0.045), zs=(0.0, -0.045), nfp=3, etabar=-0.9),
+    "qh": dict(
+        rc=(1.0, 0.17, 0.01804, 0.001409, 5.877e-5),
+        zs=(0.0, 0.1581, 0.01820, 0.001548, 7.772e-5),
+        nfp=4,
+        etabar=1.569,
+        B2c=0.1348,
+    ),
     "qa": dict(rc=(1.0, 0.155, 0.0102), zs=(0.0, 0.154, 0.0111), nfp=2, etabar=0.64, B2c=-0.00322),
     "finite_pressure_current": dict(
         rc=(1.0, 0.09), zs=(0.0, -0.09), nfp=2, etabar=0.95, B2c=-0.7, I2=0.9, p2=-600000.0

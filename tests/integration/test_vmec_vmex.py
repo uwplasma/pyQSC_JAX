@@ -1,3 +1,8 @@
+"""Optional equilibrium-code integration: frozen VMEC output, live VMEC, and live VMEX.
+
+Live runs are skipped unless ``PYQSC_VMEC_EXECUTABLE`` or ``PYQSC_RUN_VMEX=1`` is set.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -6,6 +11,7 @@ import os
 import subprocess
 from pathlib import Path
 
+import jax
 import numpy as np
 import pytest
 from scipy.io import netcdf_file
@@ -13,6 +19,7 @@ from scipy.io import netcdf_file
 import pyqsc_jax as qsc
 from fixtures import solve_configuration
 
+RUN_VMEX = os.environ.get("PYQSC_RUN_VMEX") == "1"
 REFERENCE_DIRECTORY = Path(__file__).resolve().parents[1] / "reference" / "vmec"
 
 
@@ -30,6 +37,8 @@ def _read_vmec_result(path: Path) -> dict[str, float | int]:
 
 @pytest.mark.integration
 def test_frozen_vmec_wout_recovers_near_axis_iota():
+    """A checked-in VMEC run of the exported LSP 2019 QA boundary reproduces iota to 1e-3."""
+
     manifest = json.loads((REFERENCE_DIRECTORY / "manifest.json").read_text(encoding="utf-8"))
     vmec_input = REFERENCE_DIRECTORY / "input.qa_r0025"
     wout = REFERENCE_DIRECTORY / "wout_qa_r0025.nc"
@@ -54,6 +63,8 @@ def test_frozen_vmec_wout_recovers_near_axis_iota():
 @pytest.mark.integration
 @pytest.mark.slow
 def test_local_vmec_rerun_when_executable_is_requested(tmp_path):
+    """A fresh VMEC run of the exported r = 0.0025 QA boundary converges to the near-axis iota."""
+
     executable = os.environ.get("PYQSC_VMEC_EXECUTABLE")
     if not executable:
         pytest.skip("Set PYQSC_VMEC_EXECUTABLE to rerun the fixed-boundary VMEC case.")
@@ -78,6 +89,8 @@ def test_local_vmec_rerun_when_executable_is_requested(tmp_path):
 @pytest.mark.integration
 @pytest.mark.slow
 def test_local_vmec_finite_pressure_zero_current_database_case(tmp_path):
+    """A finite-pressure, zero-current database case exported to VMEC keeps pressure and iota."""
+
     executable = os.environ.get("PYQSC_VMEC_EXECUTABLE")
     if not executable:
         pytest.skip("Set PYQSC_VMEC_EXECUTABLE to rerun the finite-beta VMEC case.")
@@ -111,3 +124,74 @@ def test_local_vmec_finite_pressure_zero_current_database_case(tmp_path):
     assert result["ier_flag"] == 0
     assert max(result["fsqr"], result["fsqz"], result["fsql"]) < 1.0e-9
     np.testing.assert_allclose(result["iota_axis"], solution.iota, rtol=5.0e-4)
+
+
+def test_vmec_namelist_round_trips_through_vmex_parser(tmp_path):
+    """VMEX parses the exported namelist with MPOL = mpol + 1 and identical RBC/ZBS."""
+
+    vmex = pytest.importorskip("vmex")
+    solution = solve_configuration("r1_qa", nphi=31)
+    export = qsc.to_vmec(solution, tmp_path / "input.mpol", r=0.03, ntheta=16, mpol=4, ntor=4)
+    parsed = vmex.VmecInput.from_file(export.path)
+
+    assert parsed.mpol == 5
+    np.testing.assert_allclose(np.asarray(parsed.rbc), np.asarray(export.boundary.RBC), rtol=1e-15)
+    np.testing.assert_allclose(np.asarray(parsed.zbs), np.asarray(export.boundary.ZBS), rtol=1e-15)
+
+
+def _vmex_problem(solution):
+    # The boundary truncation, not the radial grid, sets the error against the near-axis
+    # transform: at mpol=3, ntor=2 iota is off by 1.5 %; mpol=5, ntor=4 brings it to 7e-4.
+    return qsc.to_vmex_problem(
+        solution,
+        r=0.02,
+        ntheta=16,
+        mpol=5,
+        ntor=4,
+        ns_array=(7,),
+        ftol=1.0e-7,
+        max_iterations=1200,
+        adjoint_tol=1.0e-8,
+        multigrid=False,
+        qs_surfaces=(0.5, 1.0),
+    )
+
+
+def _magnetic_well_gradient(problem):
+    return jax.value_and_grad(
+        lambda parameters: qsc.vmex_radial_quantities(problem, parameters).magnetic_well
+    )(problem.parameters)
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.skipif(not RUN_VMEX, reason="Set PYQSC_RUN_VMEX=1 for live VMEX tests.")
+def test_vmex_vacuum_profiles_and_implicit_gradient():
+    """Live VMEX: axis iota within 0.8 % of near-axis, zero thermal energy, nonzero adjoint."""
+
+    solution = solve_configuration("qa", nphi=31)
+    problem = _vmex_problem(solution)
+    quantities = problem.solve().quantities
+
+    assert quantities.iota.shape == quantities.s.shape == (7,)
+    assert np.all(np.isfinite(np.asarray(quantities.quasisymmetry)))
+    np.testing.assert_allclose(quantities.iota[0], solution.iota, rtol=8.0e-3)
+    assert float(quantities.thermal_energy) == pytest.approx(0.0, abs=1.0e-14)
+    value, gradient = _magnetic_well_gradient(problem)
+    assert np.isfinite(float(value))
+    assert float(np.linalg.norm(np.asarray(gradient.rbc))) > 0
+
+
+@pytest.mark.integration
+@pytest.mark.slow
+@pytest.mark.skipif(not RUN_VMEX, reason="Set PYQSC_RUN_VMEX=1 for live VMEX tests.")
+def test_vmex_finite_beta_profiles():
+    """Live VMEX, finite beta: positive thermal energy and nonzero pressure-scale adjoint."""
+
+    problem = _vmex_problem(solve_configuration("plasma_stellarator", nphi=31))
+    assert problem.finite_beta
+    assert float(problem.quantities().thermal_energy) > 0
+    value, gradient = _magnetic_well_gradient(problem)
+    assert np.isfinite(float(value))
+    assert float(abs(gradient.pres_scale)) > 0
+    assert float(np.linalg.norm(np.asarray(gradient.rbc))) > 0
