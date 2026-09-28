@@ -8,7 +8,8 @@ function is called and never changes global Matplotlib settings. Every function 
 |---|---|
 | `plot_axis(solution_or_axis)` | the full-torus axis in 3-D |
 | `surface_coordinates(solution, radius, ntheta)` | full-torus Cartesian surface arrays (no plotting) |
-| `plot_surface_3d(solution, radius, ntheta)` | the surface at `radius` and the axis |
+| `surface_field_strength(solution, radius, ntheta)` | near-axis \|B\| on the same grid: $B_0(1 + r\bar\eta\cos\vartheta)$, plus $r^2(B_{20} + B_{2c}\cos 2\vartheta + B_{2s}\sin 2\vartheta)$ for r2/r3 (no $r^3$ term) |
+| `plot_surface_3d(solution, radius, ntheta, color_by="height")` | the surface at `radius` and the axis, colored by height `z` or, with `color_by="B"`, by \|B\|; equal x, y, z scales |
 | `plot_b20(solution)` | $B_{20} - \langle B_{20}\rangle$ against Boozer angle |
 | `plot_field_split_components(result, solution)` | total, plasma and external field in the Frenet frame |
 | `plot_field_jet_norms(result)` | Frobenius norms of the three field jets |

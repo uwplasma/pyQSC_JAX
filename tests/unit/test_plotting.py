@@ -16,6 +16,7 @@ from pyqsc_jax.plotting import (
     plot_field_split_components,
     plot_surface_3d,
     surface_coordinates,
+    surface_field_strength,
 )
 
 matplotlib.use("Agg")
@@ -55,6 +56,27 @@ def test_surface_and_field_split_plotters():
         plot_field_split_components(result, solution, axes=axes[:2])
     with pytest.raises(ValueError, match="three"):
         plot_field_jet_norms(result, axes=norm_axes[:2])
+
+
+def test_3d_plots_have_equal_ranges_and_color_by_field_strength():
+    """Axis and surface plots use a common cube (1:1:1); color_by="B" sets |B| facecolors."""
+
+    solution = solve_configuration("qa", nphi=31)
+    _, axis = plot_axis(solution, samples=31)
+    _, surface_axis = plot_surface_3d(solution, radius=0.05, ntheta=12, color_by="B")
+    for item in (axis, surface_axis):
+        ranges = [
+            np.ptp(limits) for limits in (item.get_xlim3d(), item.get_ylim3d(), item.get_zlim3d())
+        ]
+        np.testing.assert_allclose(ranges, ranges[0], rtol=1e-12)
+        np.testing.assert_allclose(item.get_box_aspect() / item.get_box_aspect()[0], 1.0)
+    facecolors = surface_axis.collections[0].get_facecolor()
+    assert facecolors.shape[0] > 1 and np.ptp(facecolors[:, :3], axis=0).max() > 0
+    strength = surface_field_strength(solution, radius=0.05, ntheta=12)
+    assert strength.shape == surface_coordinates(solution, radius=0.05, ntheta=12)[0].shape
+    np.testing.assert_allclose(np.mean(strength), solution.inputs.B0, rtol=0.05)
+    with pytest.raises(ValueError, match="color_by"):
+        plot_surface_3d(solution, color_by="pressure")
 
 
 def test_plotter_guards():

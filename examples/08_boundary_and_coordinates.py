@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pyqsc_jax.near_axis import near_axis
+from pyqsc_jax.plotting import set_axes_equal
 
 RC = [1.0, 0.155, 0.0102]
 ZS = [0.0, 0.154, 0.0111]
@@ -31,7 +32,7 @@ axis_3d = figure.add_subplot(1, 2, 1, projection="3d")
 axis_3d.plot_surface(
     np.asarray(x), np.asarray(y), np.asarray(z), cmap="viridis", alpha=0.8, linewidth=0
 )
-axis_3d.set_box_aspect((1, 1, 1))
+set_axes_equal(axis_3d, x, y, z)  # equal physical ranges, 1:1:1 box
 axis_3d.set_xlabel("x [m]")
 axis_3d.set_ylabel("y [m]")
 axis_3d.set_zlabel("z [m]")
