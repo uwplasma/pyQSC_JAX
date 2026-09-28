@@ -1,0 +1,5 @@
+Solving iota(etabar) = target with Newton...
+target iota: 0.42
+solved etabar: -0.8880760686885837
+achieved iota: 0.41999999999999976
+response d(iota)/d(etabar): 0.1322600893735421

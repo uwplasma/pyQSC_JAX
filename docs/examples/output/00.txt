@@ -1,0 +1,7 @@
+Solving configuration...
+iota: -0.21063504948865913
+sigma residual: 2.7478019859472624e-15
+axis length [m]: 6.717152841824647
+maximum elongation: 8.963901567540379
+r_singularity: 0.17291857384989584
+plasma beta: 0.021923550798761328

@@ -1,0 +1,8 @@
+Eliminating B2c exactly for database configuration 57409...
+Loading the independently optimized Fourier axis...
+stock exact-B2c weighted L2: 0.030992772869251492
+optimized-axis weighted L2: 1.2745432883187962e-10
+optimized-axis dense maximum: 2.654707564886394e-10
+improvement factor: 243167675.45912805
+|iota|: 2.9635796242368366
+singular radius: 0.24925039358411616

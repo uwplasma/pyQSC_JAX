@@ -1,0 +1,5 @@
+Solving first-order QA configuration...
+iota: 0.418306909433866
+sigma residual: 1.1546319456101628e-14
+axis length [m]: 6.340238817434161
+maximum elongation: 2.413260731572708

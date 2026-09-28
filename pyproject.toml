@@ -36,10 +36,13 @@ Source = "https://github.com/uwplasma/pyQSC_JAX"
 plot = ["matplotlib"]
 vmex = ["vmex"]
 docs = [
-  "furo",
+  "matplotlib",
   "myst-parser",
+  "pillow",
+  "pydata-sphinx-theme",
   "sphinx",
   "sphinx-copybutton",
+  "sphinx-design",
   "sphinxcontrib-bibtex",
 ]
 dev = [
