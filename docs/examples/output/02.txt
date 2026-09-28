@@ -1,0 +1,5 @@
+Solving first-order QH configuration...
+iota: 3.05981752131502
+iota_N: -0.9401824786849802
+frame helicity: -1
+sigma residual: 2.886579864025407e-15

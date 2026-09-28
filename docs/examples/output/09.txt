@@ -1,0 +1,7 @@
+Solving the total-field-jet reference configuration...
+field reconstruction error: 2.220446049250313e-16
+gradient reconstruction error: 7.049276787296499e-11
+maximum divergence: 9.230003220062066e-11
+maximum Hessian derivative asymmetry: 3.552713678800501e-15
+maximum gradient of divergence: 2.3613045474490946e-07
+minimum Hessian scale length [m]: 0.35315403051780464

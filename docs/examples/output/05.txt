@@ -1,0 +1,6 @@
+Solving the initial r2 configuration...
+initial B2c: 0.0
+optimal B2c: -0.49172682515692706
+initial weighted L2: 0.13578790305868763
+optimal weighted L2: 0.04142563099699398
+affine reconstruction error: 7.882583474838611e-15

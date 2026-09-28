@@ -1,0 +1,14 @@
+Solving the finite-pressure, zero-current stellarator...
+torsion RMS [1/m]: 0.9788636860324744
+Separating the surface-free plasma and external jets...
+enclosed toroidal current [A]: 0.0
+minimum |B_plasma| / |B_total|: 0.0017610599940438578
+mean |B_plasma| / |B_total|: 0.0018895978020424704
+plasma |B| peak-to-peak / mean: 0.14011935587642982
+formal radius / singular radius: 0.38164473661669046
+external gradient STF components: 5
+external Hessian STF components: 7
+maximum external-gradient trace: 3.2200686561623115e-11
+maximum external-Hessian trace: 2.838106811786645e-07
+estimated plasma-field remainder [T]: 2.8527689340038217e-05
+estimated plasma-Hessian remainder [T/m^2]: 0.005526455957692286

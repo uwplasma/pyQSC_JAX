@@ -1,0 +1,5 @@
+Differentiating rotational transform through the converged sigma solve...
+iota: 0.418306909433866
+JVP d(iota)/d(etabar): 0.1515263323821132
+finite-difference derivative: 0.1515263322454663
+relative error: 9.018029158637668e-10
