@@ -1,4 +1,4 @@
-"""Download a finite-beta database configuration, solve it to third order and plot the axis field and surfaces.
+"""Solve a finite-beta database configuration to third order and plot its field and surfaces.
 
 Needs network access to the stellarator database."""
 
