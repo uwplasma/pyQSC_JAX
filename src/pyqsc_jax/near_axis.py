@@ -92,76 +92,18 @@ class near_axis:  # noqa: N801
             spsi=self.spsi,
         )
 
-    @staticmethod
-    def _legacy_tuple(solution: NearAxisSolution) -> tuple[jax.Array, ...]:
-        geometry = solution.geometry
-        normal = geometry.normal_cylindrical
-        binormal = geometry.binormal_cylindrical
-        return (
-            solution.R0,
-            solution.Z0,
-            solution.sigma,
-            solution.elongation,
-            solution.B_axis.T,
-            jnp.moveaxis(solution.grad_B_axis, 0, -1),
-            solution.axis_length,
-            solution.iota,
-            solution.iotaN,
-            solution.G0,
-            solution.helicity,
-            solution.X1c_untwisted,
-            solution.X1s_untwisted,
-            solution.Y1s_untwisted,
-            solution.Y1c_untwisted,
-            normal[:, 0],
-            normal[:, 1],
-            normal[:, 2],
-            binormal[:, 0],
-            binormal[:, 1],
-            binormal[:, 2],
-            solution.L_grad_B,
-            1 / solution.L_grad_B,
-            solution.torsion,
-            solution.curvature,
-            solution.varphi,
-            geometry.samples.d_R_d_phi,
-            geometry.samples.d_Z_d_phi,
-        )
-
     def _refresh(self) -> None:
         solution = self._canonical_solution(self.rc, self.zs, self.etabar)
+        geometry = solution.geometry
         self.solution = solution
-        self.phi = solution.phi
-        (
-            self.R0,
-            self.Z0,
-            self.sigma,
-            self.elongation,
-            self.B_axis,
-            self.grad_B_axis,
-            self.axis_length,
-            self.iota,
-            self.iotaN,
-            self.G0,
-            self.helicity,
-            self.X1c_untwisted,
-            self.X1s_untwisted,
-            self.Y1s_untwisted,
-            self.Y1c_untwisted,
-            self.normal_R,
-            self.normal_phi,
-            self.normal_z,
-            self.binormal_R,
-            self.binormal_phi,
-            self.binormal_z,
-            self.L_grad_B,
-            self.inv_L_grad_B,
-            self.torsion,
-            self.curvature,
-            self.varphi,
-            self.R0p,
-            self.Z0p,
-        ) = self._legacy_tuple(solution)
+        # Historical pyQSC/ESSOS layouts; everything else is delegated to the solution.
+        self.B_axis = solution.B_axis.T
+        self.grad_B_axis = jnp.moveaxis(solution.grad_B_axis, 0, -1)
+        self.normal_R, self.normal_phi, self.normal_z = geometry.normal_cylindrical.T
+        self.binormal_R, self.binormal_phi, self.binormal_z = geometry.binormal_cylindrical.T
+        self.inv_L_grad_B = 1 / solution.L_grad_B
+        self.R0p = geometry.samples.d_R_d_phi
+        self.Z0p = geometry.samples.d_Z_d_phi
 
     def __getattr__(self, name: str):
         """Delegate other pyQSC-style attributes (``X20``, ``B20``, ``r_singularity``,
