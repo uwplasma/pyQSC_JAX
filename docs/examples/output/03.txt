@@ -1,0 +1,8 @@
+Solving the finite-pressure, zero-current stellarator...
+iota: -2.8092713236695612
+torsion RMS [1/m]: 0.9788636860324744
+linear residual: 4.289901767151605e-13
+linear condition estimate (1-norm): 1454.9120456300275
+B20 weighted residual: 0.289789143704373
+Mercier D r^2: 0.020550021373573542
+singular radius [m]: 0.3930356837349871

@@ -1,0 +1,11 @@
+Constructing the near-axis boundary...
+Solving the converged fixed-boundary equilibrium with VMEX...
+VMEX version: 0.11.4
+iota(s): [-0.42688495 -0.42685407 -0.42635719 -0.42500914 -0.4229924  -0.42050895
+ -0.41784229]
+quasisymmetry profile: [0.01000015 0.0100211  0.01006873 0.01011503]
+magnetic well: 0.0013716896777802334
+Differentiating magnetic well through the converged VMEX fixed point...
+magnetic well: 0.0013716896777802334
+d(well)/d(pres_scale): 0.0
+||d(well)/d(RBC)||: 15.116113212653364

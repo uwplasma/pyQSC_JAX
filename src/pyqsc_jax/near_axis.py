@@ -1,0 +1,562 @@
+"""ESSOS-compatible mutable facade over the immutable near-axis core."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import jax
+import jax.numpy as jnp
+
+from pyqsc_jax.first_order import solve
+from pyqsc_jax.geometry import Axis
+from pyqsc_jax.models import NearAxisSolution
+from pyqsc_jax.solvers import implicit_dense_root
+from pyqsc_jax.vmec import (
+    VmecExport,
+    _displacements,
+    _fft_coefficients,
+    uniform_cylindrical_surface,
+)
+from pyqsc_jax.vmec import to_vmec as export_to_vmec
+
+ArrayLike = Any
+
+
+class near_axis:  # noqa: N801
+    """ESSOS adapter for a stellarator-symmetric near-axis field.
+
+    The canonical API is :func:`pyqsc_jax.solve`; this class delegates all
+    physics to it and keeps ESSOS's mutable ``x``/``dofs`` facade (ordered
+    ``rc, zs, etabar``), pyQSC-style flat attributes and the historical
+    ``(sample, ..., component)`` ordering of ``B_axis``/``grad_B_axis``. The
+    immutable solution is available as :attr:`solution`. Inputs are coerced
+    to float arrays, so integer arguments do not change dtypes or retrace.
+    Lengths are in meters and fields in tesla.
+    """
+
+    def __init__(
+        self,
+        rc: ArrayLike = (1.0, 0.1),
+        zs: ArrayLike = (0.0, 0.1),
+        etabar: ArrayLike = 1.0,
+        B0: ArrayLike = 1.0,
+        sigma0: ArrayLike = 0.0,
+        I2: ArrayLike = 0.0,
+        nphi: int = 31,
+        spsi: int = 1,
+        sG: int = 1,
+        nfp: int = 2,
+        order: int | str = "r1",
+        B2c: ArrayLike = 0.0,
+        p2: ArrayLike = 0.0,
+        B2s: ArrayLike = 0.0,
+    ) -> None:
+        if not isinstance(nphi, int) or isinstance(nphi, bool) or nphi < 3 or nphi % 2 == 0:
+            raise ValueError("The compatibility API requires odd integer nphi >= 3.")
+        if isinstance(order, bool) or order not in (1, 2, 3, "r1", "r2", "r3"):
+            raise ValueError("order must be one of 1, 2, 3, 'r1', 'r2', or 'r3'.")
+
+        self.rc = jnp.asarray(rc, dtype=float)
+        self.zs = jnp.asarray(zs, dtype=float)
+        if self.rc.ndim != 1 or self.zs.ndim != 1 or self.rc.size != self.zs.size:
+            raise ValueError("rc and zs must be one-dimensional arrays of equal length.")
+        self.etabar = jnp.asarray(etabar, dtype=float)
+        self.B0 = jnp.asarray(B0, dtype=float)
+        self.sigma0 = jnp.asarray(sigma0, dtype=float)
+        self.I2 = jnp.asarray(I2, dtype=float)
+        self.p2 = jnp.asarray(p2, dtype=float)
+        self.B2c = jnp.asarray(B2c, dtype=float)
+        self.B2s = jnp.asarray(B2s, dtype=float)
+        self.nphi = nphi
+        self.spsi = spsi
+        self.sG = sG
+        self.nfp = nfp
+        self.order = order
+        self.nfourier = self.rc.size
+        self._dofs = jnp.concatenate((self.rc, self.zs, self.etabar[None]))
+        self._refresh()
+
+    def _canonical_solution(
+        self, rc: ArrayLike, zs: ArrayLike, etabar: ArrayLike
+    ) -> NearAxisSolution:
+        canonical_order = (
+            "r1" if self.order in (1, "r1") else ("r2" if self.order in (2, "r2") else "r3")
+        )
+        return solve(
+            axis=Axis.stellarator_symmetric(rc=rc, zs=zs, nfp=self.nfp),
+            etabar=etabar,
+            B0=self.B0,
+            sigma0=self.sigma0,
+            I2=self.I2,
+            p2=self.p2,
+            B2c=self.B2c,
+            B2s=self.B2s,
+            nphi=self.nphi,
+            order=canonical_order,
+            sG=self.sG,
+            spsi=self.spsi,
+        )
+
+    def _refresh(self) -> None:
+        solution = self._canonical_solution(self.rc, self.zs, self.etabar)
+        geometry = solution.geometry
+        self.solution = solution
+        # Historical pyQSC/ESSOS layouts; everything else is delegated to the solution.
+        self.B_axis = solution.B_axis.T
+        self.grad_B_axis = jnp.moveaxis(solution.grad_B_axis, 0, -1)
+        self.normal_R, self.normal_phi, self.normal_z = geometry.normal_cylindrical.T
+        self.binormal_R, self.binormal_phi, self.binormal_z = geometry.binormal_cylindrical.T
+        self.inv_L_grad_B = 1 / solution.L_grad_B
+        self.R0p = geometry.samples.d_R_d_phi
+        self.Z0p = geometry.samples.d_Z_d_phi
+
+    def __getattr__(self, name: str):
+        """Delegate other pyQSC-style attributes (``X20``, ``B20``, ``r_singularity``,
+        ``DMerc_times_r2``, ...) to :attr:`solution`; diagnostics are computed on access."""
+
+        if name == "solution" or name.startswith("__"):
+            raise AttributeError(name)
+        return getattr(self.solution, name)
+
+    @property
+    def grad_grad_B_axis(self) -> jax.Array:
+        """Cartesian Hessian in the historical ``(field, derivative, derivative, sample)`` order."""
+
+        return jnp.moveaxis(self.solution.grad_grad_B_axis, 0, -1)
+
+    @property
+    def dofs(self) -> jax.Array:
+        """Mutable legacy degrees of freedom ordered ``rc, zs, etabar``."""
+
+        return self._dofs
+
+    @dofs.setter
+    def dofs(self, new_dofs: ArrayLike) -> None:
+        new_dofs = jnp.asarray(new_dofs, dtype=float)
+        if new_dofs.ndim != 1 or new_dofs.size != 2 * self.nfourier + 1:
+            raise ValueError(f"dofs must have shape ({2 * self.nfourier + 1},).")
+        self._dofs = new_dofs
+        self.rc = new_dofs[: self.nfourier]
+        self.zs = new_dofs[self.nfourier : 2 * self.nfourier]
+        self.etabar = new_dofs[-1]
+        self._refresh()
+
+    @property
+    def x(self) -> jax.Array:
+        """Alias for :attr:`dofs`, retained for ESSOS optimizers."""
+
+        return self.dofs
+
+    @x.setter
+    def x(self, new_x: ArrayLike) -> None:
+        self.dofs = new_x
+
+    def _tree_flatten(self):
+        children = (
+            self.rc,
+            self.zs,
+            self.etabar,
+            self.B0,
+            self.sigma0,
+            self.I2,
+            self.B2c,
+            self.p2,
+            self.B2s,
+        )
+        auxiliary = {
+            "nphi": self.nphi,
+            "spsi": self.spsi,
+            "sG": self.sG,
+            "nfp": self.nfp,
+            "order": self.order,
+        }
+        return children, auxiliary
+
+    @classmethod
+    def _tree_unflatten(cls, auxiliary, children):
+        rc, zs, etabar, B0, sigma0, I2, B2c, p2, B2s = children
+        return cls(
+            rc=rc,
+            zs=zs,
+            etabar=etabar,
+            B0=B0,
+            sigma0=sigma0,
+            I2=I2,
+            B2c=B2c,
+            p2=p2,
+            B2s=B2s,
+            **auxiliary,
+        )
+
+    def B_covariant(self, points: ArrayLike) -> jax.Array:
+        """First-order covariant Boozer components ``(B_r, B_theta, B_phi)``."""
+
+        r, _, _ = jnp.asarray(points)
+        return jnp.asarray((0.0, r * r * self.I2, self.G0))
+
+    def B_contravariant(self, points: ArrayLike) -> jax.Array:
+        """First-order contravariant Boozer components."""
+
+        r, _, _ = jnp.asarray(points)
+        Bphi = r * self.AbsB(points) / self.jacobian(points)
+        return jnp.asarray((0.0, self.iotaN * Bphi, Bphi))
+
+    def AbsB(self, points: ArrayLike) -> jax.Array:
+        """First-order field strength in near-axis coordinates."""
+
+        r, theta, _ = jnp.asarray(points)
+        return self.B0 * (1 + r * self.etabar * jnp.cos(theta))
+
+    def jacobian(self, points: ArrayLike) -> jax.Array:
+        """First-order coordinate Jacobian."""
+
+        r, _, _ = jnp.asarray(points)
+        field_strength = self.AbsB(points)
+        return r * self.B0 * (self.G0 + self.iota * self.I2) / field_strength**2
+
+    def interpolated_array_at_point(self, array: ArrayLike, point: ArrayLike) -> jax.Array:
+        """Periodically interpolate a sampled one-field-period array."""
+
+        period = 2 * jnp.pi / self.nfp
+        array = jnp.asarray(array)
+        return jnp.interp(
+            jnp.asarray(point),
+            jnp.append(self.phi, period),
+            jnp.append(array, array[0]),
+            period=period,
+        )
+
+    def Frenet_to_cylindrical_1_point(
+        self,
+        phi0: ArrayLike,
+        X_at_this_theta: ArrayLike,
+        Y_at_this_theta: ArrayLike,
+        Z_at_this_theta: ArrayLike | None = None,
+    ) -> tuple[jax.Array, jax.Array, jax.Array]:
+        """Map one displaced Frenet point to cylindrical coordinates."""
+
+        sine = jnp.sin(phi0)
+        cosine = jnp.cos(phi0)
+        R0 = self.interpolated_array_at_point(self.R0, phi0)
+        Z0 = self.interpolated_array_at_point(self.Z0, phi0)
+        X = self.interpolated_array_at_point(X_at_this_theta, phi0)
+        Y = self.interpolated_array_at_point(Y_at_this_theta, phi0)
+        if Z_at_this_theta is None:
+            Z_at_this_theta = jnp.zeros_like(X_at_this_theta)
+        Z = self.interpolated_array_at_point(Z_at_this_theta, phi0)
+        normal_R = self.interpolated_array_at_point(self.normal_R, phi0)
+        normal_phi = self.interpolated_array_at_point(self.normal_phi, phi0)
+        normal_z = self.interpolated_array_at_point(self.normal_z, phi0)
+        binormal_R = self.interpolated_array_at_point(self.binormal_R, phi0)
+        binormal_phi = self.interpolated_array_at_point(self.binormal_phi, phi0)
+        binormal_z = self.interpolated_array_at_point(self.binormal_z, phi0)
+        tangent = self.solution.geometry.tangent_cylindrical
+        tangent_R = self.interpolated_array_at_point(tangent[:, 0], phi0)
+        tangent_phi = self.interpolated_array_at_point(tangent[:, 1], phi0)
+        tangent_z = self.interpolated_array_at_point(tangent[:, 2], phi0)
+
+        normal_x = normal_R * cosine - normal_phi * sine
+        normal_y = normal_R * sine + normal_phi * cosine
+        binormal_x = binormal_R * cosine - binormal_phi * sine
+        binormal_y = binormal_R * sine + binormal_phi * cosine
+        tangent_x = tangent_R * cosine - tangent_phi * sine
+        tangent_y = tangent_R * sine + tangent_phi * cosine
+        x = R0 * cosine + X * normal_x + Y * binormal_x + Z * tangent_x
+        y = R0 * sine + X * normal_y + Y * binormal_y + Z * tangent_y
+        z = Z0 + X * normal_z + Y * binormal_z + Z * tangent_z
+        return jnp.hypot(x, y), z, jnp.arctan2(y, x)
+
+    def Frenet_to_cylindrical_residual_func(
+        self,
+        phi0: ArrayLike,
+        phi_target: ArrayLike,
+        X_at_this_theta: ArrayLike,
+        Y_at_this_theta: ArrayLike,
+        Z_at_this_theta: ArrayLike | None = None,
+    ) -> jax.Array:
+        """Wrapped cylindrical-angle residual for a Frenet point."""
+
+        _, _, phi = self.Frenet_to_cylindrical_1_point(
+            phi0, X_at_this_theta, Y_at_this_theta, Z_at_this_theta
+        )
+        difference = phi - phi_target
+        return jnp.arctan2(jnp.sin(difference), jnp.cos(difference))
+
+    def residual_phi0_of_theta_varphi_func(
+        self, phi0: ArrayLike, r: ArrayLike, theta: ArrayLike, varphi: ArrayLike
+    ) -> jax.Array:
+        """Residual for inversion at fixed Boozer toroidal angle."""
+
+        X, Y, Z = self._frenet_displacements(r, theta)
+        _, _, phi = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
+        nu0 = self.interpolated_array_at_point(self.varphi - self.phi, phi0)
+        X1c = self.interpolated_array_at_point(self.X1c_untwisted, phi0)
+        X1s = self.interpolated_array_at_point(self.X1s_untwisted, phi0)
+        Y1c = self.interpolated_array_at_point(self.Y1c_untwisted, phi0)
+        Y1s = self.interpolated_array_at_point(self.Y1s_untwisted, phi0)
+        bR = self.interpolated_array_at_point(self.binormal_R, phi0)
+        bZ = self.interpolated_array_at_point(self.binormal_z, phi0)
+        nR = self.interpolated_array_at_point(self.normal_R, phi0)
+        nZ = self.interpolated_array_at_point(self.normal_z, phi0)
+        R0 = self.interpolated_array_at_point(self.R0, phi0)
+        R0p = self.interpolated_array_at_point(self.R0p, phi0)
+        Z0p = self.interpolated_array_at_point(self.Z0p, phi0)
+        nu1c = X1c * (bR * Z0p - bZ * R0p) / R0 + Y1c * (nZ * R0p - nR * Z0p) / R0
+        nu1s = X1s * (bR * Z0p - bZ * R0p) / R0 + Y1s * (nZ * R0p - nR * Z0p) / R0
+        nu = nu0 + r * (nu1c * jnp.cos(theta) + nu1s * jnp.sin(theta))
+        return phi + nu - varphi
+
+    def _frenet_displacements(
+        self, r: ArrayLike, theta: ArrayLike
+    ) -> tuple[jax.Array, jax.Array, jax.Array]:
+        """All available radial-order Frenet displacements on the solution grid."""
+
+        return _displacements(self.solution, r, theta, lambda values: values)
+
+    def phi_of_theta_varphi(self, r: ArrayLike, theta: ArrayLike, varphi: ArrayLike) -> jax.Array:
+        """Invert the regular-coordinate map for cylindrical toroidal angle."""
+
+        residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
+            phi0, r, theta, varphi
+        )
+        phi_on_axis, _ = implicit_dense_root(residual, jnp.asarray(varphi))
+        X, Y, Z = self._frenet_displacements(r, theta)
+        _, _, phi = self.Frenet_to_cylindrical_1_point(phi_on_axis, X, Y, Z)
+        return phi
+
+    def Frenet_to_cylindrical(
+        self, r: ArrayLike, ntheta: int = 20, phi_is_varphi: bool = False
+    ) -> tuple[jax.Array, jax.Array, jax.Array]:
+        """Map the available-order surface over one field period.
+
+        Returns ``(R, Z, phi0)`` of shape ``(ntheta, nphi)`` on the uniform cylindrical grid
+        ``phi = solution.phi`` (``phi_is_varphi=False``, shared with the VMEC export) or on the
+        uniform Boozer grid ``varphi = solution.phi`` (``phi_is_varphi=True``).
+        """
+
+        if not phi_is_varphi:
+            R, Z, phi0, _ = uniform_cylindrical_surface(self.solution, r, ntheta=ntheta)
+            return R, Z, phi0
+        theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)
+
+        def for_theta(theta_value):
+            X, Y, Z = self._frenet_displacements(r, theta_value)
+
+            def for_toroidal_angle(target):
+                residual = lambda phi0: self.residual_phi0_of_theta_varphi_func(  # noqa: E731
+                    phi0, r, theta_value, target
+                )
+                phi0, _ = implicit_dense_root(residual, target)
+                R, cylindrical_Z, _ = self.Frenet_to_cylindrical_1_point(phi0, X, Y, Z)
+                return R, cylindrical_Z, phi0
+
+            return jax.vmap(for_toroidal_angle)(self.phi)
+
+        return jax.vmap(for_theta)(theta)
+
+    def to_Fourier(  # noqa: N802
+        self, R_2D: ArrayLike, Z_2D: ArrayLike, nfp: int, mpol: int, ntor: int
+    ) -> tuple[jax.Array, jax.Array]:
+        """Stellarator-symmetric ``(RBC, ZBS)`` of shape ``(2 ntor + 1, mpol + 1)`` of a surface
+        sampled on a uniform ``(theta, phi)`` grid over one field period (``nfp`` is implied)."""
+
+        del nfp
+        return _fft_coefficients(jnp.asarray(R_2D), mpol, ntor)[0], _fft_coefficients(
+            jnp.asarray(Z_2D), mpol, ntor
+        )[1]
+
+    def get_boundary(
+        self,
+        r: ArrayLike = 0.1,
+        ntheta: int = 30,
+        nphi: int = 120,
+        ntheta_fourier: int = 20,
+        mpol: int = 5,
+        ntor: int = 5,
+        phi_is_varphi: bool = False,
+        phi_offset: ArrayLike = 0.0,
+    ) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
+        """Return a full-torus available-order surface in Cartesian coordinates."""
+
+        R_period, Z_period, _ = self.Frenet_to_cylindrical(
+            r, ntheta=ntheta_fourier, phi_is_varphi=phi_is_varphi
+        )
+        RBC, ZBS = self.to_Fourier(R_period, Z_period, self.nfp, mpol, ntor)
+        theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
+        original_phi = jnp.linspace(0, 2 * jnp.pi, nphi) + phi_offset
+        phi2d, theta2d = jnp.meshgrid(original_phi, theta, indexing="xy")
+
+        if phi_is_varphi:
+            phi2d = jax.vmap(
+                lambda theta_row, varphi_row: jax.vmap(
+                    lambda theta_value, varphi_value: self.phi_of_theta_varphi(
+                        r, theta_value, varphi_value
+                    )
+                )(theta_row, varphi_row)
+            )(theta2d, phi2d)
+
+        m = jnp.arange(mpol + 1)
+        n = jnp.arange(-ntor, ntor + 1)
+        angle = (
+            m[None, :, None, None] * theta2d[None, None, :, :]
+            - n[:, None, None, None] * self.nfp * original_phi[None, None, None, :]
+        )
+        R = jnp.sum(RBC[:, :, None, None] * jnp.cos(angle), axis=(0, 1))
+        Z = jnp.sum(ZBS[:, :, None, None] * jnp.sin(angle), axis=(0, 1))
+        return R * jnp.cos(phi2d), R * jnp.sin(phi2d), Z, R
+
+    def to_vmec(
+        self,
+        filename,
+        r: float = 0.1,
+        params: dict[str, Any] | None = None,
+        ntheta: int = 40,
+        ntorMax: int = 14,  # noqa: N803
+    ) -> VmecExport:
+        """Write a fast, diagnosed VMEC input while preserving the pyQSC call form."""
+
+        parameters = dict(params or {})
+        mpol = int(parameters.pop("mpol", min(ntheta // 2 - 1, 12)))
+        ntor = int(parameters.pop("ntor", min((self.nphi - 1) // 2, ntorMax)))
+        result = export_to_vmec(
+            self.solution,
+            filename,
+            r=r,
+            parameters=parameters,
+            ntheta=ntheta,
+            mpol=mpol,
+            ntor=ntor,
+            ntor_max=ntorMax,
+        )
+        self.RBC = result.boundary.RBC.T
+        self.RBS = result.boundary.RBS.T
+        self.ZBC = result.boundary.ZBC.T
+        self.ZBS = result.boundary.ZBS.T
+        return result
+
+    def B_mag(self, r: ArrayLike, theta: ArrayLike, phi: ArrayLike) -> jax.Array:
+        """Available-order field strength using the legacy angle convention."""
+
+        thetaN = theta - (self.iota - self.iotaN) * phi
+        field_strength = self.B0 * (1 + r * self.etabar * jnp.cos(thetaN))
+        if self.solution.second_order is not None:
+            B20 = self.interpolated_array_at_point(self.B20, phi)
+            field_strength = field_strength + r**2 * (
+                B20
+                + self.B2c * jnp.cos(2 * thetaN)
+                + self.solution.inputs.B2s * jnp.sin(2 * thetaN)
+            )
+        return field_strength
+
+    def plot(
+        self,
+        r: float = 0.1,
+        ntheta: int = 40,
+        nphi: int = 120,
+        ntheta_fourier: int = 20,
+        ax=None,
+        show: bool = True,
+        close: bool = False,
+        axis_equal: bool = True,
+        **kwargs,
+    ):
+        """Plot the available-order boundary without importing ESSOS."""
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from matplotlib import cm
+        from matplotlib.colors import LightSource, Normalize
+
+        created_axes = ax is None or getattr(ax, "name", None) != "3d"
+        if created_axes:
+            figure = plt.figure()
+            ax = figure.add_subplot(projection="3d")
+        else:
+            figure = ax.figure
+
+        x, y, z, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
+        theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
+        phi = jnp.linspace(0, 2 * jnp.pi, nphi)
+        phi2d, theta2d = jnp.meshgrid(phi, theta)
+        field_strength = np.asarray(self.B_mag(r, theta2d, phi2d))
+        normalization = Normalize(vmin=field_strength.min(), vmax=field_strength.max())
+        colormap = cm.viridis
+        facecolors = LightSource(azdeg=0, altdeg=10).shade(
+            field_strength, colormap, norm=normalization
+        )
+        kwargs.setdefault("alpha", 1)
+        ax.plot_surface(
+            np.asarray(x),
+            np.asarray(y),
+            np.asarray(z),
+            facecolors=facecolors,
+            rstride=1,
+            cstride=1,
+            antialiased=False,
+            linewidth=0,
+            shade=False,
+            **kwargs,
+        )
+        if created_axes:
+            colorbar = figure.colorbar(
+                cm.ScalarMappable(cmap=colormap, norm=normalization), ax=ax, shrink=0.7
+            )
+            colorbar.ax.set_title(r"$|B|$ [T]")
+            ax.grid(False)
+        if axis_equal:
+            from pyqsc_jax.plotting import set_axes_equal
+
+            set_axes_equal(ax, x, y, z)
+        if show:
+            plt.show()
+        if close:
+            plt.close(figure)
+        return figure, ax
+
+    def to_vtk(
+        self,
+        filename,
+        r: float = 0.1,
+        ntheta: int = 40,
+        nphi: int = 120,
+        ntheta_fourier: int = 20,
+        extra_data: dict[str, Any] | None = None,
+        field: Any = None,
+    ) -> None:
+        """Write the available-order boundary at radius ``r`` [m] as a VTK structured grid.
+
+        Point data holds the near-axis ``|B|`` [T] (``B_NearAxis``), ``field.AbsB`` at
+        the surface points when an ESSOS-like ``field`` is given (``B_BiotSavart``),
+        and any ``extra_data`` arrays of shape ``(1, nphi, ntheta)``. Requires
+        ``pyevtk``.
+        """
+
+        import numpy as np
+
+        try:
+            from pyevtk.hl import gridToVTK
+        except ImportError as error:
+            raise ImportError("to_vtk requires pyevtk (pip install pyevtk).") from error
+
+        x, y, z, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
+        x, y, z = (
+            np.ascontiguousarray(np.asarray(v).T.reshape((1, nphi, ntheta))) for v in (x, y, z)
+        )
+        point_data = {}
+        if field is not None:
+            points = jnp.stack((x[0], y[0], z[0]), axis=-1)
+            field_strength = jax.vmap(jax.vmap(field.AbsB))(points)
+            point_data["B_BiotSavart"] = np.ascontiguousarray(
+                np.asarray(field_strength).reshape((1, nphi, ntheta))
+            )
+        theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
+        phi = jnp.linspace(0, 2 * jnp.pi, nphi)
+        phi2d, theta2d = jnp.meshgrid(phi, theta)
+        point_data["B_NearAxis"] = np.ascontiguousarray(
+            np.asarray(self.B_mag(r, theta2d, phi2d)).T.reshape((1, nphi, ntheta))
+        )
+        point_data.update(extra_data or {})
+        gridToVTK(str(filename), x, y, z, pointData=point_data)
+
+
+jax.tree_util.register_pytree_node(near_axis, near_axis._tree_flatten, near_axis._tree_unflatten)

@@ -1,0 +1,4 @@
+Constructing an r2 compatibility surface...
+boundary array shape: (24, 49)
+R range [m]: 0.7964358345283623 1.1899458059645982
+Z range [m]: -0.23442490998746798 0.23442490998746796
