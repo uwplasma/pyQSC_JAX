@@ -48,6 +48,18 @@ grad = jax.grad(lambda e: qsc.solve(axis=solution.axis, etabar=e, B2c=-0.00322,
                                     order=2, nphi=61).B20_variation)(0.64)
 ```
 
+## Results at a glance
+
+All field quantities are relative to the on-axis field $B_0$ and the major radius $R_0$.
+
+| | |
+|---|---|
+| ![Convergence](docs/_static/figures/convergence.png) | Spectral convergence with axis resolution: (a) rotational transform and $B_{20}$ against pyQSC (Landreman & Sengupta 2019, section 5.1); (b) divergence of the field jet; (c) the regularized full-axis integral of the plasma field, fourth order with the endpoint kink correction, second order without. |
+| ![Plasma and external field](docs/_static/figures/example_10.png) | The on-axis field split into the plasma field and the external (coil) field, in the Frenet frame (`examples/10_plasma_external_field_jet.py`). The coils must supply the external part, not the total. |
+| ![B20](docs/_static/figures/example_06.png) | Quasisymmetry at second order: $B_{20}$ variation of a database configuration and after axis optimization (`examples/06_optimize_axis_B20.py`). |
+| ![Finite-pressure B20](docs/_static/figures/example_03.png) | Second order at finite pressure and zero current (`examples/03_second_order_finite_beta.py`). |
+| ![VMEC export](docs/_static/figures/example_13.png) | VMEC boundary export: cross-sections on uniform cylindrical angle and the boundary Fourier spectrum (`examples/13_vmec_export.py`). |
+
 ## Documentation
 
 <https://pyqsc-jax.readthedocs.io> has the theory (every equation and algorithm), a user

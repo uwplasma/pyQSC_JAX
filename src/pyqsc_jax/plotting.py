@@ -174,16 +174,19 @@ def plot_b20(
     normalized_angle = np.asarray(solution.varphi * solution.inputs.axis.nfp / (2 * jnp.pi))
     defaults = {"linewidth": 2.0}
     defaults.update(plot_kwargs)
-    ax.plot(normalized_angle, np.asarray(solution.B20_anomaly), label=label, **defaults)
+    scale = float(solution.R0[0]) ** 2 / float(solution.inputs.B0)
+    ax.plot(normalized_angle, np.asarray(solution.B20_anomaly) * scale, label=label, **defaults)
     ax.set_xlabel("Boozer angle / field period")
-    ax.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
+    ax.set_ylabel(r"$(B_{20}-\langle B_{20}\rangle)\,R_0^2/B_0$")
     if label is not None:
         ax.legend()
     return figure, ax
 
 
-def plot_field_jet_norms(result: PlasmaHessianData, *, axes: Any = None):
-    """Plot total, plasma, and external field-jet Frobenius norms."""
+def plot_field_jet_norms(
+    result: PlasmaHessianData, *, axes: Any = None, B0: float = 1.0, R0: float = 1.0
+):
+    """Plot total, plasma and external field-jet norms in units of B0, B0/R0 and B0/R0**2."""
 
     plt = _matplotlib()
     if axes is None:
@@ -206,9 +209,19 @@ def plot_field_jet_norms(result: PlasmaHessianData, *, axes: Any = None):
     samples = np.arange(total_field.shape[0]) / total_field.shape[0]
 
     tensors = (
-        (total_field, plasma_field, external_field, r"$|B|$ [T]"),
-        (total_gradient, plasma_gradient, external_gradient, r"$|\nabla B|_F$ [T/m]"),
-        (total_hessian, plasma_hessian, external_hessian, r"$|\nabla\nabla B|_F$ [T/m$^2$]"),
+        (total_field / B0, plasma_field / B0, external_field / B0, r"$|B|/B_0$"),
+        (
+            total_gradient * R0 / B0,
+            plasma_gradient * R0 / B0,
+            external_gradient * R0 / B0,
+            r"$R_0|\nabla B|_F/B_0$",
+        ),
+        (
+            total_hessian * R0**2 / B0,
+            plasma_hessian * R0**2 / B0,
+            external_hessian * R0**2 / B0,
+            r"$R_0^2|\nabla\nabla B|_F/B_0$",
+        ),
     )
     for axis, (total, plasma, external, ylabel) in zip(axes, tensors, strict=True):
         component_axes = tuple(range(1, total.ndim))
@@ -270,10 +283,12 @@ def plot_field_split_components(
         if axes.shape != (3,):
             raise ValueError("axes must contain exactly three Matplotlib axes.")
         figure = axes[0].figure
-    components = np.asarray(field_split_frenet_components(result, solution))
+    components = np.asarray(field_split_frenet_components(result, solution)) / float(
+        solution.inputs.B0
+    )
     angle = np.asarray(solution.varphi * solution.inputs.axis.nfp / (2 * jnp.pi))
     contributions = ("total", "plasma", "external")
-    component_labels = (r"$B_t$ [T]", r"$B_n$ [T]", r"$B_b$ [T]")
+    component_labels = (r"$B_t/B_0$", r"$B_n/B_0$", r"$B_b/B_0$")
     for component_index, (axis, ylabel) in enumerate(zip(axes, component_labels, strict=True)):
         for field_index, label in enumerate(contributions):
             axis.plot(angle, components[field_index, component_index], label=label)

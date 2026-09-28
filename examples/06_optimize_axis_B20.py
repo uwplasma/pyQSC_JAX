@@ -73,12 +73,18 @@ print("singular radius:", float(optimized.r_singularity))
 stock_angle = np.asarray(stock.solution.varphi * stock.solution.inputs.axis.nfp / (2 * np.pi))
 optimized_angle = np.asarray(optimized.varphi * optimized.inputs.axis.nfp / (2 * np.pi))
 figure, axes = plt.subplots(1, 2, figsize=(9.4, 3.8))
-axes[0].plot(stock_angle, np.asarray(stock.diagnostics.anomaly), linewidth=2)
+scale = float(stock.solution.R0[0]) ** 2 / float(stock.solution.inputs.B0)
+axes[0].plot(stock_angle, np.asarray(stock.diagnostics.anomaly) * scale, linewidth=2)
 axes[0].set_title(r"database ID 57409 + exact $B_{2c}$")
 axes[0].set_xlabel("Boozer angle / field period")
-axes[0].set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
+axes[0].set_ylabel(r"$(B_{20}-\langle B_{20}\rangle)\,R_0^2/B_0$")
 axes[1].plot(
-    optimized_angle, np.asarray(optimized_diagnostics.anomaly), linewidth=2, color="tab:green"
+    optimized_angle,
+    np.asarray(optimized_diagnostics.anomaly)
+    * float(optimized.R0[0]) ** 2
+    / float(optimized.inputs.B0),
+    linewidth=2,
+    color="tab:green",
 )
 axes[1].set_title(f"optimized axis ({improvement:,.0f}x smaller)")
 axes[1].set_xlabel("Boozer angle / field period")

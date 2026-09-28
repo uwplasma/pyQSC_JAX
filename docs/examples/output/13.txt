@@ -1,6 +1,6 @@
 Writing the fixed-boundary VMEC input...
 input: examples/output/input.pyqsc_jax_qa
-conversion seconds (compile + first execution): 0.7896429999964312
+conversion seconds (compile + first execution): 0.8016248750063824
 toroidal-angle inversion converged: True
 maximum toroidal-angle residual: 1.1102230246251565e-16
 toroidal-angle tolerance: 2.220446049250313e-14

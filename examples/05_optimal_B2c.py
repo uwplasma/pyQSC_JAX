@@ -29,10 +29,20 @@ print("affine reconstruction error:", float(result.affine_reconstruction_error))
 
 angle = np.asarray(initial.varphi * NFP / (2 * np.pi))
 figure, axis = plt.subplots(figsize=(6.2, 3.8))
-axis.plot(angle, np.asarray(initial.B20_anomaly), label="initial", linewidth=2)
-axis.plot(angle, np.asarray(optimized.B20_anomaly), label="optimal B2c", linewidth=2)
+axis.plot(
+    angle,
+    np.asarray(initial.B20_anomaly) * float(initial.R0[0]) ** 2 / float(initial.inputs.B0),
+    label="initial",
+    linewidth=2,
+)
+axis.plot(
+    angle,
+    np.asarray(optimized.B20_anomaly) * float(optimized.R0[0]) ** 2 / float(optimized.inputs.B0),
+    label="optimal B2c",
+    linewidth=2,
+)
 axis.set_xlabel("Boozer angle / field period")
-axis.set_ylabel(r"$B_{20}-\langle B_{20}\rangle$ [T/m$^2$]")
+axis.set_ylabel(r"$(B_{20}-\langle B_{20}\rangle)\,R_0^2/B_0$")
 axis.legend()
 figure.tight_layout()
 if SAVE_OUTPUT:
