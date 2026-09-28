@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, ClassVar
 
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.geometry import Axis
+from pyqsc_jax.geometry import Axis, is_array_like
 
 if TYPE_CHECKING:
     from pyqsc_jax.geometry import AxisGeometry
@@ -147,7 +147,10 @@ class NearAxisInputs:
             raise ValueError("sG must be +1 or -1.")
         if self.spsi not in (-1, 1):
             raise ValueError("spsi must be +1 or -1.")
-        for name in ("etabar", "B0", "sigma0", "I2", "p2", "B2c", "B2s"):
+        names = ("etabar", "B0", "sigma0", "I2", "p2", "B2c", "B2s")
+        if not all(is_array_like(getattr(self, name)) for name in names):
+            return  # placeholder leaves, e.g. during jax.jit(...).lower
+        for name in names:
             value = jnp.asarray(getattr(self, name))
             if value.ndim:
                 raise ValueError(f"{name} must be a scalar.")
@@ -250,6 +253,16 @@ class NearAxisSolution:
 
     Sampled vector arrays use a leading ``nphi`` axis. Vector components are
     Cartesian unless a field name explicitly contains ``cylindrical``.
+
+    Attribute access: first-order quantities are fields. Second- and
+    third-order coefficients (``X20``, ``B20``, ``X3c1``, ...) are read from
+    :attr:`second_order` / :attr:`third_order` under their own names. The
+    on-axis diagnostics (Mercier terms, the total field jet ``grad_grad_B_axis``
+    and the singular radius ``r_singularity``) are stored in :attr:`mercier`,
+    :attr:`field_jet` and :attr:`singularity` only when requested with
+    ``solve(..., diagnostics=True)`` or :meth:`with_diagnostics`; otherwise
+    their attributes are computed on access, so a plain solve does not pay
+    for them.
     """
 
     inputs: NearAxisInputs
@@ -322,33 +335,54 @@ class NearAxisSolution:
                 raise AttributeError(f"Lower-order solution has no {name!r} quantity.")
             return getattr(third_order, name)
         if name in self._MERCIER_NAMES:
-            mercier = object.__getattribute__(self, "mercier")
-            if mercier is None:
-                raise AttributeError("First-order solution has no Mercier diagnostics.")
-            return getattr(mercier, name)
+            return getattr(self._require_mercier(), name)
         if name in self._FIELD_JET_NAMES:
             raise AttributeError("First-order solution has no second-derivative field jet.")
         if name in self._SINGULARITY_NAMES:
             raise AttributeError("First-order solution has no singular-radius diagnostics.")
         raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}.")
 
+    def _diagnostic(self, slot: str, message: str):
+        value = object.__getattribute__(self, slot)
+        if value is not None:
+            return value
+        if object.__getattribute__(self, "second_order") is None:
+            raise AttributeError(message)
+        from pyqsc_jax import diagnostics
+
+        compute = {
+            "mercier": diagnostics.mercier_diagnostics,
+            "field_jet": diagnostics.total_field_jet,
+            "singularity": diagnostics.singularity_diagnostics,
+        }[slot]
+        return compute(self)
+
     def _require_mercier(self) -> MercierDiagnostics:
-        mercier = object.__getattribute__(self, "mercier")
-        if mercier is None:
-            raise AttributeError("First-order solution has no Mercier diagnostics.")
-        return mercier
+        return self._diagnostic("mercier", "First-order solution has no Mercier diagnostics.")
 
     def _require_field_jet(self) -> FieldJet:
-        field_jet = object.__getattribute__(self, "field_jet")
-        if field_jet is None:
-            raise AttributeError("First-order solution has no second-derivative field jet.")
-        return field_jet
+        return self._diagnostic(
+            "field_jet", "First-order solution has no second-derivative field jet."
+        )
 
     def _require_singularity(self) -> SingularityDiagnostics:
-        singularity = object.__getattribute__(self, "singularity")
-        if singularity is None:
-            raise AttributeError("First-order solution has no singular-radius diagnostics.")
-        return singularity
+        return self._diagnostic(
+            "singularity", "First-order solution has no singular-radius diagnostics."
+        )
+
+    def with_diagnostics(self) -> NearAxisSolution:
+        """Return a copy with Mercier, field-jet and singularity diagnostics stored.
+
+        Requires a second-order solution. Useful before returning a solution from
+        ``jax.jit`` or ``vmap`` so the diagnostics are part of the pytree.
+        """
+
+        return replace(
+            self,
+            mercier=self._require_mercier(),
+            field_jet=self._require_field_jet(),
+            singularity=self._require_singularity(),
+        )
 
     @property
     def axis(self) -> Axis:

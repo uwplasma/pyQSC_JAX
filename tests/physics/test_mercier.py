@@ -25,7 +25,9 @@ def test_mercier_diagnostics_match_upstream_finite_pressure_reference():
     }
     for name, value in expected.items():
         np.testing.assert_allclose(getattr(solution, name), value, rtol=3e-12, atol=3e-12)
-        np.testing.assert_allclose(getattr(solution.mercier, name), value, rtol=3e-12, atol=3e-12)
+        np.testing.assert_allclose(
+            getattr(qsc.mercier_diagnostics(solution), name), value, rtol=3e-12, atol=3e-12
+        )
 
 
 def test_vacuum_mercier_pressure_terms_vanish():

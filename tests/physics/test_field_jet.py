@@ -34,7 +34,7 @@ def _finite_pressure_current(nphi=61):
 @pytest.mark.parametrize("factory", [_vacuum_qa, _finite_pressure_current])
 def test_total_field_jet_satisfies_chain_rule_and_maxwell_identities(factory):
     solution = factory()
-    jet = solution.field_jet
+    jet = qsc.total_field_jet(solution)
 
     assert jet is not None
     assert jet.field.shape == (61, 3)
@@ -55,7 +55,7 @@ def test_total_field_jet_satisfies_chain_rule_and_maxwell_identities(factory):
 
 def test_vacuum_field_hessian_is_fully_symmetric_and_trace_free():
     solution = _vacuum_qa()
-    hessian = solution.field_jet.hessian
+    hessian = qsc.total_field_jet(solution).hessian
 
     np.testing.assert_allclose(hessian, np.swapaxes(hessian, 1, 2), rtol=0, atol=7e-7)
     np.testing.assert_allclose(hessian, np.swapaxes(hessian, 1, 3), rtol=0, atol=7e-7)

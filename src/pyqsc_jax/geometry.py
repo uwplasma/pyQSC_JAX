@@ -5,10 +5,21 @@ from typing import Any, ClassVar
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from pyqsc_jax.spectral import differentiation_matrix, periodic_grid
 
 ArrayLike = Any
+
+
+def is_array_like(value: Any) -> bool:
+    """Whether a pytree leaf is numeric data (arrays, tracers, scalars, sequences).
+
+    Dataclass validation is skipped for other leaves, such as the placeholder
+    objects JAX substitutes when it unflattens pytrees during ``jit(...).lower``.
+    """
+
+    return isinstance(value, (jax.Array, np.ndarray, np.generic, int, float, list, tuple))
 
 
 def _as_coefficient_array(values: ArrayLike, dtype: jnp.dtype) -> jax.Array:
@@ -49,6 +60,8 @@ class Axis:
     def __post_init__(self) -> None:
         if not isinstance(self.nfp, int) or isinstance(self.nfp, bool) or self.nfp < 1:
             raise ValueError("nfp must be a positive integer.")
+        if not all(is_array_like(value) for value in (self.rc, self.rs, self.zc, self.zs)):
+            return  # placeholder leaves, e.g. during jax.jit(...).lower
 
         raw = tuple(jnp.asarray(values) for values in (self.rc, self.rs, self.zc, self.zs))
         dtype = jnp.result_type(jnp.asarray(0.0), *(array.dtype for array in raw))

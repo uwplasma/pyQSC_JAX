@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -76,3 +77,44 @@ def test_input_model_validation(overrides, message):
     parameters.update(overrides)
     with pytest.raises(ValueError, match=message):
         NearAxisInputs(**parameters)
+
+
+def test_diagnostics_are_lazy_unless_requested():
+    kwargs = dict(rc=[1.0, 0.09], zs=[0.0, -0.09], nfp=2, etabar=0.95, order="r2", nphi=31)
+    plain = qsc.Qsc(**kwargs)
+    assert plain.mercier is None and plain.field_jet is None and plain.singularity is None
+    assert plain.second_order.linear_report.condition_number is None
+    assert plain.root_report.jacobian_condition_number is None
+
+    stored = qsc.Qsc(**kwargs, diagnostics=True)
+    assert stored.singularity is not None and stored.field_jet is not None
+    assert stored.second_order.linear_report.condition_number is not None
+    assert stored.root_report.jacobian_condition_number is not None
+    np.testing.assert_allclose(plain.r_singularity, stored.r_singularity, rtol=1e-12)
+    np.testing.assert_allclose(
+        plain.grad_grad_B_axis, stored.grad_grad_B_axis, rtol=1e-12, atol=1e-10
+    )
+    np.testing.assert_allclose(plain.DMerc_times_r2, stored.DMerc_times_r2, rtol=1e-12)
+    attached = plain.with_diagnostics()
+    np.testing.assert_allclose(attached.singularity.r_singularity, stored.r_singularity)
+    with pytest.raises(AttributeError, match="singular"):
+        _ = qsc.Qsc(**{**kwargs, "order": "r1"}).r_singularity
+
+
+def test_solve_does_not_retrace_for_new_values_or_input_types():
+    from pyqsc_jax.first_order import _solve
+
+    axis = qsc.Axis(rc=[1.0, 0.09], zs=[0.0, -0.09], nfp=2)
+    qsc.solve(axis=axis, etabar=0.95, nphi=23)
+    size = _solve._cache_size()
+    qsc.solve(axis=axis, etabar=jnp.asarray(0.9), nphi=23)
+    qsc.solve(axis=axis, etabar=1, B0=np.float64(1.1), nphi=23)
+    assert _solve._cache_size() == size
+
+
+def test_solution_pytree_supports_ahead_of_time_lowering():
+    def iota(etabar):
+        return qsc.solve(axis=qsc.Axis(rc=[1.0, 0.09], zs=[0.0, -0.09], nfp=2), etabar=etabar)
+
+    lowered = jax.jit(iota).lower(0.95)
+    assert lowered.compile()(0.95).iota.shape == ()

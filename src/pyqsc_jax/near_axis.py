@@ -162,29 +162,20 @@ class near_axis:  # noqa: N801
             self.R0p,
             self.Z0p,
         ) = self._legacy_tuple(solution)
-        if solution.second_order is not None:
-            for name in solution._SECOND_ORDER_NAMES:
-                setattr(self, name, getattr(solution, name))
-            self.d2_volume_d_psi2 = solution.d2_volume_d_psi2
-            self.DGeod_times_r2 = solution.DGeod_times_r2
-            self.DWell_times_r2 = solution.DWell_times_r2
-            self.DMerc_times_r2 = solution.DMerc_times_r2
-            self.grad_grad_B = solution.grad_grad_B
-            self.grad_grad_B_axis = jnp.moveaxis(solution.grad_grad_B_axis, 0, -1)
-            self.L_grad_grad_B = solution.L_grad_grad_B
-            self.grad_grad_B_inverse_scale_length_vs_varphi = (
-                solution.grad_grad_B_inverse_scale_length_vs_varphi
-            )
-            self.grad_grad_B_inverse_scale_length = solution.grad_grad_B_inverse_scale_length
-            self.r_singularity = solution.r_singularity
-            self.r_singularity_vs_varphi = solution.r_singularity_vs_varphi
-            self.inv_r_singularity_vs_varphi = solution.inv_r_singularity_vs_varphi
-            self.r_singularity_basic_vs_varphi = solution.r_singularity_basic_vs_varphi
-            self.r_singularity_theta_vs_varphi = solution.r_singularity_theta_vs_varphi
-            self.r_singularity_residual_sqnorm = solution.r_singularity_residual_sqnorm
-        if solution.third_order is not None:
-            for name in solution._THIRD_ORDER_NAMES:
-                setattr(self, name, getattr(solution, name))
+
+    def __getattr__(self, name: str):
+        """Delegate other pyQSC-style attributes (``X20``, ``B20``, ``r_singularity``,
+        ``DMerc_times_r2``, ...) to :attr:`solution`; diagnostics are computed on access."""
+
+        if name == "solution" or name.startswith("__"):
+            raise AttributeError(name)
+        return getattr(self.solution, name)
+
+    @property
+    def grad_grad_B_axis(self) -> jax.Array:
+        """Cartesian Hessian in the historical ``(field, derivative, derivative, sample)`` order."""
+
+        return jnp.moveaxis(self.solution.grad_grad_B_axis, 0, -1)
 
     @property
     def dofs(self) -> jax.Array:

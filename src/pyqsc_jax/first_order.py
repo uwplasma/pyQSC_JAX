@@ -1,5 +1,7 @@
 """First-order quasisymmetric near-axis construction."""
 
+from dataclasses import replace
+from functools import partial
 from typing import Any
 
 import jax
@@ -222,6 +224,7 @@ def solve(
     sG: int = 1,
     spsi: int = 1,
     root_options: RootSolveOptions = DEFAULT_ROOT_OPTIONS,
+    diagnostics: bool = False,
 ) -> NearAxisSolution:
     """Construct the near-axis solution for a prescribed axis and ``etabar``.
 
@@ -229,9 +232,55 @@ def solve(
     for ``order >= 2`` (``"r2"``) the second-order equations, and for
     ``order == 3`` (``"r3"``) the pyQSC-compatible third-order flux correction.
     Lengths in meters, fields in tesla, ``p2`` in Pa/m^2, ``I2`` in T/m.
+    ``nphi`` is the number of grid points per field period.
+
+    The computation is jitted with ``nphi``, ``order``, ``sG``, ``spsi``,
+    ``root_options``, ``diagnostics``, the field-period count and the number of
+    axis modes static; scalar inputs are converted to float arrays first, so
+    new values never retrace. ``diagnostics=True`` also stores the Mercier,
+    field-jet and singular-radius diagnostics and exact condition numbers in the
+    solution; otherwise those attributes are computed on access. Requires
+    64-bit floats (``jax_enable_x64``).
     """
 
-    normalized_order = _normalize_order(order)
+    scalars = {
+        name: jnp.asarray(value, dtype=float)
+        for name, value in dict(
+            etabar=etabar, B0=B0, sigma0=sigma0, I2=I2, p2=p2, B2c=B2c, B2s=B2s
+        ).items()
+    }
+    if not isinstance(axis, Axis):
+        raise TypeError("axis must be an Axis.")
+    return _solve(
+        axis,
+        **scalars,
+        nphi=nphi,
+        order=_normalize_order(order),
+        sG=sG,
+        spsi=spsi,
+        root_options=root_options,
+        diagnostics=bool(diagnostics),
+    )
+
+
+@partial(jax.jit, static_argnames=("nphi", "order", "sG", "spsi", "root_options", "diagnostics"))
+def _solve(
+    axis: Axis,
+    *,
+    etabar: jax.Array,
+    B0: jax.Array,
+    sigma0: jax.Array,
+    I2: jax.Array,
+    p2: jax.Array,
+    B2c: jax.Array,
+    B2s: jax.Array,
+    nphi: int,
+    order: int,
+    sG: int,
+    spsi: int,
+    root_options: RootSolveOptions,
+    diagnostics: bool,
+) -> NearAxisSolution:
     inputs = NearAxisInputs(
         axis=axis,
         etabar=etabar,
@@ -242,18 +291,20 @@ def solve(
         B2c=B2c,
         B2s=B2s,
         nphi=nphi,
-        order=normalized_order,
+        order=order,
         sG=sG,
         spsi=spsi,
     )
+    if diagnostics:
+        root_options = replace(root_options, exact_condition_number=True)
     geometry = compute_axis_geometry(axis, nphi=nphi)
     sigma, solved_iota, root_report = solve_sigma(inputs, geometry, root_options=root_options)
     solution = first_order_solution(inputs, geometry, sigma, solved_iota, root_report)
-    if normalized_order >= 2:
+    if order >= 2:
         from pyqsc_jax.second_order import solve_second_order
 
-        solution = solve_second_order(solution)
-    if normalized_order == 3:
+        solution = solve_second_order(solution, attach_diagnostics=diagnostics)
+    if order == 3:
         from pyqsc_jax.third_order import solve_third_order
 
         solution = solve_third_order(solution)

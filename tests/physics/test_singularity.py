@@ -66,7 +66,7 @@ def test_singular_radius_matches_upstream_pyqsc(parameters, expected_minimum, ex
 
 def test_determinant_coefficients_and_refined_residual():
     solution = qsc.Qsc(**CASES[0][0], nphi=61, order="r2")
-    diagnostics = solution.singularity
+    diagnostics = qsc.singularity_diagnostics(solution)
     expected_g0 = solution.geometry.abs_G0_over_B0 * solution.X1c * solution.Y1s
 
     np.testing.assert_allclose(diagnostics.g0, expected_g0, rtol=2e-13, atol=2e-13)

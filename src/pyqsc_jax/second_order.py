@@ -205,9 +205,14 @@ def _assemble_periodic_system(
 
 
 def solve_second_order(
-    first_order: NearAxisSolution, *, attach_diagnostics: bool = True
+    first_order: NearAxisSolution, *, attach_diagnostics: bool = False
 ) -> NearAxisSolution:
-    """Add the complete finite-pressure/current second-order solution."""
+    """Add the complete finite-pressure/current second-order solution.
+
+    With ``attach_diagnostics`` the Mercier, field-jet and singular-radius
+    diagnostics and the exact condition number of the linear system are
+    computed and stored; otherwise diagnostics are computed on attribute access.
+    """
 
     inputs = first_order.inputs
     geometry = first_order.geometry
@@ -264,7 +269,9 @@ def solve_second_order(
             first_order, X2s=X2s, X2c=X2c, Z20=Z20, Z2s=Z2s, Z2c=Z2c, beta_1s=beta_1s
         )
     )
-    solution, linear_report = implicit_dense_linear_solve(matrix, right_hand_side)
+    solution, linear_report = implicit_dense_linear_solve(
+        matrix, right_hand_side, exact_condition_number=attach_diagnostics
+    )
     X20, Y20 = jnp.split(solution, 2)
     Y2s = Y2s_inhomogeneous + Y2s_from_X20 * X20
     Y2c = Y2c_inhomogeneous + Y2c_from_X20 * X20 + Y20

@@ -23,7 +23,7 @@ solution = qsc.Qsc(
     order="r2",
     nphi=NPHI,
 )
-jet = solution.field_jet
+jet = qsc.total_field_jet(solution)
 if jet is None:
     raise RuntimeError("The r2 solution did not produce a total field jet.")
 print("field reconstruction error:", float(jet.maximum_field_error))

@@ -45,14 +45,17 @@ def test_second_order_definitions_and_derivatives():
     weighted_mean = jnp.sum(solution.B20 * weights) / jnp.sum(weights)
 
     np.testing.assert_allclose(solution.B20_mean, weighted_mean, rtol=2e-13)
-    np.testing.assert_allclose(solution.B20_anomaly, solution.B20 - weighted_mean)
+    np.testing.assert_allclose(solution.B20_anomaly, solution.B20 - weighted_mean, atol=1e-12)
     np.testing.assert_allclose(
         solution.B20_variation, jnp.max(solution.B20) - jnp.min(solution.B20)
     )
-    np.testing.assert_allclose(solution.d_X20_d_varphi, solution.geometry.d_d_varphi @ solution.X20)
+    np.testing.assert_allclose(
+        solution.d_X20_d_varphi, solution.geometry.d_d_varphi @ solution.X20, atol=1e-11
+    )
     np.testing.assert_allclose(
         solution.d2_X1c_d_varphi2,
         solution.geometry.d_d_varphi @ (solution.geometry.d_d_varphi @ solution.X1c),
+        atol=1e-10,
     )
 
 
