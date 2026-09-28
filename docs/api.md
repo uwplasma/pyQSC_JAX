@@ -104,5 +104,5 @@ These live in submodules and are not part of `__all__`.
 .. autoclass:: pyqsc_jax.near_axis.near_axis
    :members: dofs, x, get_boundary, to_vmec, plot, B_mag, to_vtk
 .. automodule:: pyqsc_jax.plotting
-   :members: plot_axis, surface_coordinates, surface_field_strength, plot_surface_3d, set_axes_equal, plot_b20, plot_field_split_components, plot_field_jet_norms, field_split_frenet_components
+   :members: plot_axis, surface_coordinates, surface_field_strength, surface_normal_field_error, plot_surface_3d, set_axes_equal, plot_b20, plot_field_split_components, plot_field_jet_norms, field_split_frenet_components
 ```

@@ -18,6 +18,7 @@ Each page runs one script from `examples/`. The figures and printed output are p
 | {doc}`12_autodiff_check` | Implicit derivative check |
 | {doc}`13_vmec_export` | VMEC export |
 | {doc}`14_vmex_radial_profiles` | VMEX radial profiles |
+| {doc}`15_surface_coloring` | Surface colouring by \|B\| and by an error field |
 
 ```{toctree}
 :hidden:
@@ -35,4 +36,5 @@ Each page runs one script from `examples/`. The figures and printed output are p
 12_autodiff_check
 13_vmec_export
 14_vmex_radial_profiles
+15_surface_coloring
 ```

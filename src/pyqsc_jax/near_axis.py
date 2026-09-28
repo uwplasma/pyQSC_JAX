@@ -504,12 +504,9 @@ class near_axis:  # noqa: N801
             colorbar.ax.set_title(r"$|B|$ [T]")
             ax.grid(False)
         if axis_equal:
-            ranges = (np.ptp(np.asarray(x)), np.ptp(np.asarray(y)), np.ptp(np.asarray(z)))
-            radius = max(ranges) / 2
-            centers = (np.mean(np.asarray(x)), np.mean(np.asarray(y)), np.mean(np.asarray(z)))
-            ax.set_xlim(centers[0] - radius, centers[0] + radius)
-            ax.set_ylim(centers[1] - radius, centers[1] + radius)
-            ax.set_zlim(centers[2] - radius, centers[2] + radius)
+            from pyqsc_jax.plotting import set_axes_equal
+
+            set_axes_equal(ax, x, y, z)
         if show:
             plt.show()
         if close:

@@ -139,6 +139,36 @@ def surface_field_strength(
     return _close_toroidally(jnp.tile(field_strength, (1, inputs.axis.nfp)))
 
 
+def surface_normal_field_error(
+    solution: NearAxisSolution, field: Any, *, radius: float = 0.05, ntheta: int = 32
+) -> np.ndarray:
+    """Relative normal field ``B.n / |B|`` on the :func:`surface_coordinates` grid.
+
+    ``field`` is a callable mapping Cartesian points ``(n, 3)`` [m] to Cartesian ``B``
+    ``(n, 3)`` [T] (e.g. a vmapped ESSOS ``BiotSavart.B``), or an array of shape
+    ``(ntheta, nphi_plot, 3)`` already evaluated on that grid. ``n`` is the outward unit
+    normal of the surface, from centred periodic differences of the sampled surface.
+    """
+
+    x, y, z = (np.asarray(v) for v in surface_coordinates(solution, radius=radius, ntheta=ntheta))
+    points = np.stack((x, y, z), axis=-1)
+    if callable(field):
+        B = np.asarray(field(jnp.asarray(points.reshape(-1, 3)))).reshape(points.shape)
+    else:
+        B = np.asarray(field)
+        if B.shape != points.shape:
+            raise ValueError(f"field array must have shape {points.shape}.")
+    periodic = points[:, :-1]  # drop the toroidal closing column
+    d_theta = np.roll(periodic, -1, axis=0) - np.roll(periodic, 1, axis=0)
+    d_phi = np.roll(periodic, -1, axis=1) - np.roll(periodic, 1, axis=1)
+    normal = np.cross(d_phi, d_theta)
+    normal /= np.linalg.norm(normal, axis=-1, keepdims=True)
+    outward = periodic - periodic.mean(axis=0, keepdims=True)  # from each section's centroid
+    normal *= np.sign(np.sum(normal * outward))
+    normal = np.concatenate((normal, normal[:, :1]), axis=1)
+    return np.sum(B * normal, axis=-1) / np.linalg.norm(B, axis=-1)
+
+
 def plot_surface_3d(
     solution: NearAxisSolution,
     *,
@@ -148,43 +178,62 @@ def plot_surface_3d(
     cmap: str = "viridis",
     alpha: float = 0.9,
     plot_axis_line: bool = True,
-    color_by: str = "height",
+    color_by: str = "B",
+    field: Any = None,
+    colorbar: bool = True,
     **surface_kwargs: Any,
 ):
     """Plot a full-torus near-axis surface with equal x, y, z scales; return ``(figure, axes)``.
 
-    ``color_by="height"`` (default) colors by ``z``; ``color_by="B"`` colors by the near-axis
-    ``|B|`` of :func:`surface_field_strength` and adds a colorbar when the axes are created here.
+    ``color_by`` selects the colouring: ``"B"`` (default) the near-axis ``|B|`` of
+    :func:`surface_field_strength`; ``"height"`` the height ``z``; ``"Bn"`` the relative
+    normal error ``log10(|B.n|/|B|)`` of an external ``field`` (see
+    :func:`surface_normal_field_error`), e.g. coils checked against the surface.
+    The ``"Bn"`` scale spans at most four decades below its maximum, so isolated zeros of
+    ``B.n`` do not wash out the map. ``colorbar`` adds a labelled colorbar.
     """
 
-    if color_by not in ("height", "B"):
-        raise ValueError("color_by must be 'height' or 'B'.")
+    if color_by not in ("height", "B", "Bn"):
+        raise ValueError("color_by must be 'height', 'B' or 'Bn'.")
+    if color_by == "Bn" and field is None:
+        raise ValueError("color_by='Bn' needs a field: a callable B(points) or an array.")
     x, y, z = surface_coordinates(solution, radius=radius, ntheta=ntheta)
     plt = _matplotlib()
-    created = ax is None
-    if created:
+    from matplotlib import colormaps
+    from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import Normalize
+
+    if ax is None:
         figure = plt.figure(figsize=(6.0, 4.8))
         ax = figure.add_subplot(111, projection="3d")
     else:
         figure = ax.figure
-    closed = [np.concatenate((v, v[:1]), axis=0) for v in map(np.asarray, (x, y, z))]
-    defaults = {"cmap": cmap, "linewidth": 0, "antialiased": True, "alpha": alpha}
     if color_by == "B":
-        from matplotlib import colormaps
-        from matplotlib.cm import ScalarMappable
-        from matplotlib.colors import Normalize
-
-        field_strength = np.asarray(surface_field_strength(solution, radius=radius, ntheta=ntheta))
-        field_strength = np.concatenate((field_strength, field_strength[:1]), axis=0)
-        norm = Normalize(field_strength.min(), field_strength.max())
-        colormap = colormaps[cmap]
-        defaults = {**defaults, "facecolors": colormap(norm(field_strength)), "shade": False}
-        del defaults["cmap"]
+        values = np.asarray(surface_field_strength(solution, radius=radius, ntheta=ntheta))
+        label = "|B| [T]"
+    elif color_by == "Bn":
+        error = np.abs(surface_normal_field_error(solution, field, radius=radius, ntheta=ntheta))
+        values = np.log10(np.maximum(error, np.finfo(float).tiny))
+        label = r"$\log_{10}(|B\cdot n|/|B|)$"
+    else:
+        values = np.asarray(z)
+        label = "z [m]"
+    closed = [np.concatenate((v, v[:1]), axis=0) for v in map(np.asarray, (x, y, z, values))]
+    lower = closed[3].min() if color_by != "Bn" else max(closed[3].min(), closed[3].max() - 4)
+    norm = Normalize(lower, closed[3].max(), clip=True)
+    colormap = colormaps[cmap]
+    defaults = {
+        "facecolors": colormap(norm(closed[3])),
+        "shade": False,
+        "linewidth": 0,
+        "antialiased": True,
+        "alpha": alpha,
+    }
     defaults.update(surface_kwargs)
-    ax.plot_surface(*closed, **defaults)
-    if color_by == "B" and created:
-        colorbar = figure.colorbar(ScalarMappable(norm=norm, cmap=colormap), ax=ax, shrink=0.7)
-        colorbar.set_label("|B| [T]")
+    ax.plot_surface(*closed[:3], **defaults)
+    if colorbar:
+        bar = figure.colorbar(ScalarMappable(norm=norm, cmap=colormap), ax=ax, shrink=0.7)
+        bar.set_label(label)
     if plot_axis_line:
         phi = jnp.linspace(0, 2 * jnp.pi, 361)
         axis_samples = evaluate_axis(solution.inputs.axis, phi)
@@ -198,7 +247,7 @@ def plot_surface_3d(
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
     ax.set_zlabel("z [m]")
-    set_axes_equal(ax, *closed)
+    set_axes_equal(ax, *closed[:3])
     plt.tight_layout()
     return figure, ax
 
