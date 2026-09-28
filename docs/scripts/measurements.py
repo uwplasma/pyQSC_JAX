@@ -8,7 +8,6 @@ into ``measurements.json``.
 from __future__ import annotations
 
 import time
-from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
