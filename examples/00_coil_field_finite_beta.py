@@ -1,4 +1,6 @@
-"""Construct and plot a first-order quasi-axisymmetric configuration."""
+"""Download a finite-beta database configuration, solve it to third order and plot the axis field and surfaces.
+
+Needs network access to the stellarator database."""
 
 import matplotlib.pyplot as plt
 import numpy as np

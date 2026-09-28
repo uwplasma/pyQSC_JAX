@@ -139,7 +139,7 @@ def plot_surface_3d(
         figure = ax.figure
     defaults = {"cmap": cmap, "linewidth": 0, "antialiased": True, "alpha": alpha}
     defaults.update(surface_kwargs)
-    ax.plot_surface(np.asarray(x), np.asarray(y), np.asarray(z))  # , **defaults)
+    ax.plot_surface(np.asarray(x), np.asarray(y), np.asarray(z), **defaults)
     if plot_axis_line:
         phi = jnp.linspace(0, 2 * jnp.pi, 361)
         axis_samples = evaluate_axis(solution.inputs.axis, phi)
