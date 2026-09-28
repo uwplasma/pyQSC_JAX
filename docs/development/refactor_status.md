@@ -1,0 +1,273 @@
+# Refactor status
+
+This log records green phase boundaries on
+`refactor/pyqsc-jax-complete`. “Not benchmarked” means no performance claim
+was made for that phase.
+
+## Phase 1 — audit and compatibility baseline
+
+- Commit: `3a87ba6`.
+- Files: baseline report, architecture/solver ADRs, local reference policy,
+  compatibility regression tests.
+- Verification: legacy imports, shapes, mutability, boundary behavior, and
+  upstream reference extraction.
+- Coverage/residuals: baseline only; inherited five-step sigma behavior
+  recorded rather than accepted.
+- Performance/API: not benchmarked; historical API frozen.
+- Risk/next: mutable monolith and inconsistent DOF unpacking; build immutable
+  axis/geometry core.
+
+## Phase 2 — packaging and quality scaffold
+
+- Commits: `5895008`, `969d616`.
+- Files: `pyproject.toml`, `src/` layout, CI, docs configuration, license and
+  citation metadata.
+- Verification: clean editable install, wheel/sdist smoke, Ruff, x64 CI.
+- Coverage/residuals: 95% line/branch gates established.
+- Performance/API: no import-time JAX policy; `jaxlib` removed from metadata.
+- Risk/next: physics still incomplete; establish spectral geometry and a
+  converged first-order solve.
+
+## Phase 3 — axis, geometry, and first order
+
+- Commits: `28955f8`, `16249fe`.
+- Files: immutable axis/geometry/spectral modules, damped sigma solver,
+  first-order models, thin compatibility adapter.
+- Verification: analytic circle, asymmetric reference geometry, QA/QH and
+  finite-current parity, JIT/VMAP/JVP/VJP/finite differences.
+- Coverage/residuals: QA sigma residual \(1.2\times10^{-14}\); coverage above
+  the 95% gate.
+- Performance/API: explicit pytrees replace static mutable `self`; no
+  benchmark claim.
+- Risk/next: r2 outputs unavailable; implement the complete coupled system.
+
+## Phase 4 — complete r2 and diagnostics
+
+- Commits: `3978a6b`, `5e67237`, `0086d77`.
+- Files: second-order solve, total regular-coordinate Hessian, Mercier and
+  singular-radius diagnostics.
+- Verification: four independent r2 residual equations; vacuum QA,
+  finite-pressure/current, and QH upstream arrays; Maxwell identities;
+  singular-map roots; JIT and AD checks.
+- Coverage/residuals: finite-current linear residual
+  \(1.6\times10^{-13}\); field reconstruction at roundoff.
+- Performance/API: one implicit dense linear solve; not benchmarked.
+- Risk/next: third-order boundary/shear parity; implement as a separate green
+  milestone.
+
+## Phase 5 — third order and shear
+
+- Commits: `99e81d5`, `935e1f8`.
+- Files: r3 flux constraint, untwisted boundary harmonics, standard-MHS
+  magnetic shear.
+- Verification: two flux-constraint forms; QA/QH/finite-current upstream
+  coefficients and boundaries; three shear cases; resolution and AD.
+- Coverage/residuals: consistency residuals meet documented test tolerances;
+  coverage above 95%.
+- Performance/API: shear remains explicit because `B31c` is independent.
+- Risk/next: shear sign specialization is documented; add inverse branches
+  and folds.
+
+## Phase 6 — inverse solves and optimization
+
+- Commits: `7e87d04`, `abcbd0a`, `5169173`, `cf3f6da`, `6fab74b`.
+- Files: target-transform inverse, full-state continuation, \(B_{20}\)
+  diagnostics, analytic `B2c`, criteria, bounded multistart axis search.
+- Verification: branch round trips, two inverse basins, fold traversal,
+  affine reconstruction \(3.3\times10^{-15}\), exact scalar stationarity,
+  criteria scaling, basin/status/resolution tests.
+- Coverage/residuals: complete suite remained above 95% branch coverage.
+- Performance/API: deterministic batched coarse search and JAX Jacobians;
+  absolute timing not benchmarked.
+- Risk/next: nonzero results explicitly lack global certificates; implement
+  the surface-free current and field.
+
+## Phase 7 — plasma source and external 3+5+7 jet
+
+- Commits: `d46b2bc`, `f173de7`, `f7d15b3`, `c7277fc`.
+- Files: positive-volume current, full-torus matched field, local gradient and
+  Hessian, STF pack/unpack, asymptotic metadata.
+- Verification: current conversions, straight/circular/elliptical channels,
+  resolved-volume Biot--Savart field scaling, Ampère/divergence, QA/QH
+  external STF identities, vacuum reduction, convergence, JIT/JVP/FD.
+- Coverage/residuals: 203 tests passed; 98.90% branch-aware coverage;
+  `plasma.py` 100%.
+- Performance/API: surface-free calls accept explicit formal radius; not
+  benchmarked.
+- Risk/next: Hessian contact terms rely on the independently derived interior
+  potential; integrate only the external target into ESSOS.
+
+## Phase 8 — ESSOS integration
+
+- ESSOS commits: `8a1ce7f`, `d20c23d`; draft PR
+  [#46](https://github.com/uwplasma/ESSOS/pull/46).
+- Files: external target/residual models, coil Hessian interface, stage-two
+  and single-stage examples, cross-repository tests.
+- Verification: 24 focused tests; actual coil and near-axis gradients versus
+  finite differences; vacuum reduction; example objectives 10.74→4.09 and
+  10.75→4.52.
+- Coverage/performance: focused integration only; example budgets are smoke
+  demonstrations, not device-quality searches.
+- API: dependency remains `ESSOS -> pyQSC_JAX`.
+- Risk/next: inherited ESSOS base-suite collection/docs failures are disclosed
+  in the PR; complete pyQSC_JAX examples and documentation.
+
+## Phase 9 — examples and publication figures
+
+- Commit: `a8eb51a`.
+- Files: named configurations, lazy plotting API, 12 tutorials, 5
+  deterministic publication scripts, clean-cwd execution tests.
+- Verification: 23 focused tests; every script produced its figure; all five
+  publication plots visually inspected; Ruff clean.
+- Coverage/residuals: tutorial AD relative error \(9.4\times10^{-10}\);
+  tutorial continuation crosses a detected fold.
+- Performance/API: full clean-directory example suite took 152 s on the
+  development Mac; this includes separate-process JAX compilation and is not a
+  package benchmark.
+- Risk/next: finish docs, release hardening, clean artifact validation, and
+  hostile review.
+
+## Phase 10 — documentation and release hardening
+
+- Commit: `69b05da`.
+- Files: complete docs hierarchy, tutorials via `literalinclude`, migration,
+  validation reports, release checklist, README, and compact reproducible
+  figures.
+- Verification: warnings-as-errors HTML and doctest builds; 23 focused
+  configuration/plot/example tests; figure visual inspection.
+- Performance/API: named configurations and lazy plotting helpers added; no
+  new physics formula.
+- Risk/next: harden coverage, packaging, publishing, compatibility, and
+  benchmark workflows before final review.
+
+## Phase 11 — release hardening
+
+- Commit: `686be1e`.
+- Files: synchronized benchmark and raw report, CI coverage/Codecov, docs
+  example smoke, ESSOS compatibility job, TestPyPI/production OIDC workflow,
+  clean wheel/sdist verification.
+- Verification: 226 tests pass with 98.64% combined line/branch coverage;
+  HTML/doctest warning-free; wheel and sdist install independently; `pip
+  check` and dependency audit clean; 12 ESSOS field-jet tests pass in a fresh
+  environment.
+- Numerical checks: direct `nphi=121` QA/finite/QH comparison with audited
+  pyQSC has maximum r2 array difference \(1.11\times10^{-11}\).
+- Performance: 61-point first-order solve 0.198 s cold and 144 µs warm on the
+  documented Apple M4 run; raw samples and caveats are committed.
+- API: removed unused `pyevtk`; core dependencies remain only `jax` and
+  `solvax`.
+- Risk/next: remote CI, TestPyPI OIDC, PR approval, and Zenodo are external
+  release gates; perform hostile final review before requesting merge.
+
+## Phase 12 — final review
+
+- Commit: `fb7ddac`.
+- Evidence: convention/API/dependency audits complete; two representative
+  physics mutations are killed by targeted tests; exact limitations and
+  external release gates are recorded in `final_review.md`.
+- Verification: final local lint, docs, clean-state, artifact, upstream, and
+  ESSOS checks pass. The latest remote CI result is reported in the PR rather
+  than hard-coded into this versioned status page.
+
+## Phase 13 — high-signal examples and VMEC equilibrium validation
+
+- Files: vectorized VMEC exporter, deterministic INDATA writer, frozen VMEC
+  9.0 equilibrium, B20/plasma-dominant named cases, optimizer/export
+  benchmarks, publication figures, and expanded validation docs.
+- Verification: 255 tests pass with 98.74% combined line/branch coverage;
+  `vmec.py` has 100% line/branch coverage; warnings-as-errors documentation
+  builds; both frozen and live local-VMEC equilibrium checks pass.
+- Numerical checks: optimized QA weighted B20 residual
+  \(1.5901\times10^{-6}\) at `nphi=121` and stable through `nphi=481`;
+  plasma-field fraction 33.26%; VMEC on-axis-iota error 0.0565% at radius
+  0.0025 with force residuals below \(7.6\times10^{-11}\).
+- Performance: synchronized VMEC conversion is 0.476 s including compilation
+  and 5.20 ms warm at the documented high-resolution boundary setting.
+- Risk/next: on-axis-iota agreement is asymptotic and degrades at larger
+  export radius as documented; remote CI and review remain external gates.
+
+## Phase 14 — VMEX radial equilibria and visual design audit
+
+- Files: optional VMEX bridge, live current-main compatibility job, radial
+  equilibrium tutorial and publication figure, full-torus 3D plotting
+  helpers, four-case gallery, and angle-dependent plasma configuration.
+- Verification: vacuum and finite-beta VMEX solves; radial \(\iota\), QS,
+  magnetic-well, energy, and boundary-gradient checks; traceable
+  `parameters_for` differentiation; focused plotting and plasma regressions.
+- Numerical checks: low-resolution vacuum VMEX/near-axis on-axis-\(\iota\)
+  difference 0.249%; finite-beta magnetic well
+  \(-4.2297\times10^{-4}\); angle-dependent minimum plasma-field fraction
+  32.70%; optimized \(B_{20}\) surface shown 3.3 times inside its singular
+  radius.
+- Performance: the VMEX smoke benchmark separates the converged forward solve
+  from the magnetic-well value-and-implicit-gradient cost; it is documented
+  as an integration timing, not a production throughput claim.
+- Risk/next: VMEX quasisymmetry diagnostics currently require stellarator
+  symmetry and the bridge covers fixed-boundary implicit differentiation, not
+  a reconverged free-boundary NESTOR adjoint. Remote CI and review remain
+  external gates.
+
+## Phase 15 — screened database showcase and constrained \(B_{20}\)
+
+- Files: traceable configurations from Wisconsin database IDs 3, 57409,
+  107579, and the one-period QA ID 139524; an eight-mode constrained
+  refinement of ID 57409; direct-Frenet 3D surface plotting; topology,
+  convergence, measured-performance, and optimizer-comparison README figures.
+- Verification: every showcased design independently passes the Curvo profile.
+  The QA lead passes with helicity zero and
+  \(\lvert\iota\rvert\ge0.3\); the other displayed cases pass with
+  \(\lvert\iota\rvert\ge0.4\). Database source IDs and URLs are frozen in
+  configuration and figure metadata, and every displayed surface has a
+  smoothness regression.
+- Numerical checks: the derived ID-57409 case has
+  \(\lvert\iota\rvert=2.964\), \(r_\mathrm{sing}=0.249\) m, and weighted
+  \(B_{20}\) residual \(1.2743\times10^{-10}\) at `nphi=121`, stable through
+  `nphi=481`. The finite-beta showcase is database ID 52521 with exactly
+  \(I_2=0\), finite \(p_2\), RMS axis torsion \(0.979\ \mathrm{m}^{-1}\),
+  and 14.04% relative angular variation of the pressure-driven plasma-field
+  norm while passing the same screen.
+- QA showcase checks: ID 139524 has helicity zero,
+  \(\lvert\iota\rvert=0.355\), RMS axis torsion
+  \(1.199\ \mathrm{m}^{-1}\), and \(r_\mathrm{sing}=0.097\) m. The complete
+  287-test run passes with 98.79% combined line/branch coverage; all 24 public
+  scripts and strict HTML/doctest documentation builds pass.
+- Performance evidence: synchronized Apple M4 measurements show 0.144 ms warm
+  first-order latency at `nphi=61`, a 1,373-fold cold-to-warm ratio, 0.191 ms
+  for a JVP, and 0.479 ms for an eight-case VMAP batch.
+- Limitation: at formal radius 0.15 m the pressure-only plasma contribution is
+  approximately 0.19% of the total field. The former 30% showcase relied on
+  finite \(I_2\) and was removed because its nearly planar geometry presented
+  as a tokamak rather than a representative stellarator.
+
+## Phase 16 — final VMEC, VMEX, and ESSOS integration
+
+- Commits: pyQSC_JAX `060aef3`; ESSOS `da66774`.
+- Files: convergence-safe VMEC/VMEX boundary conversion, a live
+  finite-pressure and exactly zero-current VMEC regression, explicit opt-in
+  VMEX examples, and pressure-only stage-two and single-stage ESSOS examples.
+- VMEC verification: the database QA ID 139524 case uses finite pressure,
+  \(I_2=0\), and RMS axis torsion \(1.189\ {\rm m}^{-1}\). At export radius
+  0.0015 m, VMEC converges to force residual \(9.97\times10^{-12}\) and its
+  signed on-axis transform differs from pyQSC_JAX by 0.02143%. Boundary
+  export now refuses to write when the cylindrical-angle inversion is
+  nonfinite or unconverged.
+- VMEX verification: two live current-main tests pass against VMEX 0.3.0
+  commit `2a40d756`, covering vacuum and finite-beta/zero-current radial
+  transform, quasisymmetry, magnetic well, and implicit pressure/boundary
+  gradients. Both opt-in example scripts also complete against that commit.
+- ESSOS verification: 13 focused tests pass, including the two clean-process
+  optimization examples. Both use the nonplanar, finite-pressure database
+  stellarator ID 52521 with exactly \(I_2=0\), and every field/gradient/Hessian
+  residual block decreases in both stage-two and single-stage runs.
+- Publication verification: all ten scripts were regenerated from
+  `060aef3`. Physics figures record that exact source commit; performance
+  figures retain the exact commit of their synchronized raw benchmark report.
+  The committed README PNGs were byte-stable and visually re-inspected.
+- Complete pyQSC_JAX evidence: the branch-coverage run completed 294 tests
+  before two VMEX subprocesses reached their former 180 s instrumentation
+  timeout; after making the documented VMEX opt-in explicit, those exact two
+  cases pass. The combined complete matrix is therefore 296 passes and four
+  intentional live-integration skips, with 98.75% line and 95.898% branch
+  coverage in the coverage run.
+- Risk/next: TestPyPI/PyPI trusted publishing, Zenodo creation, maintainer
+  review, and merge remain external release gates.

@@ -1,0 +1,136 @@
+# Changelog
+
+All notable changes to pyQSC_JAX will be documented here.
+
+The project follows Semantic Versioning once the new canonical API reaches its
+first stable release.
+
+## Unreleased
+
+### Added
+
+- Optional, lazy pyQSC_JAX-to-VMEX bridge for differentiable fixed-boundary
+  radial \(\iota\), quasisymmetry, magnetic-well, energy, volume, and
+  aspect-ratio quantities in vacuum and finite beta, with a live current-VMEX
+  compatibility job.
+- Full-torus 3D surface helpers and a four-stellarator README gallery covering
+  database QA ID 139524, database QH ID 3, the \(B_{20}\)-optimized case, and
+  the large-singular-radius database case 107579.
+- `plasma_stellarator`, an angle-dependent finite-pressure, exactly
+  zero-current database case whose pressure-driven plasma-field norm varies
+  by 14.04% and whose formal radius remains inside the singular surface.
+- Reproducible README figures for QA/QH topology branches, resolution
+  convergence, synchronized JIT/JVP/VMAP timings, and five-way \(B_{20}\)
+  optimizer screening followed by staged eight-mode refinement.
+- Vectorized, JIT-compiled VMEC boundary export with all four coefficient
+  families, deterministic INDATA output, conversion diagnostics,
+  legacy-adapter support, a frozen VMEC 9.0 `wout` regression, and opt-in
+  vacuum and finite-pressure, zero-current local-VMEC reruns.
+- Dense-grid `b20_optimized_qa` reference with a verified
+  \(1.59\times10^{-6}\) weighted residual and reproducible comparisons across
+  L-BFGS-B, least-squares, differential-evolution, and multistart
+  Levenberg--Marquardt searches.
+- `plasma_dominant_channel` validation case, for which the plasma field is
+  33.3% of the total field at the documented formal radius.
+- README evidence, benchmark reports, publication figures, executable
+  examples, and validation documentation for B20, plasma-field, and VMEC
+  behavior.
+- Audited compatibility and numerical baselines.
+- Physics traceability and architecture decision records.
+- Modern package, documentation, test, and CI scaffolding.
+- Immutable general Fourier axes with normalized coefficient packing.
+- JAX-native periodic differentiation, interpolation, and integration.
+- Sampled Frenet geometry with explicit validity diagnostics and independent
+  symmetric/asymmetric regression references.
+- Converged, damped periodic sigma solve with residual, iteration,
+  backtracking, stagnation, and Jacobian-conditioning reports.
+- Implicit differentiation of the converged sigma equation through SOLVAX.
+- Immutable first-order shape, field, field-gradient, elongation, and
+  `L_grad_B` results with JIT, VMAP, JVP, and VJP validation.
+- Thin ESSOS compatibility adapter preserving legacy array orientations,
+  coordinate conversion, boundary generation, and plotting without depending
+  on ESSOS.
+- Complete finite-pressure/current r2 coefficient system, including
+  `X20`/`Y20`, second harmonics, `beta_1s`, `G2`, `B20`, derivatives,
+  untwisted boundary data, and direct `B20` diagnostics.
+- Implicit differentiation and residual/conditioning reports for the coupled
+  dense second-order solve.
+- Independent four-equation r2 residual checks and upstream regression cases
+  spanning vacuum QA, finite pressure/current, and QH topology.
+- Regular-coordinate total-field value, gradient, and Hessian on the axis,
+  including coordinate-map conditioning and Maxwell-identity diagnostics.
+- Mercier magnetic-well and geodesic terms matching vacuum and finite-pressure
+  pyQSC references.
+- JIT/JVP, resolution, upstream Hessian, full vacuum-symmetry, divergence, and
+  derivative-of-divergence validation for the total field jet.
+- Singular-radius diagnostics derived directly from the regular-coordinate
+  Jacobian determinant, with vectorized global angular seeding, Newton
+  refinement, residual reports, and pyQSC QA/QH/finite-current parity.
+- Differentiable r3 flux-constraint surface corrections, untwisted boundary
+  coefficients, and two independent consistency checks with upstream pyQSC
+  QA, finite-pressure/current, and QH parity.
+- Standard-MHS magnetic shear with periodic and secular integrating-factor
+  branches, explicit `B31c`, immutable diagnostics, legacy adapter support,
+  and upstream QA/QH/asymmetric parity.
+- Branch-local target-transform solves for sign-preserving `etabar` or `I2`,
+  including implicit derivatives, round-trip validation, local response and
+  fold diagnostics, and propagation through r2.
+- Full-state fixed-sign pseudo-arclength continuation for `etabar`, including
+  fold-crossing detection, corrected solution records, and explicit partial
+  completion statuses.
+- Dense nonconstant-`B20` diagnostics, exact affine elimination of `B2c`,
+  degenerate-response handling, and independent doubled/quadrupled-grid
+  verification.
+- Scalable Curvo et al. (2025) Table 3 screening criteria with configurable
+  thresholds, strict/inclusive comparison semantics, units, measured values,
+  signed margins, aggregate status, and differentiable array results.
+- Deterministic bounded axis exploration, damped JAX-Jacobian local
+  least-squares refinement, normalized basin clustering, hard criteria,
+  canonical secondary selectors, staged Fourier warm starts, independent
+  verification, and explicit global-certificate status semantics.
+- Nonzero \(B_{20}\) Fourier-\(L^1\) certificates in dense and
+  resolution-verification diagnostics.
+- Exact positive-volume plasma-current source through quadratic radial order,
+  including independent pressure/current pathways, regular evaluation through
+  \(I_2=0\), and covariant-current/enclosed-ampere conversions.
+- Matched on-axis free-space plasma field with a full-torus periodic
+  finite-part integral, elliptical core constants, second-order local shape
+  correction, arbitrary matching-length cancellation, asymptotic error
+  metadata, and independent resolved-volume Biot–Savart validation.
+- Local straight-ellipse plasma gradient with divergence and Ampère
+  diagnostics, external symmetric-trace-free subtraction, vacuum reduction,
+  and a reversible five-component Cartesian STF representation.
+- Complete local plasma Hessian from the affine-current, curved-channel, and
+  second-order shape potentials, including Frenet-connection derivatives,
+  external vacuum subtraction, asymptotic metadata, and a reversible
+  seven-component Cartesian STF representation.
+- Named immutable QA, QH, and finite-pressure/current configurations.
+- Lazy plotting helpers that return Matplotlib figure and axes objects.
+- Fourteen direct tutorial scripts and ten deterministic publication-figure
+  scripts with commit/parameter metadata and clean-directory CI execution.
+- Downstream ESSOS external-field-jet integration with normalized 3+5+7
+  objectives, finite-beta stage-two and single-stage examples, and
+  finite-difference gradient validation.
+- Complete documentation hierarchy, migration guide, validation reports, and
+  release checklist.
+
+### Fixed
+
+- VMEC export now records the cylindrical-angle inversion tolerance and
+  convergence state, rejects nonfinite or nonpositive radii, and refuses to
+  write an invalid boundary when the inversion has not converged. The VMEX
+  bridge applies the same guard, while traced invalid candidates map to
+  nonfinite coefficients instead of silently solving a different surface.
+- VMEX tutorial and publication scripts now require the explicit
+  `PYQSC_RUN_VMEX=1` opt-in used by live integration CI, so installing VMEX
+  does not unexpectedly turn the ordinary example matrix into a multi-minute
+  equilibrium run.
+- ESSOS finite-beta demonstrations now use a nonplanar database stellarator
+  with finite pressure and exactly zero toroidal current; the single-stage
+  design vector can no longer vary \(I_2\).
+- A no-op assignment to legacy `dofs` no longer exchanges normal and binormal
+  cylindrical components.
+- The legacy sigma calculation no longer assumes exactly five Newton updates.
+- Canonical field gradients now use explicit
+  `(sample, field component, derivative direction)` ordering; the ESSOS
+  adapter retains its historical layout.
