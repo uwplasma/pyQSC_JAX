@@ -1,9 +1,22 @@
-"""Differentiable near-axis stellarator construction in JAX."""
+"""Differentiable near-axis quasisymmetric stellarator construction in JAX.
 
-from pyqsc_jax.axis import Axis
-from pyqsc_jax.diagnostics import mercier_diagnostics
-from pyqsc_jax.field import total_field_jet
+All computations require 64-bit floats: enable them before importing JAX
+arrays, e.g. ``jax.config.update("jax_enable_x64", True)`` or
+``JAX_ENABLE_X64=1``. Importing this package has no global side effects.
+"""
+
+from pyqsc_jax.diagnostics import (
+    B2cOptimizationResult,
+    B20Diagnostics,
+    b20_diagnostics,
+    mercier_diagnostics,
+    optimal_B2c_value,
+    optimize_B2c,
+    singularity_diagnostics,
+    total_field_jet,
+)
 from pyqsc_jax.first_order import Qsc, solve
+from pyqsc_jax.geometry import Axis
 from pyqsc_jax.models import (
     FieldJet,
     LinearSolveReport,
@@ -16,62 +29,39 @@ from pyqsc_jax.models import (
     ThirdOrderData,
 )
 from pyqsc_jax.near_axis import near_axis
-from pyqsc_jax.optimize import (
-    B2cOptimizationResult,
-    B20Diagnostics,
-    b20_diagnostics,
-    optimal_B2c_value,
-    optimize_B2c,
-)
 from pyqsc_jax.plasma import (
     PlasmaCurrentSource,
     PlasmaFieldData,
     PlasmaGradientData,
     PlasmaHessianData,
-    covariant_current_from_enclosed,
-    elliptical_channel_gradient,
-    enclosed_current_from_covariant,
-    evaluate_weighted_current,
-    matched_plasma_field_kernel,
-    pack_symmetric_trace_free_rank2,
-    pack_symmetric_trace_free_rank3,
     plasma_current_source,
     plasma_field_on_axis,
     plasma_gradient_on_axis,
     plasma_hessian_on_axis,
-    project_symmetric_trace_free_rank2,
-    project_symmetric_trace_free_rank3,
     regularized_axis_integral,
-    unpack_symmetric_trace_free_rank2,
-    unpack_symmetric_trace_free_rank3,
 )
-from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
-from pyqsc_jax.singularity import singularity_diagnostics
+from pyqsc_jax.second_order import second_order_residuals
 from pyqsc_jax.solvers import RootSolveOptions
 from pyqsc_jax.third_order import solve_third_order
 from pyqsc_jax.vmec import (
     VmecBoundary,
     VmecExport,
     VmecInputParameters,
-    to_vmec,
-    uniform_cylindrical_surface,
-    vmec_boundary,
-)
-from pyqsc_jax.vmex import (
-    VMEX_VALIDATED_COMMIT,
     VmexEquilibrium,
     VmexProblem,
     VmexRadialQuantities,
     solve_vmex,
+    to_vmec,
     to_vmex_problem,
-    vmex_parameters_from_solution,
+    uniform_cylindrical_surface,
+    vmec_boundary,
     vmex_radial_quantities,
 )
 
 __all__ = [
     "Axis",
-    "B2cOptimizationResult",
     "B20Diagnostics",
+    "B2cOptimizationResult",
     "FieldJet",
     "LinearSolveReport",
     "MercierDiagnostics",
@@ -85,7 +75,6 @@ __all__ = [
     "RootSolveOptions",
     "RootSolveReport",
     "SecondOrderData",
-    "SecondOrderResiduals",
     "SingularityDiagnostics",
     "ThirdOrderData",
     "VmecBoundary",
@@ -94,39 +83,26 @@ __all__ = [
     "VmexEquilibrium",
     "VmexProblem",
     "VmexRadialQuantities",
-    "VMEX_VALIDATED_COMMIT",
-    "near_axis",
     "b20_diagnostics",
-    "covariant_current_from_enclosed",
-    "enclosed_current_from_covariant",
-    "elliptical_channel_gradient",
-    "evaluate_weighted_current",
-    "matched_plasma_field_kernel",
-    "pack_symmetric_trace_free_rank2",
-    "pack_symmetric_trace_free_rank3",
     "mercier_diagnostics",
-    "second_order_residuals",
-    "solve",
-    "singularity_diagnostics",
-    "solve_third_order",
-    "total_field_jet",
-    "to_vmec",
-    "to_vmex_problem",
-    "uniform_cylindrical_surface",
-    "vmec_boundary",
-    "vmex_parameters_from_solution",
-    "vmex_radial_quantities",
-    "solve_vmex",
+    "near_axis",
     "optimal_B2c_value",
     "optimize_B2c",
     "plasma_current_source",
     "plasma_field_on_axis",
     "plasma_gradient_on_axis",
     "plasma_hessian_on_axis",
-    "project_symmetric_trace_free_rank2",
-    "project_symmetric_trace_free_rank3",
     "regularized_axis_integral",
-    "unpack_symmetric_trace_free_rank2",
-    "unpack_symmetric_trace_free_rank3",
+    "second_order_residuals",
+    "singularity_diagnostics",
+    "solve",
+    "solve_third_order",
+    "solve_vmex",
+    "to_vmec",
+    "to_vmex_problem",
+    "total_field_jet",
+    "uniform_cylindrical_surface",
+    "vmec_boundary",
+    "vmex_radial_quantities",
 ]
 __version__ = "0.2.0.dev0"

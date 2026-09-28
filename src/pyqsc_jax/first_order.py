@@ -5,8 +5,7 @@ from typing import Any
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.axis import Axis
-from pyqsc_jax.geometry import AxisGeometry, compute_axis_geometry
+from pyqsc_jax.geometry import Axis, AxisGeometry, compute_axis_geometry
 from pyqsc_jax.models import NearAxisInputs, NearAxisSolution, RootSolveReport
 from pyqsc_jax.solvers import DEFAULT_ROOT_OPTIONS, RootSolveOptions, implicit_dense_root
 

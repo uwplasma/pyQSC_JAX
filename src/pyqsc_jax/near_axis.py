@@ -7,8 +7,8 @@ from typing import Any
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.axis import Axis
 from pyqsc_jax.first_order import solve
+from pyqsc_jax.geometry import Axis
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.solvers import implicit_dense_root
 from pyqsc_jax.vmec import VmecExport

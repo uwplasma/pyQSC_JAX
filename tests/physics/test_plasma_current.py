@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.plasma as qp
 from pyqsc_jax.second_order import MU0
 
 
@@ -27,14 +28,14 @@ def test_covariant_and_enclosed_current_conversions_round_trip():
     I2 = 0.9
     radius = 0.08
     chi = -1
-    current = qsc.enclosed_current_from_covariant(I2, formal_radius=radius, chi=chi)
+    current = qp.enclosed_current_from_covariant(I2, formal_radius=radius, chi=chi)
 
     np.testing.assert_allclose(current, 2 * np.pi * chi * I2 * radius**2 / MU0)
     np.testing.assert_allclose(
-        qsc.covariant_current_from_enclosed(current, formal_radius=radius, chi=chi), I2
+        qp.covariant_current_from_enclosed(current, formal_radius=radius, chi=chi), I2
     )
     derivative = jax.grad(
-        lambda a: qsc.enclosed_current_from_covariant(I2, formal_radius=a, chi=chi)
+        lambda a: qp.enclosed_current_from_covariant(I2, formal_radius=a, chi=chi)
     )(radius)
     np.testing.assert_allclose(derivative, 4 * np.pi * chi * I2 * radius / MU0)
 
@@ -68,7 +69,7 @@ def test_weighted_source_evaluation_has_regular_radial_power_and_batch_shape():
     source = qsc.plasma_current_source(solution, formal_radius=0.05)
     radial = jnp.asarray([0.0, 0.01])
     theta = jnp.asarray([0.2, 0.7])
-    weighted = qsc.evaluate_weighted_current(source, radial, theta)
+    weighted = qp.evaluate_weighted_current(source, radial, theta)
 
     assert weighted.shape == (2, 15, 3)
     np.testing.assert_allclose(weighted[0], 0.0)
@@ -77,7 +78,7 @@ def test_weighted_source_evaluation_has_regular_radial_power_and_batch_shape():
         + radial[1] ** 2 * (np.cos(theta[1]) * source.w2_cosine + np.sin(theta[1]) * source.w2_sine)
     )
     np.testing.assert_allclose(weighted[1], direct)
-    scalar = jax.jit(qsc.evaluate_weighted_current)(source, 0.01, 0.3)
+    scalar = jax.jit(qp.evaluate_weighted_current)(source, 0.01, 0.3)
     assert scalar.shape == (15, 3)
 
 
@@ -106,12 +107,12 @@ def test_current_source_guards():
         )
     for value in (0.0, -0.1):
         with pytest.raises(ValueError, match="positive"):
-            qsc.enclosed_current_from_covariant(1.0, formal_radius=value, chi=1)
+            qp.enclosed_current_from_covariant(1.0, formal_radius=value, chi=1)
     with pytest.raises(ValueError, match="scalar"):
-        qsc.covariant_current_from_enclosed(1.0, formal_radius=[0.1], chi=1)
-    for function in (qsc.enclosed_current_from_covariant, qsc.covariant_current_from_enclosed):
+        qp.covariant_current_from_enclosed(1.0, formal_radius=[0.1], chi=1)
+    for function in (qp.enclosed_current_from_covariant, qp.covariant_current_from_enclosed):
         with pytest.raises(ValueError, match="chi"):
-            if function is qsc.enclosed_current_from_covariant:
+            if function is qp.enclosed_current_from_covariant:
                 function(1.0, formal_radius=0.1, chi=0)
             else:
                 function(1.0, formal_radius=0.1, chi=0)

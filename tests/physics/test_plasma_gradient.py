@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.plasma as qp
 
 
 def finite_current_solution(*, I2=0.9, p2=-600000.0, nphi=61):
@@ -24,7 +25,7 @@ def finite_current_solution(*, I2=0.9, p2=-600000.0, nphi=61):
 
 def test_straight_circular_channel_gradient():
     current_density_mu0 = 1.7
-    gradient = qsc.elliptical_channel_gradient(
+    gradient = qp.elliptical_channel_gradient(
         1.0, 0.0, parallel_current_mu0=current_density_mu0, chi=1
     )
     expected = np.asarray(
@@ -38,7 +39,7 @@ def test_straight_circular_channel_gradient():
 
 def test_straight_sheared_elliptical_channel_obeys_ampere_and_divergence():
     current_density_mu0 = -0.8
-    gradient = qsc.elliptical_channel_gradient(
+    gradient = qp.elliptical_channel_gradient(
         1.6, -0.35, parallel_current_mu0=current_density_mu0, chi=-1
     )
 
@@ -53,8 +54,8 @@ def test_gradient_rotates_covariantly_from_frenet_to_cartesian():
     rotation = jnp.asarray(
         [[1.0, 0.0, 0.0], [0.0, np.cos(angle), np.sin(angle)], [0.0, -np.sin(angle), np.cos(angle)]]
     )
-    frenet = qsc.elliptical_channel_gradient(1.3, 0.2, parallel_current_mu0=0.7, chi=1)
-    cartesian = qsc.elliptical_channel_gradient(
+    frenet = qp.elliptical_channel_gradient(1.3, 0.2, parallel_current_mu0=0.7, chi=1)
+    cartesian = qp.elliptical_channel_gradient(
         1.3, 0.2, parallel_current_mu0=0.7, chi=1, frame=rotation
     )
 
@@ -71,7 +72,7 @@ def test_external_gradient_is_symmetric_trace_free_and_ampere_cancels():
     assert result.maximum_external_trace < 2.0e-9
     np.testing.assert_allclose(result.external_gradient, result.external_gradient_stf, atol=2.0e-9)
     np.testing.assert_allclose(
-        qsc.unpack_symmetric_trace_free_rank2(result.external_gradient_independent),
+        qp.unpack_symmetric_trace_free_rank2(result.external_gradient_independent),
         result.external_gradient_stf,
         atol=2.0e-15,
     )
@@ -100,9 +101,9 @@ def test_vacuum_reduction_leaves_total_field_jet_unchanged():
 
 def test_stf_rank_two_pack_unpack_and_projection():
     tensor = jnp.asarray([[2.0, 1.0, -3.0], [3.0, -1.0, 4.0], [5.0, 2.0, 7.0]])
-    projected = qsc.project_symmetric_trace_free_rank2(tensor)
-    packed = qsc.pack_symmetric_trace_free_rank2(tensor)
-    unpacked = qsc.unpack_symmetric_trace_free_rank2(packed)
+    projected = qp.project_symmetric_trace_free_rank2(tensor)
+    packed = qp.pack_symmetric_trace_free_rank2(tensor)
+    unpacked = qp.unpack_symmetric_trace_free_rank2(packed)
 
     np.testing.assert_allclose(projected, projected.T)
     np.testing.assert_allclose(np.trace(projected), 0.0, atol=1.0e-15)
@@ -112,7 +113,7 @@ def test_stf_rank_two_pack_unpack_and_projection():
 
 def test_elliptical_gradient_is_jittable_and_differentiable():
     def component(x):
-        return qsc.elliptical_channel_gradient(x, 0.2, parallel_current_mu0=0.7, chi=1)[1, 2]
+        return qp.elliptical_channel_gradient(x, 0.2, parallel_current_mu0=0.7, chi=1)[1, 2]
 
     x = 1.3
     value = component(x)
@@ -151,10 +152,10 @@ def test_gradient_branch_jumps_at_zero_current_by_the_order_a2_term():
 
 def test_gradient_and_stf_guards():
     with pytest.raises(ValueError, match="chi"):
-        qsc.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=0)
+        qp.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=0)
     with pytest.raises(ValueError, match="frame"):
-        qsc.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=1, frame=[1.0, 2.0])
+        qp.elliptical_channel_gradient(1.0, 0.0, parallel_current_mu0=1.0, chi=1, frame=[1.0, 2.0])
     with pytest.raises(ValueError, match="shape"):
-        qsc.project_symmetric_trace_free_rank2(jnp.ones((2, 2)))
+        qp.project_symmetric_trace_free_rank2(jnp.ones((2, 2)))
     with pytest.raises(ValueError, match="length 5"):
-        qsc.unpack_symmetric_trace_free_rank2(jnp.ones(4))
+        qp.unpack_symmetric_trace_free_rank2(jnp.ones(4))

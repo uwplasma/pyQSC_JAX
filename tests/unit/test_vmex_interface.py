@@ -9,8 +9,9 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.vmec as qv
 from fixtures import solve_configuration
-from pyqsc_jax import vmex as bridge
+from pyqsc_jax import vmec as bridge
 
 
 @jax.tree_util.register_dataclass
@@ -132,7 +133,7 @@ def test_problem_builds_without_disk_and_exposes_quantities(fake_vmex):
     quantities = result.quantities
 
     assert problem.vmex_version == "test"
-    assert problem.validated_commit == qsc.VMEX_VALIDATED_COMMIT
+    assert problem.validated_commit == qv.VMEX_VALIDATED_COMMIT
     assert problem.adjoint_tol == 1.0e-11
     assert problem.input.mpol == 4
     assert problem.boundary.RBC.shape == (5, 4)

@@ -8,24 +8,10 @@ from typing import TYPE_CHECKING, ClassVar
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.axis import Axis
+from pyqsc_jax.geometry import Axis
 
 if TYPE_CHECKING:
     from pyqsc_jax.geometry import AxisGeometry
-
-
-@jax.tree_util.register_dataclass
-@dataclass(frozen=True)
-class GeometryDiagnostics:
-    """Validity and conditioning information for sampled axis geometry."""
-
-    minimum_speed: jax.Array
-    minimum_curvature: jax.Array
-    minimum_cylindrical_radius: jax.Array
-    maximum_frame_orthogonality_error: jax.Array
-    minimum_frame_determinant: jax.Array
-    frenet_valid: jax.Array
-    cylindrical_coordinates_valid: jax.Array
 
 
 @jax.tree_util.register_dataclass

@@ -349,9 +349,7 @@ def solve_second_order(
     solution = replace(first_order, second_order=second_order)
     if not attach_diagnostics:
         return solution
-    from pyqsc_jax.diagnostics import mercier_diagnostics
-    from pyqsc_jax.field import total_field_jet
-    from pyqsc_jax.singularity import singularity_diagnostics
+    from pyqsc_jax.diagnostics import mercier_diagnostics, singularity_diagnostics, total_field_jet
 
     return replace(
         solution,

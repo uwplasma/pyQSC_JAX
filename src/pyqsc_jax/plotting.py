@@ -1,17 +1,22 @@
-"""Optional Matplotlib plotting helpers that return their figure objects."""
+"""Optional Matplotlib plotting helpers that return their figure objects.
+
+Matplotlib, the plasma module and the VMEC surface code are imported lazily,
+so importing this module has no side effects.
+"""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
-from pyqsc_jax.axis import Axis, evaluate_axis
+from pyqsc_jax.geometry import Axis, evaluate_axis
 from pyqsc_jax.models import NearAxisSolution
-from pyqsc_jax.plasma import PlasmaHessianData
-from pyqsc_jax.vmec import frenet_displacements
+
+if TYPE_CHECKING:
+    from pyqsc_jax.plasma import PlasmaHessianData
 
 
 def _matplotlib():
@@ -80,6 +85,8 @@ def surface_coordinates(
         raise ValueError("ntheta must be an integer >= 4.")
     theta = jnp.linspace(0, 2 * jnp.pi, ntheta, endpoint=False)[:, None]
     phi0 = solution.phi[None, :]
+    from pyqsc_jax.vmec import frenet_displacements
+
     X, Y, Z = frenet_displacements(solution, jnp.asarray(radius), theta, phi0)
     axis_position = jnp.stack(
         (solution.R0 * jnp.cos(solution.phi), solution.R0 * jnp.sin(solution.phi), solution.Z0),

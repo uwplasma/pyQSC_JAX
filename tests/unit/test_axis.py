@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from pyqsc_jax import Axis
-from pyqsc_jax.axis import evaluate_axis
+from pyqsc_jax.geometry import evaluate_axis
 
 
 def test_coefficients_are_normalized_and_round_trip():

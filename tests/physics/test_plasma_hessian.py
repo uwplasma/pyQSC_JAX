@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.plasma as qp
 from pyqsc_jax.plasma import _transverse_plasma_hessian
 
 
@@ -42,9 +43,9 @@ def vacuum_qa_solution(*, nphi=61):
 
 def test_stf_rank_three_pack_unpack_and_projection():
     tensor = jnp.arange(54.0).reshape(2, 3, 3, 3)
-    projected = qsc.project_symmetric_trace_free_rank3(tensor)
-    packed = qsc.pack_symmetric_trace_free_rank3(tensor)
-    unpacked = qsc.unpack_symmetric_trace_free_rank3(packed)
+    projected = qp.project_symmetric_trace_free_rank3(tensor)
+    packed = qp.pack_symmetric_trace_free_rank3(tensor)
+    unpacked = qp.unpack_symmetric_trace_free_rank3(packed)
 
     for permutation in permutations((1, 2, 3)):
         np.testing.assert_allclose(
@@ -58,10 +59,10 @@ def test_stf_rank_three_pack_unpack_and_projection():
 def test_stf_rank_three_helpers_are_jittable():
     tensor = jnp.arange(27.0).reshape(3, 3, 3)
 
-    eager = qsc.unpack_symmetric_trace_free_rank3(qsc.pack_symmetric_trace_free_rank3(tensor))
+    eager = qp.unpack_symmetric_trace_free_rank3(qp.pack_symmetric_trace_free_rank3(tensor))
     compiled = jax.jit(
-        lambda value: qsc.unpack_symmetric_trace_free_rank3(
-            qsc.pack_symmetric_trace_free_rank3(value)
+        lambda value: qp.unpack_symmetric_trace_free_rank3(
+            qp.pack_symmetric_trace_free_rank3(value)
         )
     )(tensor)
 
@@ -78,7 +79,7 @@ def test_external_hessian_is_fully_symmetric_and_trace_free():
     assert result.maximum_external_trace < 2.0e-10
     np.testing.assert_allclose(result.external_hessian, result.external_hessian_stf, atol=2.0e-10)
     np.testing.assert_allclose(
-        qsc.unpack_symmetric_trace_free_rank3(result.external_hessian_independent),
+        qp.unpack_symmetric_trace_free_rank3(result.external_hessian_independent),
         result.external_hessian_stf,
         atol=2.0e-15,
     )
@@ -190,6 +191,6 @@ def test_plasma_hessian_supports_jit_and_jvp():
 
 def test_rank_three_guards():
     with pytest.raises(ValueError, match="shape"):
-        qsc.project_symmetric_trace_free_rank3(jnp.ones((3, 3)))
+        qp.project_symmetric_trace_free_rank3(jnp.ones((3, 3)))
     with pytest.raises(ValueError, match="length 7"):
-        qsc.unpack_symmetric_trace_free_rank3(jnp.ones(6))
+        qp.unpack_symmetric_trace_free_rank3(jnp.ones(6))

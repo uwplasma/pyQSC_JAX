@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+import pyqsc_jax.plasma as qp
 from fixtures import solve_configuration
 
 
@@ -50,8 +51,8 @@ def test_matching_reference_length_cancels_exactly():
     solution = finite_current_solution()
     source = qsc.plasma_current_source(solution, formal_radius=0.06)
     integral = qsc.regularized_axis_integral(solution)
-    first = qsc.matched_plasma_field_kernel(solution, source, integral, reference_length=2.3)
-    second = qsc.matched_plasma_field_kernel(solution, source, integral, reference_length=7.1)
+    first = qp.matched_plasma_field_kernel(solution, source, integral, reference_length=2.3)
+    second = qp.matched_plasma_field_kernel(solution, source, integral, reference_length=7.1)
     plasma = qsc.plasma_field_on_axis(solution, formal_radius=0.06)
 
     np.testing.assert_allclose(first, second, rtol=0, atol=2.0e-15)
@@ -179,6 +180,6 @@ def test_plasma_field_guards():
         qsc.plasma_field_on_axis(solution, formal_radius=0.05, angular_resolution=7)
     source = qsc.plasma_current_source(solution, formal_radius=0.05)
     with pytest.raises(ValueError, match="reference_length"):
-        qsc.matched_plasma_field_kernel(
+        qp.matched_plasma_field_kernel(
             solution, source, qsc.regularized_axis_integral(solution), reference_length=0.0
         )
