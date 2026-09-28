@@ -20,7 +20,8 @@ def test_dense_newton_converges_with_report():
     assert not bool(report.stagnated)
     assert 0 < int(report.iterations) < 20
     assert report.residual_norm <= report.tolerance
-    np.testing.assert_allclose(report.jacobian_condition_number, 1.0)
+    np.testing.assert_allclose(report.jacobian_condition_estimate, 1.0)
+    assert report.jacobian_condition_number is None
 
 
 def test_backtracking_is_exercised():
@@ -166,3 +167,50 @@ def test_singular_linear_solve_poisons_derivative():
 
     assert np.isfinite(jax.grad(objective)(2.0))
     assert np.isnan(jax.grad(objective)(1.0))
+
+
+def test_condition_estimate_tracks_exact_condition_number():
+    # A graded, nonsymmetric matrix with kappa ~ 1e8.
+    rng = np.random.default_rng(0)
+    q1, _ = np.linalg.qr(rng.normal(size=(40, 40)))
+    q2, _ = np.linalg.qr(rng.normal(size=(40, 40)))
+    matrix = jnp.asarray(q1 @ np.diag(np.logspace(0, -8, 40)) @ q2)
+    right_hand_side = jnp.ones(40)
+
+    solution, report = implicit_dense_linear_solve(
+        matrix, right_hand_side, exact_condition_number=True
+    )
+    exact_one_norm = np.linalg.cond(np.asarray(matrix), 1)
+    assert report.condition_estimate <= exact_one_norm * (1 + 1e-10)
+    assert report.condition_estimate >= exact_one_norm / 10
+    np.testing.assert_allclose(report.condition_number, np.linalg.cond(np.asarray(matrix)))
+    _, cheap = implicit_dense_linear_solve(matrix, right_hand_side)
+    assert cheap.condition_number is None
+    np.testing.assert_allclose(cheap.condition_estimate, report.condition_estimate)
+
+    def residual(x):
+        return (matrix + jnp.diag(x**2)) @ x - right_hand_side
+
+    options = RootSolveOptions(exact_condition_number=True, rtol=1e-10)
+    _, root_report = dense_newton_root(residual, jnp.zeros(40), options=options)
+    assert bool(root_report.finite)
+    assert root_report.jacobian_condition_number is not None
+    assert np.isfinite(root_report.jacobian_condition_estimate)
+
+
+def test_shared_lu_gives_matching_forward_and_reverse_derivatives():
+    base = jnp.asarray([[3.0, 0.4, -0.2], [0.1, 2.5, 0.3], [-0.5, 0.2, 1.8]])
+    right_hand_side = jnp.asarray([1.0, -2.0, 0.5])
+
+    def solve_for(parameter):
+        solution, _ = implicit_dense_linear_solve(
+            base + parameter * jnp.eye(3), right_hand_side * (1 + parameter)
+        )
+        return solution
+
+    forward = jax.jacfwd(solve_for)(0.3)
+    reverse = jax.jacrev(solve_for)(0.3)
+    step = 1e-6
+    finite_difference = (solve_for(0.3 + step) - solve_for(0.3 - step)) / (2 * step)
+    np.testing.assert_allclose(forward, reverse, rtol=1e-13, atol=1e-15)
+    np.testing.assert_allclose(forward, finite_difference, rtol=1e-8)

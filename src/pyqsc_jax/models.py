@@ -17,7 +17,15 @@ if TYPE_CHECKING:
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class RootSolveReport:
-    """Convergence evidence for a nonlinear root solve."""
+    """Convergence evidence for a nonlinear root solve.
+
+    ``jacobian_condition_estimate`` is a Hager-Higham estimate (lower bound) of
+    the 1-norm condition number of the final Jacobian; ``jacobian_condition_number``
+    is the exact 2-norm condition number, or ``None`` unless requested with
+    ``RootSolveOptions(exact_condition_number=True)`` or ``solve(diagnostics=True)``.
+    ``line_search_failed`` means no step length decreased the residual; the best
+    iterate is returned.
+    """
 
     initial_residual_norm: jax.Array
     residual_norm: jax.Array
@@ -25,24 +33,31 @@ class RootSolveReport:
     step_norm: jax.Array
     iterations: jax.Array
     backtracking_steps: jax.Array
-    jacobian_condition_number: jax.Array
+    jacobian_condition_estimate: jax.Array
     converged: jax.Array
     finite: jax.Array
     stagnated: jax.Array
     line_search_failed: jax.Array
+    jacobian_condition_number: jax.Array | None = None
 
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
 class LinearSolveReport:
-    """Residual and conditioning evidence for a dense linear solve."""
+    """Residual and conditioning evidence for a dense linear solve.
+
+    ``condition_estimate`` estimates the 1-norm condition number from the LU
+    factors; ``condition_number`` is the exact 2-norm value, or ``None`` unless
+    requested (``solve(diagnostics=True)``).
+    """
 
     residual_norm: jax.Array
     relative_residual_norm: jax.Array
-    matrix_condition_number: jax.Array
+    condition_estimate: jax.Array
     finite: jax.Array
     converged: jax.Array
     well_conditioned: jax.Array
+    condition_number: jax.Array | None = None
 
 
 @jax.tree_util.register_dataclass

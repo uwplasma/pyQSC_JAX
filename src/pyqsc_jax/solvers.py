@@ -6,6 +6,7 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
+import jax.scipy.linalg as jsl
 from solvax import linear_solve, root_solve
 
 from pyqsc_jax.models import LinearSolveReport, RootSolveReport
@@ -15,13 +16,19 @@ ArrayLike = Any
 
 @dataclass(frozen=True)
 class RootSolveOptions:
-    """Tolerance and globalization policy for dense Newton root solves."""
+    """Tolerance and globalization policy for dense Newton root solves.
+
+    ``exact_condition_number`` additionally reports the exact 2-norm condition
+    number of the final Jacobian (an O(n^3) SVD); by default only the O(n^2)
+    1-norm estimate is computed.
+    """
 
     atol: float = 1e-13
     rtol: float = 1e-13
     step_tolerance: float = 1e-13
     max_steps: int = 20
     max_backtracking_steps: int = 12
+    exact_condition_number: bool = False
 
     def __post_init__(self) -> None:
         if self.atol < 0 or self.rtol < 0 or self.step_tolerance < 0:
@@ -35,6 +42,31 @@ DEFAULT_ROOT_OPTIONS = RootSolveOptions()
 
 def _infinity_norm(value: jax.Array) -> jax.Array:
     return jnp.max(jnp.abs(value))
+
+
+def _lu_condition_estimate(matrix: jax.Array, factors, iterations: int = 5) -> jax.Array:
+    """Hager-Higham estimate of the 1-norm condition number from LU factors.
+
+    Uses ``2 * iterations`` pairs of triangular solves, O(n^2) each, instead of
+    the O(n^3) SVD behind ``jnp.linalg.cond``. The result is a lower bound on
+    ``kappa_1(A) = |A|_1 |A^-1|_1``, in practice within a small factor of it.
+    """
+
+    n = matrix.shape[0]
+    dtype = matrix.dtype
+
+    def body(_, state):
+        x, estimate = state
+        y = jsl.lu_solve(factors, x)
+        estimate = jnp.maximum(estimate, jnp.sum(jnp.abs(y)))
+        z = jsl.lu_solve(factors, jnp.where(y >= 0, 1.0, -1.0).astype(dtype), trans=1)
+        x = jax.nn.one_hot(jnp.argmax(jnp.abs(z)), n, dtype=dtype)
+        return x, estimate
+
+    x0 = jnp.full((n,), 1.0 / n, dtype=dtype)
+    _, inverse_norm = jax.lax.fori_loop(0, iterations, body, (x0, jnp.zeros((), dtype)))
+    matrix_norm = jnp.max(jnp.sum(jnp.abs(matrix), axis=0))
+    return jnp.where(jnp.isfinite(inverse_norm), matrix_norm * inverse_norm, jnp.inf)
 
 
 def dense_newton_root(
@@ -135,11 +167,16 @@ def dense_newton_root(
     line_search_failed = line_search_failed & ~converged
     step_threshold = options.step_tolerance * (1 + _infinity_norm(x))
     stagnated = finite & ~converged & ~line_search_failed & (step_norm <= step_threshold)
-    final_jacobian = jax.jacfwd(residual_function)(x)
+    final_jacobian = jax.lax.stop_gradient(jax.jacfwd(residual_function)(x))
+    jacobian_condition_number = None
     if initial_guess.ndim == 0:
-        jacobian_condition_number = jnp.where(final_jacobian == 0, jnp.inf, 1.0)
+        jacobian_condition_estimate = jnp.where(final_jacobian == 0, jnp.inf, 1.0)
     else:
-        jacobian_condition_number = jnp.linalg.cond(final_jacobian)
+        jacobian_condition_estimate = _lu_condition_estimate(
+            final_jacobian, jsl.lu_factor(final_jacobian)
+        )
+        if options.exact_condition_number:
+            jacobian_condition_number = jnp.linalg.cond(final_jacobian)
     report = RootSolveReport(
         initial_residual_norm=initial_residual_norm,
         residual_norm=residual_norm,
@@ -147,6 +184,7 @@ def dense_newton_root(
         step_norm=step_norm,
         iterations=iterations,
         backtracking_steps=backtracking_steps,
+        jacobian_condition_estimate=jacobian_condition_estimate,
         jacobian_condition_number=jacobian_condition_number,
         converged=converged,
         finite=finite,
@@ -193,7 +231,7 @@ def implicit_dense_root(
     root = root_solve(
         residual_function, candidate, lambda _function, supplied_candidate: supplied_candidate
     )
-    regular = report.converged & jnp.isfinite(report.jacobian_condition_number)
+    regular = report.converged & jnp.isfinite(report.jacobian_condition_estimate)
     return _gate_tangent(root, jax.lax.stop_gradient(regular)), report
 
 
@@ -203,9 +241,14 @@ def implicit_dense_linear_solve(
     *,
     residual_tolerance: float = 1e-11,
     condition_limit: float = 1e12,
+    exact_condition_number: bool = False,
 ) -> tuple[jax.Array, LinearSolveReport]:
     """Solve a dense system with implicit JVP/VJP rules and diagnostics.
 
+    One LU factorization serves the primal solve, the transposed (adjoint)
+    solve of reverse mode, and the 1-norm condition estimate used for
+    ``well_conditioned``; the exact 2-norm condition number (an SVD) is
+    computed only with ``exact_condition_number=True``.
     Derivatives are attached only when the solve converged (finite solution,
     relative residual within ``residual_tolerance``); otherwise tangents and
     cotangents of the solution are NaN.
@@ -223,12 +266,11 @@ def implicit_dense_linear_solve(
     if right_hand_side.ndim != 1 or right_hand_side.shape[0] != matrix.shape[0]:
         raise ValueError("right_hand_side must match the matrix dimension.")
 
+    factors = jsl.lu_factor(jax.lax.stop_gradient(matrix))
     matvec = lambda value: matrix @ value  # noqa: E731
     transpose_matvec = lambda value: matrix.T @ value  # noqa: E731
-    primal_solver = lambda _operator, value: jnp.linalg.solve(matrix, value)  # noqa: E731
-    transpose_solver = lambda _operator, value: jnp.linalg.solve(  # noqa: E731
-        matrix.T, value
-    )
+    primal_solver = lambda _operator, value: jsl.lu_solve(factors, value)  # noqa: E731
+    transpose_solver = lambda _operator, value: jsl.lu_solve(factors, value, trans=1)  # noqa: E731
     solution = linear_solve(
         matvec,
         right_hand_side,
@@ -242,19 +284,23 @@ def implicit_dense_linear_solve(
     relative_residual_norm = residual_norm / jnp.maximum(
         right_hand_side_norm, jnp.finfo(right_hand_side.dtype).tiny
     )
-    condition_number = jnp.linalg.cond(matrix)
+    condition_estimate = _lu_condition_estimate(jax.lax.stop_gradient(matrix), factors)
+    condition_number = (
+        jnp.linalg.cond(jax.lax.stop_gradient(matrix)) if exact_condition_number else None
+    )
     finite = (
         jnp.all(jnp.isfinite(solution))
         & jnp.isfinite(residual_norm)
-        & jnp.isfinite(condition_number)
+        & jnp.isfinite(condition_estimate)
     )
     converged = finite & (relative_residual_norm <= residual_tolerance)
-    well_conditioned = finite & (condition_number <= condition_limit)
+    well_conditioned = finite & (condition_estimate <= condition_limit)
     solution = _gate_tangent(solution, jax.lax.stop_gradient(converged))
     report = LinearSolveReport(
         residual_norm=residual_norm,
         relative_residual_norm=relative_residual_norm,
-        matrix_condition_number=condition_number,
+        condition_estimate=condition_estimate,
+        condition_number=condition_number,
         finite=finite,
         converged=converged,
         well_conditioned=well_conditioned,

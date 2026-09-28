@@ -30,7 +30,7 @@ assert float(solution.inputs.p2) != 0.0
 print("iota:", float(solution.iota))
 print("torsion RMS [1/m]:", float((solution.torsion**2).mean() ** 0.5))
 print("linear residual:", float(solution.linear_report.residual_norm))
-print("linear condition number:", float(solution.linear_report.matrix_condition_number))
+print("linear condition estimate (1-norm):", float(solution.linear_report.condition_estimate))
 print("B20 weighted residual:", float(solution.B20_residual))
 print("Mercier D r^2:", float(solution.DMerc_times_r2))
 print("singular radius [m]:", float(solution.r_singularity))
