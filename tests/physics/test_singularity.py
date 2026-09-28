@@ -146,3 +146,23 @@ def test_singularity_validation_and_legacy_adapter():
     np.testing.assert_allclose(
         legacy.r_singularity_residual_sqnorm, legacy.solution.r_singularity_residual_sqnorm
     )
+
+
+def test_r_singularity_gradient_is_finite_and_matches_finite_differences():
+    parameters = CASES[0][0]
+
+    def r_singularity(etabar, B2c):
+        solution = qsc.Qsc(**{**parameters, "etabar": etabar, "B2c": B2c}, order="r2", nphi=61)
+        return solution.r_singularity
+
+    point = (jnp.asarray(0.64), jnp.asarray(-0.00322))
+    gradient = jax.jit(jax.grad(r_singularity, argnums=(0, 1)))(*point)
+    step = 1e-6
+    for index, value in enumerate(gradient):
+        plus = list(point)
+        minus = list(point)
+        plus[index] = plus[index] + step
+        minus[index] = minus[index] - step
+        finite_difference = (r_singularity(*plus) - r_singularity(*minus)) / (2 * step)
+        assert np.isfinite(value)
+        np.testing.assert_allclose(value, finite_difference, rtol=1e-6, atol=1e-9)

@@ -344,8 +344,11 @@ def singularity_diagnostics(
     initial_radius = jnp.take_along_axis(root_grid, minimum_indices[:, None], axis=1)[:, 0]
     initial_theta = theta_grid[minimum_indices]
     finite_seed = jnp.isfinite(initial_radius)
-    radius = jnp.where(finite_seed, initial_radius, 1)
-    theta = initial_theta
+    # The angular scan only seeds Newton. Its branchy root formula (sqrt of a
+    # clipped discriminant, where-selected infinities) has NaN derivatives, so
+    # derivatives must come from the refined det = 0, d(det)/dtheta = 0 equations.
+    radius = jax.lax.stop_gradient(jnp.where(finite_seed, initial_radius, 1))
+    theta = jax.lax.stop_gradient(initial_theta)
 
     def newton_step(_, state):
         radius, theta = state
