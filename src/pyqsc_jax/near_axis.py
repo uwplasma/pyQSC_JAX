@@ -18,11 +18,15 @@ ArrayLike = Any
 
 
 class near_axis:  # noqa: N801
-    """Compatibility adapter for the historical ``near_axis`` interface.
+    """ESSOS adapter for a stellarator-symmetric near-axis field.
 
-    The canonical API is :func:`pyqsc_jax.solve`. This class intentionally
-    keeps ESSOS's mutable ``x``/``dofs`` facade and historical component-axis
-    ordering while delegating all near-axis physics to the immutable core.
+    The canonical API is :func:`pyqsc_jax.solve`; this class delegates all
+    physics to it and keeps ESSOS's mutable ``x``/``dofs`` facade (ordered
+    ``rc, zs, etabar``), pyQSC-style flat attributes and the historical
+    ``(sample, ..., component)`` ordering of ``B_axis``/``grad_B_axis``. The
+    immutable solution is available as :attr:`solution`. Inputs are coerced
+    to float arrays, so integer arguments do not change dtypes or retrace.
+    Lengths are in meters and fields in tesla.
     """
 
     def __init__(
@@ -47,17 +51,17 @@ class near_axis:  # noqa: N801
         if isinstance(order, bool) or order not in (1, 2, 3, "r1", "r2", "r3"):
             raise ValueError("order must be one of 1, 2, 3, 'r1', 'r2', or 'r3'.")
 
-        self.rc = jnp.asarray(rc)
-        self.zs = jnp.asarray(zs)
+        self.rc = jnp.asarray(rc, dtype=float)
+        self.zs = jnp.asarray(zs, dtype=float)
         if self.rc.ndim != 1 or self.zs.ndim != 1 or self.rc.size != self.zs.size:
             raise ValueError("rc and zs must be one-dimensional arrays of equal length.")
-        self.etabar = jnp.asarray(etabar)
-        self.B0 = jnp.asarray(B0)
-        self.sigma0 = jnp.asarray(sigma0)
-        self.I2 = jnp.asarray(I2)
-        self.p2 = jnp.asarray(p2)
-        self.B2c = jnp.asarray(B2c)
-        self.B2s = jnp.asarray(B2s)
+        self.etabar = jnp.asarray(etabar, dtype=float)
+        self.B0 = jnp.asarray(B0, dtype=float)
+        self.sigma0 = jnp.asarray(sigma0, dtype=float)
+        self.I2 = jnp.asarray(I2, dtype=float)
+        self.p2 = jnp.asarray(p2, dtype=float)
+        self.B2c = jnp.asarray(B2c, dtype=float)
+        self.B2s = jnp.asarray(B2s, dtype=float)
         self.nphi = nphi
         self.spsi = spsi
         self.sG = sG
@@ -190,7 +194,7 @@ class near_axis:  # noqa: N801
 
     @dofs.setter
     def dofs(self, new_dofs: ArrayLike) -> None:
-        new_dofs = jnp.asarray(new_dofs)
+        new_dofs = jnp.asarray(new_dofs, dtype=float)
         if new_dofs.ndim != 1 or new_dofs.size != 2 * self.nfourier + 1:
             raise ValueError(f"dofs must have shape ({2 * self.nfourier + 1},).")
         self._dofs = new_dofs
@@ -245,11 +249,6 @@ class near_axis:  # noqa: N801
             B2s=B2s,
             **auxiliary,
         )
-
-    def calculate(self, rc: ArrayLike, zs: ArrayLike, etabar: ArrayLike):
-        """Return the historical tuple, evaluated by the canonical core."""
-
-        return self._legacy_tuple(self._canonical_solution(rc, zs, etabar))
 
     def B_covariant(self, points: ArrayLike) -> jax.Array:
         """First-order covariant Boozer components ``(B_r, B_theta, B_phi)``."""
@@ -628,6 +627,51 @@ class near_axis:  # noqa: N801
         if close:
             plt.close(figure)
         return figure, ax
+
+    def to_vtk(
+        self,
+        filename,
+        r: float = 0.1,
+        ntheta: int = 40,
+        nphi: int = 120,
+        ntheta_fourier: int = 20,
+        extra_data: dict[str, Any] | None = None,
+        field: Any = None,
+    ) -> None:
+        """Write the available-order boundary at radius ``r`` [m] as a VTK structured grid.
+
+        Point data holds the near-axis ``|B|`` [T] (``B_NearAxis``), ``field.AbsB`` at
+        the surface points when an ESSOS-like ``field`` is given (``B_BiotSavart``),
+        and any ``extra_data`` arrays of shape ``(1, nphi, ntheta)``. Requires
+        ``pyevtk``.
+        """
+
+        import numpy as np
+
+        try:
+            from pyevtk.hl import gridToVTK
+        except ImportError as error:
+            raise ImportError("to_vtk requires pyevtk (pip install pyevtk).") from error
+
+        x, y, z, _ = self.get_boundary(r=r, ntheta=ntheta, nphi=nphi, ntheta_fourier=ntheta_fourier)
+        x, y, z = (
+            np.ascontiguousarray(np.asarray(v).T.reshape((1, nphi, ntheta))) for v in (x, y, z)
+        )
+        point_data = {}
+        if field is not None:
+            points = jnp.stack((x[0], y[0], z[0]), axis=-1)
+            field_strength = jax.vmap(jax.vmap(field.AbsB))(points)
+            point_data["B_BiotSavart"] = np.ascontiguousarray(
+                np.asarray(field_strength).reshape((1, nphi, ntheta))
+            )
+        theta = jnp.linspace(0, 2 * jnp.pi, ntheta)
+        phi = jnp.linspace(0, 2 * jnp.pi, nphi)
+        phi2d, theta2d = jnp.meshgrid(phi, theta)
+        point_data["B_NearAxis"] = np.ascontiguousarray(
+            np.asarray(self.B_mag(r, theta2d, phi2d)).T.reshape((1, nphi, ntheta))
+        )
+        point_data.update(extra_data or {})
+        gridToVTK(str(filename), x, y, z, pointData=point_data)
 
 
 jax.tree_util.register_pytree_node(near_axis, near_axis._tree_flatten, near_axis._tree_unflatten)

@@ -37,10 +37,13 @@ def test_legacy_constructor_validation(kwargs, message):
         standard_field(**kwargs)
 
 
-def test_calculate_and_pytree_round_trip():
+def test_float_coercion_and_pytree_round_trip():
     field = standard_field()
-    calculated = field.calculate(field.rc, field.zs, field.etabar)
-    np.testing.assert_allclose(calculated[7], field.iota)
+    integer_inputs = near_axis(rc=[1, 0], zs=[0, 0], etabar=1, B0=1, I2=0, nfp=1, nphi=15)
+    assert integer_inputs.rc.dtype == jnp.float64
+    assert integer_inputs.dofs.dtype == jnp.float64
+    integer_inputs.x = [1, 0, 0, 0, 1]
+    assert integer_inputs.dofs.dtype == jnp.float64
 
     leaves, structure = jax.tree_util.tree_flatten(field)
     restored = jax.tree_util.tree_unflatten(structure, leaves)
@@ -127,3 +130,16 @@ def test_plot_supports_created_and_supplied_axes(monkeypatch):
     )
     assert returned_figure is supplied_figure
     assert returned_axes is supplied_axes
+
+
+def test_to_vtk_writes_boundary(tmp_path):
+    pytest.importorskip("pyevtk")
+
+    class UniformField:
+        def AbsB(self, point):
+            return jnp.linalg.norm(point) * 0 + 2.0
+
+    field = standard_field()
+    field.to_vtk(tmp_path / "boundary", ntheta=6, nphi=8, ntheta_fourier=6, field=UniformField())
+    text = (tmp_path / "boundary.vts").read_bytes()
+    assert b"B_NearAxis" in text and b"B_BiotSavart" in text
