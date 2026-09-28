@@ -43,6 +43,7 @@ class RootSolveReport:
     converged: jax.Array
     finite: jax.Array
     stagnated: jax.Array
+    line_search_failed: jax.Array
 
 
 @jax.tree_util.register_dataclass

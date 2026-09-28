@@ -113,3 +113,56 @@ def test_linear_solve_shape_validation(matrix, right_hand_side, message):
 def test_linear_solve_policy_validation(kwargs, message):
     with pytest.raises(ValueError, match=message):
         implicit_dense_linear_solve(jnp.eye(2), jnp.ones(2), **kwargs)
+
+
+def test_failed_line_search_keeps_best_iterate_and_is_reported():
+    # x**2 + 1 has no real root: the first Newton step reaches the minimum x = 0,
+    # where the Jacobian vanishes and no step can decrease the residual.
+    root, report = dense_newton_root(lambda x: x**2 + 1.0, jnp.asarray(1.0))
+
+    np.testing.assert_allclose(root, 0.0, atol=1e-15)
+    np.testing.assert_allclose(report.residual_norm, 1.0)
+    assert bool(report.line_search_failed)
+    assert not bool(report.converged)
+    assert not bool(report.stagnated)
+    assert bool(report.finite)
+
+
+def test_converged_solve_reports_no_line_search_failure():
+    _, report = dense_newton_root(lambda x: x**3 - 1.0, jnp.asarray(0.1))
+
+    assert bool(report.converged)
+    assert not bool(report.line_search_failed)
+
+
+@pytest.mark.parametrize("mode", ["grad", "jvp"])
+def test_failed_root_solve_poisons_implicit_derivative(mode):
+    def root(parameter, options=None):
+        options = RootSolveOptions() if options is None else options
+        solved, _ = implicit_dense_root(
+            lambda x: x**2 - parameter, jnp.asarray(1.0), options=options
+        )
+        return solved
+
+    def unconverged(parameter):
+        return root(parameter, RootSolveOptions(max_steps=1))
+
+    if mode == "grad":
+        assert np.isfinite(jax.grad(root)(2.0))
+        assert np.isnan(jax.grad(unconverged)(2.0))
+        assert np.isnan(jax.jit(jax.grad(unconverged))(2.0))
+    else:
+        _, tangent = jax.jvp(unconverged, (2.0,), (1.0,))
+        assert np.isnan(tangent)
+    # The primal value of the failed solve is still returned for inspection.
+    assert np.isfinite(unconverged(2.0))
+
+
+def test_singular_linear_solve_poisons_derivative():
+    def objective(parameter):
+        matrix = jnp.asarray([[parameter, 1.0], [1.0, 1.0]])
+        solution, _ = implicit_dense_linear_solve(matrix, jnp.asarray([1.0, 2.0]))
+        return jnp.sum(solution)
+
+    assert np.isfinite(jax.grad(objective)(2.0))
+    assert np.isnan(jax.grad(objective)(1.0))

@@ -58,10 +58,11 @@ def dense_newton_root(
         jnp.asarray(jnp.inf, dtype=dtype),
         jnp.int32(0),
         jnp.int32(0),
+        jnp.asarray(False),
     )
 
     def continue_iteration(state):
-        x, residual, residual_norm, step_norm, iterations, _ = state
+        x, residual, residual_norm, step_norm, iterations, _, line_search_failed = state
         finite = (
             jnp.all(jnp.isfinite(x)) & jnp.all(jnp.isfinite(residual)) & jnp.isfinite(residual_norm)
         )
@@ -71,10 +72,11 @@ def dense_newton_root(
             & (iterations < options.max_steps)
             & (step_norm > step_threshold)
             & finite
+            & ~line_search_failed
         )
 
     def newton_step(state):
-        x, residual, residual_norm, _, iterations, total_backtracking = state
+        x, residual, residual_norm, _, iterations, total_backtracking, _ = state
         jacobian = jax.jacfwd(residual_function)(x)
         if initial_guess.ndim == 0:
             full_step = -residual / jacobian
@@ -87,16 +89,17 @@ def dense_newton_root(
             candidate_norm = _infinity_norm(candidate_residual)
             return candidate_x, candidate_residual, candidate_norm
 
+        def acceptable(candidate_residual, candidate_norm):
+            finite = jnp.all(jnp.isfinite(candidate_residual)) & jnp.isfinite(candidate_norm)
+            return finite & (candidate_norm < residual_norm)
+
         damping0 = jnp.asarray(1.0, dtype=dtype)
         candidate_x0, candidate_residual0, candidate_norm0 = candidate(damping0)
         line_state0 = (damping0, candidate_x0, candidate_residual0, candidate_norm0, jnp.int32(0))
 
         def continue_backtracking(line_state):
             _, _, candidate_residual, candidate_norm, backtracking = line_state
-            candidate_finite = jnp.all(jnp.isfinite(candidate_residual)) & jnp.isfinite(
-                candidate_norm
-            )
-            return ((candidate_norm >= residual_norm) | ~candidate_finite) & (
+            return ~acceptable(candidate_residual, candidate_norm) & (
                 backtracking < options.max_backtracking_steps
             )
 
@@ -109,25 +112,29 @@ def dense_newton_root(
         damping, candidate_x, candidate_residual, candidate_norm, backtracking = jax.lax.while_loop(
             continue_backtracking, backtrack, line_state0
         )
-        step_norm = _infinity_norm(damping * full_step)
+        # Only a step that decreases the residual is accepted, so the returned iterate is
+        # always the best one seen. A failed line search keeps the current iterate and stops.
+        accepted = acceptable(candidate_residual, candidate_norm)
         return (
-            candidate_x,
-            candidate_residual,
-            candidate_norm,
-            step_norm,
+            jnp.where(accepted, candidate_x, x),
+            jnp.where(accepted, candidate_residual, residual),
+            jnp.where(accepted, candidate_norm, residual_norm),
+            jnp.where(accepted, _infinity_norm(damping * full_step), 0.0),
             iterations + 1,
             total_backtracking + backtracking,
+            ~accepted,
         )
 
-    x, residual, residual_norm, step_norm, iterations, backtracking_steps = jax.lax.while_loop(
-        continue_iteration, newton_step, initial_state
+    (x, residual, residual_norm, step_norm, iterations, backtracking_steps, line_search_failed) = (
+        jax.lax.while_loop(continue_iteration, newton_step, initial_state)
     )
     finite = (
         jnp.all(jnp.isfinite(x)) & jnp.all(jnp.isfinite(residual)) & jnp.isfinite(residual_norm)
     )
     converged = finite & (residual_norm <= tolerance)
+    line_search_failed = line_search_failed & ~converged
     step_threshold = options.step_tolerance * (1 + _infinity_norm(x))
-    stagnated = finite & ~converged & (step_norm <= step_threshold)
+    stagnated = finite & ~converged & ~line_search_failed & (step_norm <= step_threshold)
     final_jacobian = jax.jacfwd(residual_function)(x)
     if initial_guess.ndim == 0:
         jacobian_condition_number = jnp.where(final_jacobian == 0, jnp.inf, 1.0)
@@ -144,8 +151,24 @@ def dense_newton_root(
         converged=converged,
         finite=finite,
         stagnated=stagnated,
+        line_search_failed=line_search_failed,
     )
     return x, report
+
+
+@jax.custom_jvp
+def _gate_tangent(value: jax.Array, valid: jax.Array) -> jax.Array:
+    """Identity on values; tangents are multiplied by NaN when ``valid`` is false."""
+
+    return value
+
+
+@_gate_tangent.defjvp
+def _gate_tangent_jvp(primals, tangents):
+    value, valid = primals
+    tangent, _ = tangents
+    scale = jnp.where(valid, 1.0, jnp.nan).astype(value.dtype)
+    return value, tangent * scale
 
 
 def implicit_dense_root(
@@ -157,8 +180,12 @@ def implicit_dense_root(
     """Solve once with dense Newton and differentiate the converged equation.
 
     The Newton candidate is stopped before it is supplied to SOLVAX's custom
-    root. Consequently JVPs and VJPs use the implicit function theorem rather
-    than differentiating the iteration history.
+    root, so JVPs and VJPs use the implicit function theorem rather than the
+    iteration history. The implicit derivative is valid only at a converged
+    root with a regular (finite-condition) Jacobian; otherwise every tangent
+    and cotangent of the returned root is NaN, so a failed solve can never
+    silently supply a usable gradient. Check ``report.converged`` on the
+    primal path.
     """
 
     candidate, report = dense_newton_root(residual_function, initial_guess, options=options)
@@ -166,7 +193,8 @@ def implicit_dense_root(
     root = root_solve(
         residual_function, candidate, lambda _function, supplied_candidate: supplied_candidate
     )
-    return root, report
+    regular = report.converged & jnp.isfinite(report.jacobian_condition_number)
+    return _gate_tangent(root, jax.lax.stop_gradient(regular)), report
 
 
 def implicit_dense_linear_solve(
@@ -176,7 +204,12 @@ def implicit_dense_linear_solve(
     residual_tolerance: float = 1e-11,
     condition_limit: float = 1e12,
 ) -> tuple[jax.Array, LinearSolveReport]:
-    """Solve a dense system with implicit JVP/VJP rules and diagnostics."""
+    """Solve a dense system with implicit JVP/VJP rules and diagnostics.
+
+    Derivatives are attached only when the solve converged (finite solution,
+    relative residual within ``residual_tolerance``); otherwise tangents and
+    cotangents of the solution are NaN.
+    """
 
     if residual_tolerance < 0:
         raise ValueError("residual_tolerance must be nonnegative.")
@@ -217,6 +250,7 @@ def implicit_dense_linear_solve(
     )
     converged = finite & (relative_residual_norm <= residual_tolerance)
     well_conditioned = finite & (condition_number <= condition_limit)
+    solution = _gate_tangent(solution, jax.lax.stop_gradient(converged))
     report = LinearSolveReport(
         residual_norm=residual_norm,
         relative_residual_norm=relative_residual_norm,
