@@ -11,6 +11,7 @@ import pytest
 from scipy.io import netcdf_file
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 
 REFERENCE_DIRECTORY = Path(__file__).resolve().parents[1] / "reference" / "vmec"
 
@@ -80,7 +81,7 @@ def test_local_vmec_finite_pressure_zero_current_database_case(tmp_path):
     executable = os.environ.get("PYQSC_VMEC_EXECUTABLE")
     if not executable:
         pytest.skip("Set PYQSC_VMEC_EXECUTABLE to rerun the finite-beta VMEC case.")
-    solution = qsc.solve_configuration("database_qa_139524", nphi=241, order="r3")
+    solution = solve_configuration("database_qa_139524", nphi=241, order="r3")
     export = qsc.to_vmec(
         solution,
         tmp_path / "input.qa139524_beta_r0015",

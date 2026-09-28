@@ -1,6 +1,5 @@
 """First-order quasisymmetric near-axis construction."""
 
-from dataclasses import replace
 from typing import Any
 
 import jax
@@ -212,8 +211,7 @@ def _normalize_order(order: int | str) -> int:
 def solve(
     *,
     axis: Axis,
-    etabar: ArrayLike | None = None,
-    iota: ArrayLike | None = None,
+    etabar: ArrayLike,
     B0: ArrayLike = 1.0,
     sigma0: ArrayLike = 0.0,
     I2: ArrayLike = 0.0,
@@ -224,29 +222,17 @@ def solve(
     order: int | str = 1,
     sG: int = 1,
     spsi: int = 1,
-    solve_for: str = "iota",
     root_options: RootSolveOptions = DEFAULT_ROOT_OPTIONS,
-    fold_tolerance: float = 1e-8,
 ) -> NearAxisSolution:
-    """Construct an immutable forward or target-transform solution."""
+    """Construct the near-axis solution for a prescribed axis and ``etabar``.
+
+    Solves the first-order sigma equation for ``sigma(varphi)`` and ``iota``;
+    for ``order >= 2`` (``"r2"``) the second-order equations, and for
+    ``order == 3`` (``"r3"``) the pyQSC-compatible third-order flux correction.
+    Lengths in meters, fields in tesla, ``p2`` in Pa/m^2, ``I2`` in T/m.
+    """
 
     normalized_order = _normalize_order(order)
-    if solve_for not in ("iota", "etabar", "I2"):
-        raise ValueError("solve_for must be 'iota', 'etabar', or 'I2'.")
-    if fold_tolerance < 0:
-        raise ValueError("fold_tolerance must be nonnegative.")
-    if solve_for == "iota":
-        if etabar is None:
-            raise ValueError("etabar is required when solve_for='iota'.")
-        if iota is not None:
-            raise ValueError("iota is prescribed only when solve_for is 'etabar' or 'I2'.")
-    else:
-        if iota is None:
-            raise ValueError(f"iota is required when solve_for={solve_for!r}.")
-        if solve_for == "I2" and etabar is None:
-            raise ValueError("etabar is required when solve_for='I2'.")
-        if etabar is None:
-            etabar = -1.0
     inputs = NearAxisInputs(
         axis=axis,
         etabar=etabar,
@@ -260,24 +246,10 @@ def solve(
         order=normalized_order,
         sG=sG,
         spsi=spsi,
-        solve_for=solve_for,
     )
     geometry = compute_axis_geometry(axis, nphi=nphi)
-    if solve_for == "iota":
-        sigma, solved_iota, root_report = solve_sigma(inputs, geometry, root_options=root_options)
-        inverse = None
-    else:
-        from pyqsc_jax.inverse import solve_target_iota
-
-        inputs, sigma, solved_iota, root_report, inverse = solve_target_iota(
-            inputs,
-            geometry,
-            target_iota=iota,
-            root_options=root_options,
-            fold_tolerance=fold_tolerance,
-        )
+    sigma, solved_iota, root_report = solve_sigma(inputs, geometry, root_options=root_options)
     solution = first_order_solution(inputs, geometry, sigma, solved_iota, root_report)
-    solution = replace(solution, inverse=inverse)
     if normalized_order >= 2:
         from pyqsc_jax.second_order import solve_second_order
 

@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 
 RUN_VMEX = os.environ.get("PYQSC_RUN_VMEX") == "1"
 pytestmark = [
@@ -37,7 +38,7 @@ def _problem(solution):
 
 
 def test_vmex_vacuum_profiles_and_implicit_gradient():
-    solution = qsc.solve_configuration("qa", nphi=31)
+    solution = solve_configuration("qa", nphi=31)
     problem = _problem(solution)
     result = problem.solve()
     quantities = result.quantities
@@ -59,7 +60,7 @@ def test_vmex_vacuum_profiles_and_implicit_gradient():
 
 
 def test_vmex_finite_beta_profiles():
-    solution = qsc.solve_configuration("plasma_stellarator", nphi=31)
+    solution = solve_configuration("plasma_stellarator", nphi=31)
     problem = _problem(solution)
     quantities = problem.quantities()
 

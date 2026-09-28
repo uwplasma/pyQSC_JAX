@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 
 
 def qa_solution(nphi=31, order="r2", **overrides):
@@ -92,13 +93,11 @@ def test_B2c_optimum_is_jittable_and_differentiable():
     np.testing.assert_allclose(tangent, finite_difference, rtol=2.0e-6)
 
 
-def test_optimal_solution_recomputes_r3_and_shear_without_stale_data():
-    original = qsc.solve_magnetic_shear(qa_solution(nphi=15, order="r3"))
+def test_optimal_solution_recomputes_r3_without_stale_data():
+    original = qa_solution(nphi=15, order="r3")
     result = qsc.optimize_B2c(original)
 
     assert result.solution.third_order is not None
-    assert result.solution.shear is not None
-    np.testing.assert_allclose(result.solution.B31c, original.B31c)
     # The third-order data must be rebuilt from the optimized second order. Optimizing B2c
     # moves the flux-constraint coefficient by order one, so data carried over from the
     # original would match it rather than a fresh evaluation.
@@ -120,32 +119,16 @@ def test_circular_axis_has_degenerate_nonconstant_B2c_response():
     assert result.diagnostics.weighted_l2 < 2.0e-14
 
 
-def test_resolution_verification_recomputes_fixed_candidate():
-    result = qsc.optimize_B2c(qa_solution())
-    verification = qsc.verify_B20_resolution(result.solution, multipliers=(1, 2))
-
-    np.testing.assert_array_equal(verification.resolutions, [31, 61])
-    np.testing.assert_allclose(verification.weighted_l2[0], result.diagnostics.weighted_l2)
-    assert verification.relative_weighted_l2_change[1] < 2.0e-6
-    assert verification.fourier_tail_ratio[1] < verification.fourier_tail_ratio[0]
-    assert np.all(np.asarray(verification.nonzero_fourier_l1) >= 0)
-    assert verification.relative_grid_maximum_change[1] < 0.03
-
-
 @pytest.mark.physics
 def test_documented_optimized_axis_has_nearly_constant_B20():
-    stock = qsc.optimize_B2c(qsc.solve_configuration("database_low_b20_57409", nphi=121))
-    optimized = qsc.solve_configuration("b20_optimized_good", nphi=121)
+    stock = qsc.optimize_B2c(solve_configuration("database_low_b20_57409", nphi=121))
+    optimized = solve_configuration("b20_optimized_good", nphi=121)
     diagnostics = qsc.b20_diagnostics(optimized)
-    verification = qsc.verify_B20_resolution(optimized, multipliers=(1, 2))
-    criteria = qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4)
 
     assert float(diagnostics.weighted_l2) < 1.4e-10
     assert float(diagnostics.grid_maximum) < 3.0e-10
     assert float(diagnostics.peak_to_peak) < 6.0e-10
     assert float(stock.diagnostics.weighted_l2 / diagnostics.weighted_l2) > 2.0e8
-    assert float(verification.relative_weighted_l2_change[1]) < 2.0e-3
-    assert criteria.evaluate(optimized).passed
     assert abs(float(optimized.iota)) > 0.4
 
 
@@ -159,7 +142,3 @@ def test_B20_optimization_input_guards():
         qsc.b20_diagnostics(qa_solution(), smooth_maximum_power=1)
     with pytest.raises(ValueError, match="degeneracy_tolerance"):
         qsc.optimal_B2c_value(qa_solution(), degeneracy_tolerance=-1.0)
-    with pytest.raises(ValueError, match="multipliers"):
-        qsc.verify_B20_resolution(qa_solution(), multipliers=())
-    with pytest.raises(ValueError, match="multipliers"):
-        qsc.verify_B20_resolution(qa_solution(), multipliers=(True,))

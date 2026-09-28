@@ -7,14 +7,22 @@ import numpy as np
 
 import pyqsc_jax as qsc
 
-CONFIGURATION = "qa"
 NPHI = 61
 SAVE_OUTPUT = True
 SHOW_FIGURE = False
 OUTPUT = Path("examples/output/09_total_field_jet.png")
 
 print("Solving the total-field-jet reference configuration...")
-solution = qsc.solve_configuration(CONFIGURATION, nphi=NPHI)
+# Landreman & Sengupta, J. Plasma Phys. 85, 815850601 (2019), section 5.1.
+solution = qsc.Qsc(
+    rc=[1.0, 0.155, 0.0102],
+    zs=[0.0, 0.154, 0.0111],
+    nfp=2,
+    etabar=0.64,
+    B2c=-0.00322,
+    order="r2",
+    nphi=NPHI,
+)
 jet = solution.field_jet
 if jet is None:
     raise RuntimeError("The r2 solution did not produce a total field jet.")

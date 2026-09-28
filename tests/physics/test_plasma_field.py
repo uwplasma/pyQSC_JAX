@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 
 
 def circular_solution(*, I2=0.1, p2=0.0, nphi=31):
@@ -137,7 +138,7 @@ def test_regularized_integral_resolution_convergence_for_nonplanar_axis():
 
 @pytest.mark.physics
 def test_documented_plasma_dominant_case_exceeds_thirty_percent():
-    solution = qsc.solve_configuration("plasma_dominant_channel", nphi=61)
+    solution = solve_configuration("plasma_dominant_channel", nphi=61)
     formal_radius = 0.2
     plasma = qsc.plasma_field_on_axis(solution, formal_radius=formal_radius, angular_resolution=64)
     plasma_norm = np.linalg.norm(np.asarray(plasma.field), axis=-1)
@@ -154,7 +155,7 @@ def test_documented_plasma_dominant_case_exceeds_thirty_percent():
 
 @pytest.mark.physics
 def test_documented_plasma_stellarator_is_pressure_only_nonplanar_and_angle_dependent():
-    solution = qsc.solve_configuration("plasma_stellarator", nphi=121)
+    solution = solve_configuration("plasma_stellarator", nphi=121)
     formal_radius = 0.15
     plasma = qsc.plasma_field_on_axis(solution, formal_radius=formal_radius, angular_resolution=128)
     plasma_norm = np.linalg.norm(np.asarray(plasma.field), axis=-1)
@@ -169,7 +170,6 @@ def test_documented_plasma_stellarator_is_pressure_only_nonplanar_and_angle_depe
     assert np.min(fraction) > 1.7e-3
     assert peak_to_peak_over_mean > 0.1
     assert formal_radius / float(solution.r_singularity) < 0.4
-    assert qsc.Criteria.from_curvo_2025(minimum_abs_iota=0.4).evaluate(solution).passed
     np.testing.assert_allclose(np.mean(fraction), 0.0018895978020422664, rtol=3.0e-12)
 
 

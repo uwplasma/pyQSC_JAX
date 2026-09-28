@@ -1,39 +1,17 @@
 """Differentiable near-axis stellarator construction in JAX."""
 
 from pyqsc_jax.axis import Axis
-from pyqsc_jax.axis_optimization import (
-    AxisSearchCandidate,
-    AxisSearchContinuation,
-    AxisSearchOptions,
-    AxisSearchProblem,
-    AxisSearchResult,
-    LocalLeastSquaresReport,
-    continue_axis_search,
-    search_axis,
-    stellarator_symmetric_variable_indices,
-)
-from pyqsc_jax.configurations import (
-    REFERENCE_CONFIGURATIONS,
-    ReferenceConfiguration,
-    available_configurations,
-    get_configuration,
-    solve_configuration,
-)
-from pyqsc_jax.continuation import ContinuationResult, continue_etabar_branch
-from pyqsc_jax.criteria import Criteria, CriteriaReport, CriterionEvaluation
 from pyqsc_jax.diagnostics import mercier_diagnostics
 from pyqsc_jax.field import total_field_jet
 from pyqsc_jax.first_order import Qsc, solve
 from pyqsc_jax.models import (
     FieldJet,
-    InverseSolveDiagnostics,
     LinearSolveReport,
     MercierDiagnostics,
     NearAxisInputs,
     NearAxisSolution,
     RootSolveReport,
     SecondOrderData,
-    ShearData,
     SingularityDiagnostics,
     ThirdOrderData,
 )
@@ -41,11 +19,9 @@ from pyqsc_jax.near_axis import near_axis
 from pyqsc_jax.optimize import (
     B2cOptimizationResult,
     B20Diagnostics,
-    B20ResolutionVerification,
     b20_diagnostics,
     optimal_B2c_value,
     optimize_B2c,
-    verify_B20_resolution,
 )
 from pyqsc_jax.plasma import (
     PlasmaCurrentSource,
@@ -70,7 +46,6 @@ from pyqsc_jax.plasma import (
     unpack_symmetric_trace_free_rank3,
 )
 from pyqsc_jax.second_order import SecondOrderResiduals, second_order_residuals
-from pyqsc_jax.shear import solve_magnetic_shear
 from pyqsc_jax.singularity import singularity_diagnostics
 from pyqsc_jax.solvers import RootSolveOptions
 from pyqsc_jax.third_order import solve_third_order
@@ -95,22 +70,10 @@ from pyqsc_jax.vmex import (
 
 __all__ = [
     "Axis",
-    "AxisSearchCandidate",
-    "AxisSearchContinuation",
-    "AxisSearchOptions",
-    "AxisSearchProblem",
-    "AxisSearchResult",
     "B2cOptimizationResult",
     "B20Diagnostics",
-    "B20ResolutionVerification",
-    "ContinuationResult",
-    "Criteria",
-    "CriteriaReport",
-    "CriterionEvaluation",
     "FieldJet",
-    "InverseSolveDiagnostics",
     "LinearSolveReport",
-    "LocalLeastSquaresReport",
     "MercierDiagnostics",
     "NearAxisInputs",
     "NearAxisSolution",
@@ -119,13 +82,10 @@ __all__ = [
     "PlasmaGradientData",
     "PlasmaHessianData",
     "Qsc",
-    "REFERENCE_CONFIGURATIONS",
-    "ReferenceConfiguration",
     "RootSolveOptions",
     "RootSolveReport",
     "SecondOrderData",
     "SecondOrderResiduals",
-    "ShearData",
     "SingularityDiagnostics",
     "ThirdOrderData",
     "VmecBoundary",
@@ -137,25 +97,17 @@ __all__ = [
     "VMEX_VALIDATED_COMMIT",
     "near_axis",
     "b20_diagnostics",
-    "available_configurations",
-    "continue_etabar_branch",
-    "continue_axis_search",
     "covariant_current_from_enclosed",
     "enclosed_current_from_covariant",
     "elliptical_channel_gradient",
     "evaluate_weighted_current",
-    "get_configuration",
     "matched_plasma_field_kernel",
     "pack_symmetric_trace_free_rank2",
     "pack_symmetric_trace_free_rank3",
     "mercier_diagnostics",
     "second_order_residuals",
-    "search_axis",
     "solve",
-    "solve_configuration",
-    "solve_magnetic_shear",
     "singularity_diagnostics",
-    "stellarator_symmetric_variable_indices",
     "solve_third_order",
     "total_field_jet",
     "to_vmec",
@@ -176,6 +128,5 @@ __all__ = [
     "regularized_axis_integral",
     "unpack_symmetric_trace_free_rank2",
     "unpack_symmetric_trace_free_rank3",
-    "verify_B20_resolution",
 ]
 __version__ = "0.2.0.dev0"

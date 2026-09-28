@@ -7,7 +7,6 @@ from dataclasses import dataclass, replace
 import jax
 import jax.numpy as jnp
 
-from pyqsc_jax.first_order import solve
 from pyqsc_jax.models import NearAxisSolution
 from pyqsc_jax.second_order import solve_second_order
 
@@ -44,22 +43,6 @@ class B2cOptimizationResult:
     projected_response_norm_squared: jax.Array
     affine_reconstruction_error: jax.Array
     degenerate: jax.Array
-
-
-@jax.tree_util.register_dataclass
-@dataclass(frozen=True)
-class B20ResolutionVerification:
-    """Independent fixed-parameter B20 checks on successively finer grids."""
-
-    resolutions: jax.Array
-    weighted_l2: jax.Array
-    smooth_maximum: jax.Array
-    grid_maximum: jax.Array
-    peak_to_peak: jax.Array
-    nonzero_fourier_l1: jax.Array
-    fourier_tail_ratio: jax.Array
-    relative_weighted_l2_change: jax.Array
-    relative_grid_maximum_change: jax.Array
 
 
 def b20_diagnostics(
@@ -127,7 +110,6 @@ def _first_order_with_B2c(solution: NearAxisSolution, B2c: jax.Array) -> NearAxi
         field_jet=None,
         singularity=None,
         third_order=None,
-        shear=None,
     )
 
 
@@ -186,10 +168,6 @@ def optimize_B2c(
         from pyqsc_jax.third_order import solve_third_order
 
         optimal = solve_third_order(optimal)
-    if solution.shear is not None:
-        from pyqsc_jax.shear import solve_magnetic_shear
-
-        optimal = solve_magnetic_shear(optimal, B31c=solution.shear.B31c)
     reconstruction_error = jnp.max(jnp.abs(optimal.B20 - (intercept + optimum * response)))
     return B2cOptimizationResult(
         solution=optimal,
@@ -200,68 +178,4 @@ def optimize_B2c(
         projected_response_norm_squared=denominator,
         affine_reconstruction_error=reconstruction_error,
         degenerate=degenerate,
-    )
-
-
-def verify_B20_resolution(
-    solution: NearAxisSolution,
-    *,
-    multipliers: tuple[int, ...] = (1, 2, 4),
-    smooth_maximum_power: int = 16,
-) -> B20ResolutionVerification:
-    """Recompute one fixed physical candidate at independent resolutions."""
-
-    if not multipliers or any(
-        not isinstance(multiplier, int) or isinstance(multiplier, bool) or multiplier < 1
-        for multiplier in multipliers
-    ):
-        raise ValueError("multipliers must be a nonempty tuple of positive integers.")
-    inputs = solution.inputs
-    resolutions = tuple(multiplier * (inputs.nphi - 1) + 1 for multiplier in multipliers)
-    diagnostics = []
-    for nphi in resolutions:
-        candidate = solve(
-            axis=inputs.axis,
-            etabar=inputs.etabar,
-            B0=inputs.B0,
-            sigma0=inputs.sigma0,
-            I2=inputs.I2,
-            p2=inputs.p2,
-            B2c=inputs.B2c,
-            B2s=inputs.B2s,
-            nphi=nphi,
-            order="r2",
-            sG=inputs.sG,
-            spsi=inputs.spsi,
-        )
-        diagnostics.append(b20_diagnostics(candidate, smooth_maximum_power=smooth_maximum_power))
-    weighted_l2 = jnp.stack(tuple(item.weighted_l2 for item in diagnostics))
-    smooth_maximum = jnp.stack(tuple(item.smooth_maximum for item in diagnostics))
-    grid_maximum = jnp.stack(tuple(item.grid_maximum for item in diagnostics))
-    peak_to_peak = jnp.stack(tuple(item.peak_to_peak for item in diagnostics))
-    nonzero_fourier_l1 = jnp.stack(tuple(item.nonzero_fourier_l1 for item in diagnostics))
-    tail_ratio = jnp.stack(tuple(item.fourier_tail_ratio for item in diagnostics))
-    tiny = jnp.finfo(weighted_l2.dtype).tiny
-    relative_l2_change = jnp.concatenate(
-        (
-            jnp.zeros(1, dtype=weighted_l2.dtype),
-            jnp.abs(jnp.diff(weighted_l2)) / jnp.maximum(weighted_l2[:-1], tiny),
-        )
-    )
-    relative_maximum_change = jnp.concatenate(
-        (
-            jnp.zeros(1, dtype=grid_maximum.dtype),
-            jnp.abs(jnp.diff(grid_maximum)) / jnp.maximum(grid_maximum[:-1], tiny),
-        )
-    )
-    return B20ResolutionVerification(
-        resolutions=jnp.asarray(resolutions),
-        weighted_l2=weighted_l2,
-        smooth_maximum=smooth_maximum,
-        grid_maximum=grid_maximum,
-        peak_to_peak=peak_to_peak,
-        nonzero_fourier_l1=nonzero_fourier_l1,
-        fourier_tail_ratio=tail_ratio,
-        relative_weighted_l2_change=relative_l2_change,
-        relative_grid_maximum_change=relative_maximum_change,
     )

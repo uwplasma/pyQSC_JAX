@@ -48,22 +48,6 @@ class RootSolveReport:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
-class InverseSolveDiagnostics:
-    """Local branch and fold diagnostics for a target-transform solve."""
-
-    target_iota: jax.Array
-    achieved_iota: jax.Array
-    solved_value: jax.Array
-    response_derivative: jax.Array
-    absolute_response_derivative: jax.Array
-    fold_tolerance: jax.Array
-    branch_fold: jax.Array
-    parameter_sign: jax.Array
-    parameter: str = field(metadata={"static": True})
-
-
-@jax.tree_util.register_dataclass
-@dataclass(frozen=True)
 class LinearSolveReport:
     """Residual and conditioning evidence for a dense linear solve."""
 
@@ -152,7 +136,6 @@ class NearAxisInputs:
     order: int = field(default=1, metadata={"static": True})
     sG: int = field(default=1, metadata={"static": True})
     spsi: int = field(default=1, metadata={"static": True})
-    solve_for: str = field(default="iota", metadata={"static": True})
 
     def __post_init__(self) -> None:
         if not isinstance(self.nphi, int) or isinstance(self.nphi, bool) or self.nphi < 3:
@@ -163,8 +146,6 @@ class NearAxisInputs:
             raise ValueError("sG must be +1 or -1.")
         if self.spsi not in (-1, 1):
             raise ValueError("spsi must be +1 or -1.")
-        if self.solve_for not in ("iota", "etabar", "I2"):
-            raise ValueError("solve_for must be 'iota', 'etabar', or 'I2'.")
         for name in ("etabar", "B0", "sigma0", "I2", "p2", "B2c", "B2s"):
             value = jnp.asarray(getattr(self, name))
             if value.ndim:
@@ -263,26 +244,6 @@ class ThirdOrderData:
 
 @jax.tree_util.register_dataclass
 @dataclass(frozen=True)
-class ShearData:
-    """Order-r-squared rotational-transform correction and intermediates."""
-
-    B31c: jax.Array
-    iota2: jax.Array
-    numerator: jax.Array
-    denominator: jax.Array
-    Lambda_tilde: jax.Array
-    integrating_factor: jax.Array
-    sigma_average: jax.Array
-    Z31c: jax.Array
-    Z31s: jax.Array
-    X31c: jax.Array
-    X31s: jax.Array
-    Y31s: jax.Array
-    stellarator_symmetric: jax.Array
-
-
-@jax.tree_util.register_dataclass
-@dataclass(frozen=True)
 class NearAxisSolution:
     """Canonical immutable near-axis solution.
 
@@ -318,20 +279,12 @@ class NearAxisSolution:
     field_jet: FieldJet | None = None
     singularity: SingularityDiagnostics | None = None
     third_order: ThirdOrderData | None = None
-    shear: ShearData | None = None
-    inverse: InverseSolveDiagnostics | None = None
 
     _SECOND_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in SecondOrderData.__dataclass_fields__.values()
     )
     _THIRD_ORDER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in ThirdOrderData.__dataclass_fields__.values()
-    )
-    _SHEAR_NAMES: ClassVar[frozenset[str]] = frozenset(
-        field.name for field in ShearData.__dataclass_fields__.values()
-    )
-    _INVERSE_NAMES: ClassVar[frozenset[str]] = frozenset(
-        field.name for field in InverseSolveDiagnostics.__dataclass_fields__.values()
     )
     _MERCIER_NAMES: ClassVar[frozenset[str]] = frozenset(
         field.name for field in MercierDiagnostics.__dataclass_fields__.values()
@@ -367,18 +320,6 @@ class NearAxisSolution:
             if third_order is None:
                 raise AttributeError(f"Lower-order solution has no {name!r} quantity.")
             return getattr(third_order, name)
-        if name in self._SHEAR_NAMES:
-            shear = object.__getattribute__(self, "shear")
-            if shear is None:
-                raise AttributeError(
-                    f"Magnetic shear has not been calculated; no {name!r} quantity."
-                )
-            return getattr(shear, name)
-        if name in self._INVERSE_NAMES:
-            inverse = object.__getattribute__(self, "inverse")
-            if inverse is None:
-                raise AttributeError(f"Forward solution has no inverse diagnostic {name!r}.")
-            return getattr(inverse, name)
         if name in self._MERCIER_NAMES:
             mercier = object.__getattribute__(self, "mercier")
             if mercier is None:

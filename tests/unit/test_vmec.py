@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 from pyqsc_jax.near_axis import near_axis
 
 
@@ -119,7 +120,7 @@ def test_first_and_third_order_surfaces_and_ntor_cap(tmp_path):
     first_boundary = qsc.vmec_boundary(first_order, 0.005, ntheta=8, mpol=3, ntor=2)
     assert np.all(np.isfinite(first_boundary.R))
 
-    third_order = qsc.solve_configuration("qa", nphi=15, order="r3")
+    third_order = solve_configuration("qa", nphi=15, order="r3")
     export = qsc.to_vmec(
         third_order,
         tmp_path / "input.r3",
@@ -137,7 +138,7 @@ def test_first_and_third_order_surfaces_and_ntor_cap(tmp_path):
 
 
 def test_finite_pressure_current_profiles_are_written(tmp_path):
-    solution = qsc.solve_configuration("plasma_dominant_channel", nphi=15)
+    solution = solve_configuration("plasma_dominant_channel", nphi=15)
     export = qsc.to_vmec(solution, tmp_path / "input.plasma", r=0.1, ntheta=10, mpol=4, ntor=2)
     contents = export.path.read_text(encoding="utf-8")
 

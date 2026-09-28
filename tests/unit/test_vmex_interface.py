@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 from pyqsc_jax import vmex as bridge
 
 
@@ -143,7 +144,7 @@ def test_problem_builds_without_disk_and_exposes_quantities(fake_vmex):
 
 
 def test_finite_beta_and_traceable_parameter_remap(fake_vmex):
-    solution = qsc.solve_configuration("plasma_stellarator", nphi=15)
+    solution = solve_configuration("plasma_stellarator", nphi=15)
     problem = make_problem(fake_vmex, solution=solution)
     assert problem.finite_beta
 

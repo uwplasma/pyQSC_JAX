@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import pyqsc_jax as qsc
+from fixtures import solve_configuration
 from pyqsc_jax.plotting import (
     field_split_frenet_components,
     plot_axis,
@@ -19,7 +20,7 @@ matplotlib.use("Agg")
 
 
 def test_axis_and_b20_plotters_return_objects():
-    solution = qsc.solve_configuration("qa", nphi=31)
+    solution = solve_configuration("qa", nphi=31)
     figure_axis, axis = plot_axis(solution, samples=31, label="QA")
     figure_b20, b20_axis = plot_b20(solution, label="QA")
     reused_axis_figure, reused_axis = plot_axis(solution, ax=axis, samples=31)
@@ -36,7 +37,7 @@ def test_axis_and_b20_plotters_return_objects():
 
 
 def test_field_jet_norm_plotter_and_axes_guard():
-    solution = qsc.solve_configuration("finite_pressure_current", nphi=31)
+    solution = solve_configuration("finite_pressure_current", nphi=31)
     result = qsc.plasma_hessian_on_axis(solution, formal_radius=0.05)
     figure, axes = plot_field_jet_norms(result)
 
@@ -48,7 +49,7 @@ def test_field_jet_norm_plotter_and_axes_guard():
 
 
 def test_surface_and_angle_dependent_field_split_plotters():
-    solution = qsc.solve_configuration("plasma_stellarator", nphi=31)
+    solution = solve_configuration("plasma_stellarator", nphi=31)
     x, y, z = surface_coordinates(solution, radius=0.05, ntheta=12)
     figure, axis = plot_surface_3d(solution, radius=0.05, ntheta=12)
     reused_figure, reused_axis = plot_surface_3d(
@@ -83,7 +84,7 @@ def test_surface_and_angle_dependent_field_split_plotters():
     ),
 )
 def test_database_surface_coordinates_are_finite_and_smooth(configuration, radius):
-    solution = qsc.solve_configuration(configuration, nphi=121)
+    solution = solve_configuration(configuration, nphi=121)
     x, y, z = surface_coordinates(solution, radius=radius, ntheta=36)
     points = np.stack((x, y, z), axis=-1)
     toroidal_edges = np.linalg.norm(np.diff(points, axis=1), axis=-1)
@@ -93,7 +94,7 @@ def test_database_surface_coordinates_are_finite_and_smooth(configuration, radiu
 
 
 def test_plotter_guards():
-    first_order = qsc.solve_configuration("qa", nphi=15, order="r1")
+    first_order = solve_configuration("qa", nphi=15, order="r1")
     with pytest.raises(ValueError, match="r2"):
         plot_b20(first_order)
     with pytest.raises(ValueError, match="integer"):

@@ -55,11 +55,9 @@ def test_first_order_shapes_and_coefficients():
     np.testing.assert_allclose(area_jacobian, solution.inputs.sG * solution.inputs.spsi, rtol=2e-13)
 
 
-def test_invalid_order_and_inverse_mode_are_explicitly_rejected():
+def test_invalid_order_is_explicitly_rejected():
     with pytest.raises(ValueError, match="order must be"):
         standard_solution(order="fourth")
-    with pytest.raises(ValueError, match="iota is required"):
-        standard_solution(solve_for="etabar")
 
 
 @pytest.mark.parametrize(
@@ -70,7 +68,6 @@ def test_invalid_order_and_inverse_mode_are_explicitly_rejected():
         ({"order": 4}, "order"),
         ({"sG": 0}, "sG"),
         ({"spsi": 0}, "spsi"),
-        ({"solve_for": "pressure"}, "solve_for"),
         ({"etabar": jnp.ones(2)}, "etabar"),
     ],
 )

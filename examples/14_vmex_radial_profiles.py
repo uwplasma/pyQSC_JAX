@@ -9,7 +9,6 @@ import numpy as np
 
 import pyqsc_jax as qsc
 
-CONFIGURATION = "qa"
 RADIUS = 0.02
 QS_SURFACES = (0.25, 0.5, 0.75, 1.0)
 OUTPUT = Path("examples/output/14_vmex_radial_profiles.png")
@@ -21,7 +20,16 @@ if os.environ.get("PYQSC_RUN_VMEX") != "1":
     raise SystemExit(0)
 
 print("Constructing the near-axis boundary...")
-solution = qsc.solve_configuration(CONFIGURATION, nphi=31)
+# Landreman & Sengupta, J. Plasma Phys. 85, 815850601 (2019), section 5.1.
+solution = qsc.Qsc(
+    rc=[1.0, 0.155, 0.0102],
+    zs=[0.0, 0.154, 0.0111],
+    nfp=2,
+    etabar=0.64,
+    B2c=-0.00322,
+    order="r2",
+    nphi=31,
+)
 try:
     problem = qsc.to_vmex_problem(
         solution,
