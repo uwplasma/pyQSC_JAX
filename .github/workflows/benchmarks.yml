@@ -18,6 +18,6 @@ jobs:
           python-version: "3.14"
           cache: pip
       - run: python -m pip install -e '.[dev]'
-      - run: pytest -m numerics
+      - run: pytest tests/physics tests/regression tests/literature
       - name: Record environment
         run: python -m pip freeze

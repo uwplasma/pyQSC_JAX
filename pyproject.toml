@@ -83,7 +83,6 @@ pythonpath = ["src"]
 markers = [
   "integration: cross-package or optional-runtime integration tests",
   "literature: regression tests tied to published configurations",
-  "numerics: numerical convergence and conditioning tests",
   "physics: independent physical identity tests",
   "slow: tests excluded from the default quick developer loop",
 ]
