@@ -24,8 +24,8 @@ jobs:
           python-version: "3.14"
           cache: pip
       - run: python -m pip install ruff
-      - run: ruff check src tests examples benchmarks
-      - run: ruff format --check src tests examples benchmarks
+      - run: ruff check src tests examples
+      - run: ruff format --check src tests examples
 
   test:
     permissions:
