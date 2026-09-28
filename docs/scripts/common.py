@@ -51,9 +51,9 @@ def compress(path: Path, colors: int = 256) -> None:
         from PIL import Image
 
         image = Image.open(path).convert("RGB")
-        image.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(
-            path, optimize=True
-        )
+        image.quantize(
+            colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE
+        ).save(path, optimize=True)
     except Exception as error:  # Pillow missing
         print(f"    (compression skipped: {error})")
 
@@ -96,4 +96,8 @@ def record(script: str, values: dict) -> None:
 def sci(value: float, digits: int = 2) -> str:
     """Format a number as LaTeX-free scientific text, e.g. ``3.1e-14``."""
 
-    return f"{float(value):.{digits}g}" if 1e-3 <= abs(float(value)) < 1e4 else f"{float(value):.{digits - 1}e}"
+    return (
+        f"{float(value):.{digits}g}"
+        if 1e-3 <= abs(float(value)) < 1e4
+        else f"{float(value):.{digits - 1}e}"
+    )
