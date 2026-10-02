@@ -13,5 +13,6 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
     ],
+    extras_require={"essos": ["essos>=0.19.3"]},
     python_requires=">=3.9",
 )
